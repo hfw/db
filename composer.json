@@ -1,0 +1,26 @@
+{
+  "name": "hfw/db",
+  "type": "library",
+  "description": "Database CRUD",
+  "keywords": [
+    "database",
+    "crud"
+  ],
+  "homepage": "https://github.com/hfw/crud",
+  "license": "MIT",
+  "require": {
+    "php": "~7.3",
+    "ext-pdo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Helix\\": "src/",
+      "Helix\\DB\\": "src/DB/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "": "test/src/"
+    }
+  }
+}
