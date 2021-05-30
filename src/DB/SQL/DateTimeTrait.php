@@ -6,6 +6,9 @@ use Helix\DB;
 
 /**
  * Produces datetime related expressions for the instance.
+ *
+ * @see https://sqlite.org/lang_datefunc.html
+ * @see https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
  */
 trait DateTimeTrait {
 
@@ -26,9 +29,21 @@ trait DateTimeTrait {
     }
 
     /**
+     * `YYYY-MM-DD hh:mm:ss`
+     *
+     * @return Text
+     */
+    public function getDateTime () {
+        return Text::factory($this->db, $this->getDateTimeFormat([
+            'mysql' => '%Y-%m-%d %H:%i:%S',
+            'sqlite' => '%Y-%m-%d %H:%M:%S'
+        ]));
+    }
+
+    /**
      * Returns a text expression using a driver-appropriate format function.
      *
-     * @param string|array $format Format, or formats keyed by driver name.
+     * @param string|string[] $format Format, or formats keyed by driver name.
      * @return Text
      */
     public function getDateTimeFormat ($format) {
