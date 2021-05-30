@@ -9,6 +9,8 @@ use Helix\DB;
  */
 trait AggregateTrait {
 
+    abstract public function __toString ();
+
     /**
      * @var DB
      */
@@ -20,7 +22,7 @@ trait AggregateTrait {
      * @param string $aggregate `ALL|DISTINCT`
      * @return Numeric
      */
-    public function getAvg ($aggregate = 'ALL') {
+    public function getAvg (string $aggregate = 'ALL') {
         return $this->db->factory(Numeric::class, $this->db, "AVG({$aggregate} {$this})");
     }
 
@@ -32,12 +34,10 @@ trait AggregateTrait {
      */
     public function getConcat (string $delimiter = ',') {
         $delimiter = $this->db->quote($delimiter);
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->factory(Text::class, $this->db, "GROUP_CONCAT({$this},{$delimiter})");
-            default:
-                return $this->db->factory(Text::class, $this->db, "GROUP_CONCAT({$this} SEPARATOR {$delimiter})");
+        if ($this->db->isSQLite()) {
+            return $this->db->factory(Text::class, $this->db, "GROUP_CONCAT({$this},{$delimiter})");
         }
+        return $this->db->factory(Text::class, $this->db, "GROUP_CONCAT({$this} SEPARATOR {$delimiter})");
     }
 
     /**

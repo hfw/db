@@ -15,6 +15,8 @@ use Helix\DB\Select;
  */
 trait ComparisonTrait {
 
+    abstract public function __toString ();
+
     /**
      * @var DB
      */
@@ -108,19 +110,15 @@ trait ComparisonTrait {
      */
     public function isGreater ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
-            switch ($this->db) {
-                case 'sqlite':
-                    /** @var Select $sub */
-                    $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
-                    switch ($multi) {
-                        case 'ANY':
-                            return $sub->where("{$this} > {$arg[0]}")->isNotEmpty();
-                        default:
-                            return $sub->where("{$this} <= {$arg[0]}")->isEmpty();
-                    }
-                default:
-                    return $this->db->factory(Predicate::class, "{$this} > {$multi} ({$arg->toSql()})");
+            if ($this->db->isSQLite()) {
+                /** @var Select $sub */
+                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                if ($multi === 'ANY') {
+                    return $sub->where("{$this} > {$arg[0]}")->isNotEmpty();
+                }
+                return $sub->where("{$this} <= {$arg[0]}")->isEmpty();
             }
+            return $this->db->factory(Predicate::class, "{$this} > {$multi} ({$arg->toSql()})");
         }
         return $this->db->factory(Predicate::class, "{$this} > {$this->db->quote($arg)}");
     }
@@ -139,19 +137,15 @@ trait ComparisonTrait {
      */
     public function isGreaterOrEqual ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
-            switch ($this->db) {
-                case 'sqlite':
-                    /** @var Select $sub */
-                    $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
-                    switch ($multi) {
-                        case 'ANY':
-                            return $sub->where("{$this} >= {$arg[0]}")->isNotEmpty();
-                        default:
-                            return $sub->where("{$this} < {$arg[0]}")->isEmpty();
-                    }
-                default:
-                    return $this->db->factory(Predicate::class, "{$this} >= {$multi} ({$arg->toSql()})");
+            if ($this->db->isSQLite()) {
+                /** @var Select $sub */
+                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                if ($multi === 'ANY') {
+                    return $sub->where("{$this} >= {$arg[0]}")->isNotEmpty();
+                }
+                return $sub->where("{$this} < {$arg[0]}")->isEmpty();
             }
+            return $this->db->factory(Predicate::class, "{$this} >= {$multi} ({$arg->toSql()})");
         }
         return $this->db->factory(Predicate::class, "{$this} >= {$this->db->quote($arg)}");
     }
@@ -170,19 +164,15 @@ trait ComparisonTrait {
      */
     public function isLess ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
-            switch ($this->db) {
-                case 'sqlite':
-                    /** @var Select $sub */
-                    $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
-                    switch ($multi) {
-                        case 'ANY':
-                            return $sub->where("{$this} < {$arg[0]}")->isNotEmpty();
-                        default:
-                            return $sub->where("{$this} >= {$arg[0]}")->isEmpty();
-                    }
-                default:
-                    return $this->db->factory(Predicate::class, "{$this} < {$multi} ({$arg->toSql()})");
+            if ($this->db->isSQLite()) {
+                /** @var Select $sub */
+                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                if ($multi === 'ANY') {
+                    return $sub->where("{$this} < {$arg[0]}")->isNotEmpty();
+                }
+                return $sub->where("{$this} >= {$arg[0]}")->isEmpty();
             }
+            return $this->db->factory(Predicate::class, "{$this} < {$multi} ({$arg->toSql()})");
         }
         return $this->db->factory(Predicate::class, "{$this} < {$this->db->quote($arg)}");
     }
@@ -201,19 +191,15 @@ trait ComparisonTrait {
      */
     public function isLessOrEqual ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
-            switch ($this->db) {
-                case 'sqlite':
-                    /** @var Select $sub */
-                    $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
-                    switch ($multi) {
-                        case 'ANY':
-                            return $sub->where("{$this} <= {$arg[0]}")->isNotEmpty();
-                        default:
-                            return $sub->where("{$this} > {$arg[0]}")->isEmpty();
-                    }
-                default:
-                    return $this->db->factory(Predicate::class, "{$this} <= {$multi} ({$arg->toSql()})");
+            if ($this->db->isSQLite()) {
+                /** @var Select $sub */
+                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                if ($multi === 'ANY') {
+                    return $sub->where("{$this} <= {$arg[0]}")->isNotEmpty();
+                }
+                return $sub->where("{$this} > {$arg[0]}")->isEmpty();
             }
+            return $this->db->factory(Predicate::class, "{$this} <= {$multi} ({$arg->toSql()})");
         }
         return $this->db->factory(Predicate::class, "{$this} <= {$this->db->quote($arg)}");
     }

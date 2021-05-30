@@ -9,6 +9,8 @@ use Helix\DB;
  */
 trait DateTimeTrait {
 
+    abstract public function __toString ();
+
     /**
      * @var DB
      */
@@ -30,17 +32,14 @@ trait DateTimeTrait {
      * @return Text
      */
     public function getDateTimeFormat ($format) {
-        $driver = $this->db->getDriver();
         if (is_array($format)) {
-            $format = $format[$driver];
+            $format = $format[$this->db->getDriver()];
         }
         $format = $this->db->quote($format);
-        switch ($driver) {
-            case 'sqlite':
-                return $this->db->factory(Text::class, $this->db, "STRFTIME({$format},{$this})");
-            default:
-                return $this->db->factory(Text::class, $this->db, "DATE_FORMAT({$this},{$format})");
+        if ($this->db->isSQLite()) {
+            return $this->db->factory(Text::class, $this->db, "STRFTIME({$format},{$this})");
         }
+        return $this->db->factory(Text::class, $this->db, "DATE_FORMAT({$this},{$format})");
     }
 
     /**
@@ -62,7 +61,7 @@ trait DateTimeTrait {
     }
 
     /**
-     * `001` to `366` (leap year)
+     * `001` to `366` (365 + 1 during leap year)
      *
      * @return Numeric
      */
@@ -127,12 +126,10 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getTimestamp () {
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->factory(Numeric::class, $this->db, "STRFTIME('%s',{$this})");
-            default:
-                return $this->db->factory(Numeric::class, $this->db, "UNIX_TIMESTAMP({$this})");
+        if ($this->db->isSQLite()) {
+            return $this->db->factory(Numeric::class, $this->db, "STRFTIME('%s',{$this})");
         }
+        return $this->db->factory(Numeric::class, $this->db, "UNIX_TIMESTAMP({$this})");
     }
 
     /**

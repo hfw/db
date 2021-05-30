@@ -9,6 +9,8 @@ use Helix\DB;
  */
 trait NumericTrait {
 
+    abstract public function __toString ();
+
     /**
      * @var DB
      */

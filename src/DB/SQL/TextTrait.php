@@ -9,6 +9,8 @@ use Helix\DB;
  */
 trait TextTrait {
 
+    abstract public function __toString ();
+
     /**
      * @var DB
      */
@@ -29,12 +31,10 @@ trait TextTrait {
      * @return Numeric
      */
     public function getLength () {
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->factory(Numeric::class, $this->db, "LENGTH(CAST({$this} AS TEXT))");
-            default:
-                return $this->db->factory(Numeric::class, $this->db, "CHAR_LENGTH({$this})");
+        if ($this->db->isSQLite()) {
+            return $this->db->factory(Numeric::class, $this->db, "LENGTH(CAST({$this} AS TEXT))");
         }
+        return $this->db->factory(Numeric::class, $this->db, "CHAR_LENGTH({$this})");
     }
 
     /**
@@ -56,12 +56,10 @@ trait TextTrait {
      */
     public function getPosition (string $substring) {
         $substring = $this->db->quote($substring);
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->factory(Numeric::class, $this->db, "INSTR({$this},{$substring})");
-            default:
-                return $this->db->factory(Numeric::class, $this->db, "LOCATE({$substring},{$this})");
+        if ($this->db->isSQLite()) {
+            return $this->db->factory(Numeric::class, $this->db, "INSTR({$this},{$substring})");
         }
+        return $this->db->factory(Numeric::class, $this->db, "LOCATE({$substring},{$this})");
     }
 
     /**
@@ -83,19 +81,17 @@ trait TextTrait {
      * @return Numeric
      */
     public function getSize () {
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->factory(Numeric::class, $this->db, "LENGTH(CAST({$this} AS BLOB))");
-            default:
-                return $this->db->factory(Numeric::class, $this->db, "LENGTH({$this})");
+        if ($this->db->isSQLite()) {
+            return $this->db->factory(Numeric::class, $this->db, "LENGTH(CAST({$this} AS BLOB))");
         }
+        return $this->db->factory(Numeric::class, $this->db, "LENGTH({$this})");
     }
 
     /**
      * `SUBSTR($this,$start)` or `SUBSTR($this,$start,$length)`
      *
      * @param int $start 1-based, can be negative to start from the right.
-     * @param int $length
+     * @param null|int $length
      * @return Text
      */
     public function getSubstring (int $start, int $length = null) {
