@@ -5,9 +5,9 @@ namespace Helix\DB\SQL;
 /**
  * Represents a numeric expression. Produces various transformations.
  */
-class Numeric extends Value {
+class Num extends Value {
 
-    use NumericTrait;
+    use NumTrait;
 
     /**
      * Casts the expression to a character string.

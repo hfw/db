@@ -12,24 +12,24 @@ class Text extends Value {
     /**
      * Casts the expression to a floating point number.
      *
-     * @return Numeric
+     * @return Num
      */
     public function toFloat () {
         if ($this->db->isSQLite()) {
-            return Numeric::factory($this->db, "CAST({$this} AS REAL)");
+            return Num::factory($this->db, "CAST({$this} AS REAL)");
         }
-        return Numeric::factory($this->db, "({$this} + 0)");
+        return Num::factory($this->db, "({$this} + 0)");
     }
 
     /**
      * Casts the expression to a signed integer.
      *
-     * @return Numeric
+     * @return Num
      */
     public function toInt () {
         if ($this->db->isSQLite()) {
-            return Numeric::factory($this->db, "CAST({$this} AS INTEGER)");
+            return Num::factory($this->db, "CAST({$this} AS INTEGER)");
         }
-        return Numeric::factory($this->db, "CAST({$this} AS SIGNED)");
+        return Num::factory($this->db, "CAST({$this} AS SIGNED)");
     }
 }

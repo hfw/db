@@ -28,13 +28,13 @@ trait TextTrait {
      *
      * @see getSize()
      *
-     * @return Numeric
+     * @return Num
      */
     public function getLength () {
         if ($this->db->isSQLite()) {
-            return Numeric::factory($this->db, "LENGTH(CAST({$this} AS TEXT))");
+            return Num::factory($this->db, "LENGTH(CAST({$this} AS TEXT))");
         }
-        return Numeric::factory($this->db, "CHAR_LENGTH({$this})");
+        return Num::factory($this->db, "CHAR_LENGTH({$this})");
     }
 
     /**
@@ -52,14 +52,14 @@ trait TextTrait {
      * The position is `0` if the substring isn't found.
      *
      * @param string $substring
-     * @return Numeric
+     * @return Num
      */
     public function getPosition (string $substring) {
         $substring = $this->db->quote($substring);
         if ($this->db->isSQLite()) {
-            return Numeric::factory($this->db, "INSTR({$this},{$substring})");
+            return Num::factory($this->db, "INSTR({$this},{$substring})");
         }
-        return Numeric::factory($this->db, "LOCATE({$substring},{$this})");
+        return Num::factory($this->db, "LOCATE({$substring},{$this})");
     }
 
     /**
@@ -78,13 +78,13 @@ trait TextTrait {
     /**
      * The number of bytes in the string.
      *
-     * @return Numeric
+     * @return Num
      */
     public function getSize () {
         if ($this->db->isSQLite()) {
-            return Numeric::factory($this->db, "LENGTH(CAST({$this} AS BLOB))");
+            return Num::factory($this->db, "LENGTH(CAST({$this} AS BLOB))");
         }
-        return Numeric::factory($this->db, "LENGTH({$this})");
+        return Num::factory($this->db, "LENGTH({$this})");
     }
 
     /**

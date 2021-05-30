@@ -6,7 +6,7 @@ use Helix\DB;
 use Helix\DB\SQL\AggregateTrait;
 use Helix\DB\SQL\ComparisonTrait;
 use Helix\DB\SQL\DateTimeTrait;
-use Helix\DB\SQL\NumericTrait;
+use Helix\DB\SQL\NumTrait;
 use Helix\DB\SQL\TextTrait;
 use Helix\DB\SQL\ValueInterface;
 
@@ -23,7 +23,7 @@ class Column implements ValueInterface {
     use AggregateTrait;
     use ComparisonTrait;
     use DateTimeTrait;
-    use NumericTrait;
+    use NumTrait;
     use TextTrait;
 
     /**

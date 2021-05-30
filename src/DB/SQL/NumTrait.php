@@ -7,7 +7,7 @@ use Helix\DB;
 /**
  * Produces numeric expressions for the instance.
  */
-trait NumericTrait {
+trait NumTrait {
 
     abstract public function __toString ();
 
@@ -19,48 +19,48 @@ trait NumericTrait {
     /**
      * `ABS($this)`
      *
-     * @return Numeric
+     * @return Num
      */
     public function abs () {
-        return Numeric::factory($this->db, "ABS({$this})");
+        return Num::factory($this->db, "ABS({$this})");
     }
 
     /**
      * `($this + $arg)`
      *
      * @param number|ValueInterface $arg
-     * @return Numeric
+     * @return Num
      */
     public function add ($arg) {
-        return Numeric::factory($this->db, "({$this} + {$arg})");
+        return Num::factory($this->db, "({$this} + {$arg})");
     }
 
     /**
      * `CEIL($this)`
      *
-     * @return Numeric
+     * @return Num
      */
     public function ceil () {
-        return Numeric::factory($this->db, "CEIL({$this})");
+        return Num::factory($this->db, "CEIL({$this})");
     }
 
     /**
      * `($this / $arg)`
      *
      * @param number|ValueInterface $arg
-     * @return Numeric
+     * @return Num
      */
     public function divide ($arg) {
-        return Numeric::factory($this->db, "({$this} / {$arg})");
+        return Num::factory($this->db, "({$this} / {$arg})");
     }
 
     /**
      * `FLOOR($this)`
      *
-     * @return Numeric
+     * @return Num
      */
     public function floor () {
-        return Numeric::factory($this->db, "FLOOR({$this})");
+        return Num::factory($this->db, "FLOOR({$this})");
     }
 
     /**
@@ -103,49 +103,49 @@ trait NumericTrait {
      * `($this % $arg)`
      *
      * @param number|ValueInterface $arg
-     * @return Numeric
+     * @return Num
      */
     public function modulo ($arg) {
-        return Numeric::factory($this->db, "({$this} % {$arg})");
+        return Num::factory($this->db, "({$this} % {$arg})");
     }
 
     /**
      * `($this * $arg)`
      *
      * @param number|ValueInterface $arg
-     * @return Numeric
+     * @return Num
      */
     public function multiply ($arg) {
-        return Numeric::factory($this->db, "({$this} * {$arg})");
+        return Num::factory($this->db, "({$this} * {$arg})");
     }
 
     /**
      * `POW($this,$exponent)`
      *
      * @param number|ValueInterface $exponent
-     * @return Numeric
+     * @return Num
      */
     public function pow ($exponent) {
-        return Numeric::factory($this->db, "POW({$this},{$exponent})");
+        return Num::factory($this->db, "POW({$this},{$exponent})");
     }
 
     /**
      * `ROUND($this,$decimals)`
      *
      * @param int $decimals
-     * @return Numeric
+     * @return Num
      */
     public function round (int $decimals = 0) {
-        return Numeric::factory($this->db, "ROUND({$this},{$decimals})");
+        return Num::factory($this->db, "ROUND({$this},{$decimals})");
     }
 
     /**
      * `($this - $arg)`
      *
      * @param number|ValueInterface $arg
-     * @return Numeric
+     * @return Num
      */
     public function subtract (ValueInterface $arg) {
-        return Numeric::factory($this->db, "({$this} - {$arg})");
+        return Num::factory($this->db, "({$this} - {$arg})");
     }
 }

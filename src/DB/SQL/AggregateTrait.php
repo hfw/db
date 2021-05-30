@@ -20,10 +20,10 @@ trait AggregateTrait {
      * `AVG(ALL|DISTINCT $this)`
      *
      * @param string $aggregate `ALL|DISTINCT`
-     * @return Numeric
+     * @return Num
      */
     public function getAvg (string $aggregate = 'ALL') {
-        return Numeric::factory($this->db, "AVG({$aggregate} {$this})");
+        return Num::factory($this->db, "AVG({$aggregate} {$this})");
     }
 
     /**
@@ -44,37 +44,37 @@ trait AggregateTrait {
      * `COUNT(ALL|DISTINCT $this)`
      *
      * @param string $aggregate `ALL|DISTINCT`
-     * @return Numeric
+     * @return Num
      */
     public function getCount (string $aggregate = 'ALL') {
-        return Numeric::factory($this->db, "COUNT({$aggregate} {$this})");
+        return Num::factory($this->db, "COUNT({$aggregate} {$this})");
     }
 
     /**
      * `MAX($this)`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getMax () {
-        return Numeric::factory($this->db, "MAX({$this})");
+        return Num::factory($this->db, "MAX({$this})");
     }
 
     /**
      * `MIN($this)`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getMin () {
-        return Numeric::factory($this->db, "MIN({$this})");
+        return Num::factory($this->db, "MIN({$this})");
     }
 
     /**
      * `SUM(ALL|DISTINCT $this)`
      *
      * @param string $aggregate `ALL|DISTINCT`
-     * @return Numeric
+     * @return Num
      */
     public function getSum (string $aggregate = 'ALL') {
-        return Numeric::factory($this->db, "SUM({$aggregate} {$this})");
+        return Num::factory($this->db, "SUM({$aggregate} {$this})");
     }
 }

@@ -60,46 +60,46 @@ trait DateTimeTrait {
     /**
      * `01` to `31`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getDay () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat('%d'));
+        return Num::factory($this->db, $this->getDateTimeFormat('%d'));
     }
 
     /**
      * `0` to `6` (Sunday is `0`)
      *
-     * @return Numeric
+     * @return Num
      */
     public function getDayOfWeek () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat('%w'));
+        return Num::factory($this->db, $this->getDateTimeFormat('%w'));
     }
 
     /**
      * `001` to `366` (365 + 1 during leap year)
      *
-     * @return Numeric
+     * @return Num
      */
     public function getDayOfYear () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat('%j'));
+        return Num::factory($this->db, $this->getDateTimeFormat('%j'));
     }
 
     /**
      * `00` to `23`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getHours () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat('%H'));
+        return Num::factory($this->db, $this->getDateTimeFormat('%H'));
     }
 
     /**
      * `00` to `59`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getMinutes () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat([
+        return Num::factory($this->db, $this->getDateTimeFormat([
             'mysql' => '%i',
             'sqlite' => '%M'
         ]));
@@ -108,19 +108,19 @@ trait DateTimeTrait {
     /**
      * `01` to `12`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getMonth () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat('%m'));
+        return Num::factory($this->db, $this->getDateTimeFormat('%m'));
     }
 
     /**
      * `00` to `59`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getSeconds () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat('%S'));
+        return Num::factory($this->db, $this->getDateTimeFormat('%S'));
     }
 
     /**
@@ -138,22 +138,22 @@ trait DateTimeTrait {
     /**
      * Unix timestamp.
      *
-     * @return Numeric
+     * @return Num
      */
     public function getTimestamp () {
         if ($this->db->isSQLite()) {
-            return Numeric::factory($this->db, "STRFTIME('%s',{$this})");
+            return Num::factory($this->db, "STRFTIME('%s',{$this})");
         }
-        return Numeric::factory($this->db, "UNIX_TIMESTAMP({$this})");
+        return Num::factory($this->db, "UNIX_TIMESTAMP({$this})");
     }
 
     /**
      * `00` to `53`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getWeekOfYear () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat([
+        return Num::factory($this->db, $this->getDateTimeFormat([
             'mysql' => '%U',
             'sqlite' => '%W'
         ]));
@@ -162,9 +162,9 @@ trait DateTimeTrait {
     /**
      * `YYYY`
      *
-     * @return Numeric
+     * @return Num
      */
     public function getYear () {
-        return Numeric::factory($this->db, $this->getDateTimeFormat('%Y'));
+        return Num::factory($this->db, $this->getDateTimeFormat('%Y'));
     }
 }
