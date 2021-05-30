@@ -208,10 +208,12 @@ class Record extends Table {
      * @return null|EntityInterface
      */
     public function load (int $id) {
-        $load = $this->cache(__FUNCTION__, function() {
+        $statement = $this->cache(__FUNCTION__, function() {
             return $this->select(array_keys($this->columns))->where('id = ?')->prepare();
         });
-        if ($values = $load([$id])->fetch()) {
+        $values = $statement([$id])->fetch();
+        $statement->closeCursor();
+        if ($values) {
             $entity = clone $this->proto;
             $this->setValues($entity, $values);
             $this->loadEav([$id => $entity]);
@@ -271,7 +273,7 @@ class Record extends Table {
      * @param EntityInterface $entity
      */
     protected function saveInsert (EntityInterface $entity): void {
-        $insert = $this->cache(__FUNCTION__, function() {
+        $statement = $this->cache(__FUNCTION__, function() {
             $slots = SQL::slots(array_keys($this->columns));
             unset($slots['id']);
             $columns = implode(',', array_keys($slots));
@@ -280,7 +282,8 @@ class Record extends Table {
         });
         $values = $this->getValues($entity);
         unset($values['id']);
-        $this->properties['id']->setValue($entity, $insert($values)->getId());
+        $this->properties['id']->setValue($entity, $statement($values)->getId());
+        $statement->closeCursor();
     }
 
     /**
@@ -289,12 +292,14 @@ class Record extends Table {
      * @param EntityInterface $entity
      */
     protected function saveUpdate (EntityInterface $entity): void {
-        $this->cache(__FUNCTION__, function() {
+        $statement = $this->cache(__FUNCTION__, function() {
             $slots = SQL::slotsEqual(array_keys($this->columns));
             unset($slots['id']);
             $slots = implode(', ', $slots);
             return $this->db->prepare("UPDATE {$this} SET {$slots} WHERE id = :id");
-        })->execute($this->getValues($entity));
+        });
+        $statement->execute($this->getValues($entity));
+        $statement->closeCursor();
     }
 
     /**

@@ -27,12 +27,12 @@ class EAV extends Table {
      * @return bool
      */
     public function exists (int $id, string $attribute): bool {
-        $exists = $this->cache(__FUNCTION__, function() {
-            $select = $this->select(['COUNT(*) > 0']);
-            $select->where('entity = ? AND attribute = ?');
-            return $select->prepare();
+        $statement = $this->cache(__FUNCTION__, function() {
+            return $this->select(['COUNT(*) > 0'])->where('entity = ? AND attribute = ?')->prepare();
         });
-        return (bool)$exists([$id, $attribute])->fetchColumn();
+        $exists = (bool)$statement([$id, $attribute])->fetchColumn();
+        $statement->closeCursor();
+        return $exists;
     }
 
     /**
@@ -67,13 +67,13 @@ class EAV extends Table {
      * @return array `[attribute => value]`
      */
     public function load (int $id): array {
-        $load = $this->cache(__FUNCTION__, function() {
+        $statement = $this->cache(__FUNCTION__, function() {
             $select = $this->select(['attribute', 'value']);
             $select->where('entity = ?');
             $select->order('attribute');
             return $select->prepare();
         });
-        return $load([$id])->fetchAll(DB::FETCH_KEY_PAIR);
+        return $statement([$id])->fetchAll(DB::FETCH_KEY_PAIR);
     }
 
     /**
@@ -100,7 +100,7 @@ class EAV extends Table {
     }
 
     /**
-     * Replaces an entity's attributes with those given.
+     * Upserts an entity's attributes with those given.
      * Stored attributes not given here are pruned.
      *
      * @param int $id
@@ -112,22 +112,22 @@ class EAV extends Table {
             $this['entity']->isEqual($id),
             $this['attribute']->isNotEqual(array_keys($values))
         ]);
-        $upsert = $this->cache(__FUNCTION__, function() {
-            switch ($this->db) {
-                case 'sqlite':
-                    return $this->db->prepare(
-                        "REPLACE INTO {$this} (entity,attribute,value) VALUES (?,?,?)"
-                    );
-                default:
-                    return $this->db->prepare(
-                        "INSERT INTO {$this} (entity,attribute,value) VALUES (?,?,?)" .
-                        " ON DUPLICATE KEY UPDATE value=VALUES(value)"
-                    );
+        $statement = $this->cache(__FUNCTION__, function() {
+            if ($this->db->isSQLite()) {
+                return $this->db->prepare(
+                    "INSERT INTO {$this} (entity,attribute,value) VALUES (?,?,?)"
+                    . " ON CONFLICT (entity,attribute) DO UPDATE SET value=excluded.value"
+                );
             }
+            return $this->db->prepare(
+                "INSERT INTO {$this} (entity,attribute,value) VALUES (?,?,?)"
+                . " ON DUPLICATE KEY UPDATE value=VALUES(value)"
+            );
         });
         foreach ($values as $attribute => $value) {
-            $upsert->execute([$id, $attribute, $value]);
+            $statement->execute([$id, $attribute, $value]);
         }
+        $statement->closeCursor();
         return $this;
     }
 }

@@ -85,21 +85,21 @@ class Junction extends Table {
      * @return int Rows affected.
      */
     public function link (array $ids): int {
-        $link = $this->cache(__FUNCTION__, function() {
+        $statement = $this->cache(__FUNCTION__, function() {
             $columns = implode(',', array_keys($this->columns));
             $slots = implode(',', SQL::slots(array_keys($this->columns)));
-            switch ($this->db) {
-                case 'sqlite':
-                    return $this->db->prepare(
-                        "INSERT OR IGNORE INTO {$this} ({$columns}) VALUES ({$slots})"
-                    );
-                default:
-                    return $this->db->prepare(
-                        "INSERT IGNORE INTO {$this} ({$columns}) VALUES ({$slots})"
-                    );
+            if ($this->db->isSQLite()) {
+                return $this->db->prepare(
+                    "INSERT OR IGNORE INTO {$this} ({$columns}) VALUES ({$slots})"
+                );
             }
+            return $this->db->prepare(
+                "INSERT IGNORE INTO {$this} ({$columns}) VALUES ({$slots})"
+            );
         });
-        return $link($ids)->rowCount();
+        $affected = $statement($ids)->rowCount();
+        $statement->closeCursor();
+        return $affected;
     }
 
     /**

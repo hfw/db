@@ -19,7 +19,7 @@ class Table extends AbstractTable {
     use FactoryTrait;
 
     /**
-     * Prepared query cache.
+     * Prepared statement cache, keyed by function name.
      *
      * @var Statement[]
      */
@@ -68,27 +68,25 @@ class Table extends AbstractTable {
     public function apply (array $values): int {
         $columns = implode(',', array_keys($values));
         $values = $this->db->quoteList($values);
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->exec(
-                    "INSERT OR IGNORE INTO {$this} ({$columns}) VALUES ({$values})"
-                );
-            default:
-                return $this->db->exec(
-                    "INSERT IGNORE INTO {$this} ({$columns}) VALUES ({$values})"
-                );
+        if ($this->db->isSQLite()) {
+            return $this->db->exec(
+                "INSERT OR IGNORE INTO {$this} ({$columns}) VALUES ({$values})"
+            );
         }
+        return $this->db->exec(
+            "INSERT IGNORE INTO {$this} ({$columns}) VALUES ({$values})"
+        );
     }
 
     /**
-     * Caches a prepared query.
+     * Caches a prepared statement.
      *
      * @param string $key
      * @param Closure $prepare `():Statement`
      * @return Statement
      */
     protected function cache (string $key, Closure $prepare) {
-        return $this->_cache[$key] ?? $this->_cache[$key] = $prepare->__invoke();
+        return $this->_cache[$key] ??= $prepare->__invoke();
     }
 
     /**
