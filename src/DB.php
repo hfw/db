@@ -32,8 +32,9 @@ class DB extends PDO implements ArrayAccess {
 
     /**
      * Notified whenever a query is executed or a statement is prepared.
-     * Takes only one argument: the SQL being executed or prepared.
      * This is a stub closure by default.
+     *
+     * `fn($sql):void`
      *
      * @var Closure
      */
@@ -59,16 +60,17 @@ class DB extends PDO implements ArrayAccess {
      * @param string $password
      * @param array $options
      */
-    public function __construct ($dsn, $username = null, $password = null, $options = null) {
+    public function __construct ($dsn, $username = null, $password = null, array $options = []) {
+        $options += [
+            self::ATTR_STATEMENT_CLASS => [Statement::class, [$this]]
+        ];
         parent::__construct($dsn, $username, $password, $options);
-        $this->driver = $this->getAttribute(self::ATTR_DRIVER_NAME);
         $this->setAttribute(self::ATTR_DEFAULT_FETCH_MODE, self::FETCH_ASSOC);
         $this->setAttribute(self::ATTR_EMULATE_PREPARES, false);
         $this->setAttribute(self::ATTR_ERRMODE, self::ERRMODE_EXCEPTION);
-        $this->setAttribute(self::ATTR_STATEMENT_CLASS, [Statement::class, [$this]]);
         $this->setAttribute(self::ATTR_STRINGIFY_FETCHES, false);
-        $this->logger = function() {
-        };
+        $this->logger ??= fn() => null;
+        $this->driver = $this->getAttribute(self::ATTR_DRIVER_NAME);
         if ($this->isSQLite()) {
             $this->sqliteCreateFunction('CEIL', 'ceil');
             $this->sqliteCreateFunction('FLOOR', 'floor');
