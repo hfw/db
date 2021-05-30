@@ -22,7 +22,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function abs () {
-        return $this->db->factory(Numeric::class, $this->db, "ABS({$this})");
+        return Numeric::factory($this->db, "ABS({$this})");
     }
 
     /**
@@ -32,7 +32,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function add ($arg) {
-        return $this->db->factory(Numeric::class, $this->db, "({$this} + {$arg})");
+        return Numeric::factory($this->db, "({$this} + {$arg})");
     }
 
     /**
@@ -41,7 +41,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function ceil () {
-        return $this->db->factory(Numeric::class, $this->db, "CEIL({$this})");
+        return Numeric::factory($this->db, "CEIL({$this})");
     }
 
     /**
@@ -51,7 +51,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function divide ($arg) {
-        return $this->db->factory(Numeric::class, $this->db, "({$this} / {$arg})");
+        return Numeric::factory($this->db, "({$this} / {$arg})");
     }
 
     /**
@@ -60,7 +60,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function floor () {
-        return $this->db->factory(Numeric::class, $this->db, "FLOOR({$this})");
+        return Numeric::factory($this->db, "FLOOR({$this})");
     }
 
     /**
@@ -69,7 +69,7 @@ trait NumericTrait {
      * @return Predicate
      */
     public function isEven () {
-        return $this->db->factory(Predicate::class, "({$this} % 2) = 0");
+        return Predicate::factory($this->db, "({$this} % 2) = 0");
     }
 
     /**
@@ -78,7 +78,7 @@ trait NumericTrait {
      * @return Predicate
      */
     public function isNegative () {
-        return $this->db->factory(Predicate::class, "{$this} < 0");
+        return Predicate::factory($this->db, "{$this} < 0");
     }
 
     /**
@@ -87,7 +87,7 @@ trait NumericTrait {
      * @return Predicate
      */
     public function isOdd () {
-        return $this->db->factory(Predicate::class, "({$this} % 2) <> 0");
+        return Predicate::factory($this->db, "({$this} % 2) <> 0");
     }
 
     /**
@@ -96,7 +96,7 @@ trait NumericTrait {
      * @return Predicate
      */
     public function isPositive () {
-        return $this->db->factory(Predicate::class, "{$this} > 0");
+        return Predicate::factory($this->db, "{$this} > 0");
     }
 
     /**
@@ -106,7 +106,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function modulo ($arg) {
-        return $this->db->factory(Numeric::class, $this->db, "({$this} % {$arg})");
+        return Numeric::factory($this->db, "({$this} % {$arg})");
     }
 
     /**
@@ -116,7 +116,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function multiply ($arg) {
-        return $this->db->factory(Numeric::class, $this->db, "({$this} * {$arg})");
+        return Numeric::factory($this->db, "({$this} * {$arg})");
     }
 
     /**
@@ -126,7 +126,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function pow ($exponent) {
-        return $this->db->factory(Numeric::class, $this->db, "POW({$this},{$exponent})");
+        return Numeric::factory($this->db, "POW({$this},{$exponent})");
     }
 
     /**
@@ -136,7 +136,7 @@ trait NumericTrait {
      * @return Numeric
      */
     public function round (int $decimals = 0) {
-        return $this->db->factory(Numeric::class, $this->db, "ROUND({$this},{$decimals})");
+        return Numeric::factory($this->db, "ROUND({$this},{$decimals})");
     }
 
     /**
@@ -145,7 +145,7 @@ trait NumericTrait {
      * @param number|ValueInterface $arg
      * @return Numeric
      */
-    public function subtract ($arg) {
-        return $this->db->factory(Numeric::class, $this->db, "({$this} - {$arg})");
+    public function subtract (ValueInterface $arg) {
+        return Numeric::factory($this->db, "({$this} - {$arg})");
     }
 }

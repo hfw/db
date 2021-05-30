@@ -3,7 +3,6 @@
 namespace Helix\DB;
 
 use Countable;
-use Helix\DB\SQL\Expression;
 use Helix\DB\SQL\ExpressionInterface;
 
 /**
@@ -20,10 +19,18 @@ class SQL {
      * @return ExpressionInterface[]
      */
     public static function marks ($count): array {
+        static $mark;
+        $mark ??= new class implements ExpressionInterface {
+
+            public function __toString () {
+                return '?';
+            }
+        };
+
         if (is_array($count) or $count instanceof Countable) {
             $count = count($count);
         }
-        return array_fill(0, $count, new Expression('?'));
+        return array_fill(0, $count, $mark);
     }
 
     /**
@@ -37,7 +44,7 @@ class SQL {
     public static function slots (array $columns): array {
         $slots = [];
         foreach ($columns as $column) {
-            $slots[(string)$column] = ':' . str_replace('.', '__', $column);
+            $slots[$column] = ':' . str_replace('.', '__', $column);
         }
         return $slots;
     }
@@ -54,5 +61,6 @@ class SQL {
         return $slots;
     }
 
-    final private function __construct () { }
+    final private function __construct () {
+    }
 }

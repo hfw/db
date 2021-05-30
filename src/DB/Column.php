@@ -14,9 +14,12 @@ use Helix\DB\SQL\ValueInterface;
  * Immutable column expression. Can produce all available transformations.
  *
  * @immutable Mutations operate on and return clones.
+ *
+ * @method static static factory(DB $db, string $name, string $qualifier = '')
  */
 class Column implements ValueInterface {
 
+    use FactoryTrait;
     use AggregateTrait;
     use ComparisonTrait;
     use DateTimeTrait;

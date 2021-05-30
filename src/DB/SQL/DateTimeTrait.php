@@ -22,7 +22,7 @@ trait DateTimeTrait {
      * @return Text
      */
     public function getDate () {
-        return $this->db->factory(Text::class, $this->db, $this->getDateTimeFormat('%Y-%m-%d'));
+        return Text::factory($this->db, $this->getDateTimeFormat('%Y-%m-%d'));
     }
 
     /**
@@ -37,9 +37,9 @@ trait DateTimeTrait {
         }
         $format = $this->db->quote($format);
         if ($this->db->isSQLite()) {
-            return $this->db->factory(Text::class, $this->db, "STRFTIME({$format},{$this})");
+            return Text::factory($this->db, "STRFTIME({$format},{$this})");
         }
-        return $this->db->factory(Text::class, $this->db, "DATE_FORMAT({$this},{$format})");
+        return Text::factory($this->db, "DATE_FORMAT({$this},{$format})");
     }
 
     /**
@@ -48,7 +48,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getDay () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat('%d'));
+        return Numeric::factory($this->db, $this->getDateTimeFormat('%d'));
     }
 
     /**
@@ -57,7 +57,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getDayOfWeek () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat('%w'));
+        return Numeric::factory($this->db, $this->getDateTimeFormat('%w'));
     }
 
     /**
@@ -66,7 +66,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getDayOfYear () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat('%j'));
+        return Numeric::factory($this->db, $this->getDateTimeFormat('%j'));
     }
 
     /**
@@ -75,7 +75,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getHours () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat('%H'));
+        return Numeric::factory($this->db, $this->getDateTimeFormat('%H'));
     }
 
     /**
@@ -84,7 +84,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getMinutes () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat([
+        return Numeric::factory($this->db, $this->getDateTimeFormat([
             'mysql' => '%i',
             'sqlite' => '%M'
         ]));
@@ -96,7 +96,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getMonth () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat('%m'));
+        return Numeric::factory($this->db, $this->getDateTimeFormat('%m'));
     }
 
     /**
@@ -105,7 +105,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getSeconds () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat('%S'));
+        return Numeric::factory($this->db, $this->getDateTimeFormat('%S'));
     }
 
     /**
@@ -114,7 +114,7 @@ trait DateTimeTrait {
      * @return Text
      */
     public function getTime () {
-        return $this->db->factory(Text::class, $this->db, $this->getDateTimeFormat([
+        return Text::factory($this->db, $this->getDateTimeFormat([
             'mysql' => '%H:%i:%S',
             'sqlite' => '%H:%M:%S'
         ]));
@@ -127,9 +127,9 @@ trait DateTimeTrait {
      */
     public function getTimestamp () {
         if ($this->db->isSQLite()) {
-            return $this->db->factory(Numeric::class, $this->db, "STRFTIME('%s',{$this})");
+            return Numeric::factory($this->db, "STRFTIME('%s',{$this})");
         }
-        return $this->db->factory(Numeric::class, $this->db, "UNIX_TIMESTAMP({$this})");
+        return Numeric::factory($this->db, "UNIX_TIMESTAMP({$this})");
     }
 
     /**
@@ -138,7 +138,7 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getWeekOfYear () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat([
+        return Numeric::factory($this->db, $this->getDateTimeFormat([
             'mysql' => '%U',
             'sqlite' => '%W'
         ]));
@@ -150,6 +150,6 @@ trait DateTimeTrait {
      * @return Numeric
      */
     public function getYear () {
-        return $this->db->factory(Numeric::class, $this->db, $this->getDateTimeFormat('%Y'));
+        return Numeric::factory($this->db, $this->getDateTimeFormat('%Y'));
     }
 }

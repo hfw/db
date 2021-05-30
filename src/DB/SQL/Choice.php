@@ -32,6 +32,8 @@ use Helix\DB;
  *  ...
  * END
  * ```
+ *
+ * @method static static factory(DB $db, string $subject = null, array $values = [])
  */
 class Choice extends Value {
 
@@ -54,7 +56,7 @@ class Choice extends Value {
 
     /**
      * @param DB $db
-     * @param string $subject
+     * @param null|string $subject
      * @param array $values `[when => then]` for the subject.
      */
     public function __construct (DB $db, string $subject = null, array $values = []) {

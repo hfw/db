@@ -10,10 +10,10 @@ class Predicate extends Expression implements ValueInterface {
     /**
      * `NOT($this)`
      *
-     * @return Predicate
+     * @return static
      */
     public function not () {
-        return new static("NOT({$this})");
+        return static::factory($this->db, "NOT({$this})");
     }
 
 }

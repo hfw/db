@@ -97,16 +97,18 @@ class DB extends PDO implements ArrayAccess {
     }
 
     /**
-     * Central point of framework object creation.
+     * Central point of object creation.
      *
-     * Override this to override framework classes.
+     * Override this to override classes.
+     *
+     * The only thing that calls this should be {@link \Helix\DB\FactoryTrait}
      *
      * @param string $class
      * @param mixed ...$args
      * @return mixed
      */
     public function factory (string $class, ...$args) {
-        return new $class(...$args);
+        return new $class($this, ...$args);
     }
 
     /**
@@ -163,10 +165,10 @@ class DB extends PDO implements ArrayAccess {
                     "SELECT column_name FROM information_schema.tables WHERE table_name = {$this->quote($name)}"
                 )->fetchAll(self::FETCH_COLUMN);
             }
-            if (!$cols){
+            if (!$cols) {
                 return null;
             }
-            $this->tables[$name] = $this->factory(Table::class, $this, $name, $cols);
+            $this->tables[$name] = Table::factory($this, $name, $cols);
         }
         return $this->tables[$name];
     }
@@ -214,15 +216,15 @@ class DB extends PDO implements ArrayAccess {
             return $b->__invoke($a, $this);
         }
         if (is_int($a)) {
-            return $this->factory(Predicate::class, $b);
+            return Predicate::factory($this, $b);
         }
         if (is_array($b)) {
-            return $this->factory(Predicate::class, "{$a} IN ({$this->quoteList($b)})");
+            return Predicate::factory($this, "{$a} IN ({$this->quoteList($b)})");
         }
         if ($b instanceof Select) {
-            return $this->factory(Predicate::class, "{$a} IN ({$b->toSql()})");
+            return Predicate::factory($this, "{$a} IN ({$b->toSql()})");
         }
-        return $this->factory(Predicate::class, "{$a} = {$this->quote($b)}");
+        return Predicate::factory($this, "{$a} = {$this->quote($b)}");
     }
 
     /**

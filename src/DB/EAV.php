@@ -6,14 +6,16 @@ use Helix\DB;
 
 /**
  * Array storage in an extension table.
+ *
+ * @method static static factory(DB $db, string $name)
  */
 class EAV extends Table {
 
     /**
      * @param DB $db
-     * @param $name
+     * @param string $name
      */
-    public function __construct (DB $db, $name) {
+    public function __construct (DB $db, string $name) {
         parent::__construct($db, $name, ['entity', 'attribute', 'value']);
     }
 

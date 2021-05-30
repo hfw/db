@@ -12,8 +12,12 @@ use IteratorAggregate;
 
 /**
  * Represents a `SELECT` query.
+ *
+ * @method static static factory(DB $db, $table, array $columns)
  */
 class Select extends AbstractTable implements Countable, IteratorAggregate, ExpressionInterface {
+
+    use FactoryTrait;
 
     /**
      * Compiled column list.
@@ -277,7 +281,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @return Predicate
      */
     public function isEmpty () {
-        return $this->db->factory(Predicate::class, "NOT EXISTS ({$this->toSql()})");
+        return Predicate::factory($this->db, "NOT EXISTS ({$this->toSql()})");
     }
 
     /**
@@ -286,7 +290,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @return Predicate
      */
     public function isNotEmpty () {
-        return $this->db->factory(Predicate::class, "EXISTS ({$this->toSql()})");
+        return Predicate::factory($this->db, "EXISTS ({$this->toSql()})");
     }
 
     /**
@@ -394,7 +398,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
                 $expr .= " AS {$alias}";
             }
             if (isset($alias)) {
-                $this->refs[$alias] = $this->db->factory(Column::class, $this->db, $alias, $this->alias);
+                $this->refs[$alias] = Column::factory($this->db, $alias, $this->alias);
             }
             $_columns[] = "{$expr}";
         }

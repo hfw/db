@@ -20,6 +20,8 @@ use ReflectionProperty;
  * - `@eav TABLE`
  *
  * Property value types are preserved as long as they are annotated with `@var`.
+ *
+ * @method static static factory(DB $db, EntityInterface $proto, string $table, array $columns, array $eav = [])
  */
 class Record extends Table {
 
@@ -75,14 +77,14 @@ class Record extends Table {
                     $columns[] = $rProp->getName();
                 }
                 elseif (preg_match('/@eav\s+(?<table>\S+)/', $rProp->getDocComment(), $attr)) {
-                    $eav[$rProp->getName()] = $db->factory(EAV::class, $db, $attr['table']);
+                    $eav[$rProp->getName()] = EAV::factory($db, $attr['table']);
                 }
             }
             preg_match('/@record\s+(?<table>\S+)/', $rClass->getDocComment(), $record);
             if (!is_object($class)) {
                 $class = $rClass->newInstanceWithoutConstructor();
             }
-            return new static($db, $class, $record['table'], $columns, $eav);
+            return static::factory($db, $class, $record['table'], $columns, $eav);
         })();
     }
 

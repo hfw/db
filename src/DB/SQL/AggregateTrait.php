@@ -23,7 +23,7 @@ trait AggregateTrait {
      * @return Numeric
      */
     public function getAvg (string $aggregate = 'ALL') {
-        return $this->db->factory(Numeric::class, $this->db, "AVG({$aggregate} {$this})");
+        return Numeric::factory($this->db, "AVG({$aggregate} {$this})");
     }
 
     /**
@@ -35,9 +35,9 @@ trait AggregateTrait {
     public function getConcat (string $delimiter = ',') {
         $delimiter = $this->db->quote($delimiter);
         if ($this->db->isSQLite()) {
-            return $this->db->factory(Text::class, $this->db, "GROUP_CONCAT({$this},{$delimiter})");
+            return Text::factory($this->db, "GROUP_CONCAT({$this},{$delimiter})");
         }
-        return $this->db->factory(Text::class, $this->db, "GROUP_CONCAT({$this} SEPARATOR {$delimiter})");
+        return Text::factory($this->db, "GROUP_CONCAT({$this} SEPARATOR {$delimiter})");
     }
 
     /**
@@ -47,7 +47,7 @@ trait AggregateTrait {
      * @return Numeric
      */
     public function getCount (string $aggregate = 'ALL') {
-        return $this->db->factory(Numeric::class, $this->db, "COUNT({$aggregate} {$this})");
+        return Numeric::factory($this->db, "COUNT({$aggregate} {$this})");
     }
 
     /**
@@ -56,7 +56,7 @@ trait AggregateTrait {
      * @return Numeric
      */
     public function getMax () {
-        return $this->db->factory(Numeric::class, $this->db, "MAX({$this})");
+        return Numeric::factory($this->db, "MAX({$this})");
     }
 
     /**
@@ -65,7 +65,7 @@ trait AggregateTrait {
      * @return Numeric
      */
     public function getMin () {
-        return $this->db->factory(Numeric::class, $this->db, "MIN({$this})");
+        return Numeric::factory($this->db, "MIN({$this})");
     }
 
     /**
@@ -75,6 +75,6 @@ trait AggregateTrait {
      * @return Numeric
      */
     public function getSum (string $aggregate = 'ALL') {
-        return $this->db->factory(Numeric::class, $this->db, "SUM({$aggregate} {$this})");
+        return Numeric::factory($this->db, "SUM({$aggregate} {$this})");
     }
 }

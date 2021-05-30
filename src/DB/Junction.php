@@ -14,6 +14,8 @@ use ReflectionException;
  *
  * - `@junction TABLE`
  * - `@foreign COLUMN CLASS` or `@for COLUMN CLASS`
+ *
+ * @method static static factory(DB $db, string $table, array $classes)
  */
 class Junction extends Table {
 
@@ -44,7 +46,7 @@ class Junction extends Table {
             }
         }
         preg_match('/@junction\s+(?<table>\S+)/', $doc, $junction);
-        return new static($db, $junction['table'], $classes);
+        return static::factory($db, $junction['table'], $classes);
     }
 
     /**

@@ -15,12 +15,10 @@ class Text extends Value {
      * @return Numeric
      */
     public function toFloat () {
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->factory(Numeric::class, $this->db, "CAST({$this} AS REAL)");
-            default:
-                return $this->db->factory(Numeric::class, $this->db, "({$this} + 0)");
+        if ($this->db->isSQLite()) {
+            return Numeric::factory($this->db, "CAST({$this} AS REAL)");
         }
+        return Numeric::factory($this->db, "({$this} + 0)");
     }
 
     /**
@@ -29,11 +27,9 @@ class Text extends Value {
      * @return Numeric
      */
     public function toInt () {
-        switch ($this->db) {
-            case 'sqlite':
-                return $this->db->factory(Numeric::class, $this->db, "CAST({$this} AS INTEGER)");
-            default:
-                return $this->db->factory(Numeric::class, $this->db, "CAST({$this} AS SIGNED)");
+        if ($this->db->isSQLite()) {
+            return Numeric::factory($this->db, "CAST({$this} AS INTEGER)");
         }
+        return Numeric::factory($this->db, "CAST({$this} AS SIGNED)");
     }
 }

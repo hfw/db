@@ -11,8 +11,12 @@ use Helix\DB;
  * Accessing the table as an array produces {@link Column} instances.
  *
  * @immutable Mutations operate on and return clones.
+ *
+ * @method static static factory(DB $db, string $name, array $columns)
  */
 class Table extends AbstractTable {
+
+    use FactoryTrait;
 
     /**
      * Prepared query cache.
@@ -38,11 +42,11 @@ class Table extends AbstractTable {
      * @param string $name
      * @param string[] $columns
      */
-    public function __construct (DB $db, $name, array $columns) {
+    public function __construct (DB $db, string $name, array $columns) {
         parent::__construct($db);
         $this->name = $name;
         foreach ($columns as $column) {
-            $this->columns[$column] = $db->factory(Column::class, $db, $column, $this);
+            $this->columns[$column] = Column::factory($db, $column, $this);
         }
     }
 
@@ -162,7 +166,7 @@ class Table extends AbstractTable {
         if (empty($columns)) {
             $columns = $this->columns;
         }
-        return $this->db->factory(Select::class, $this->db, $this, $columns);
+        return Select::factory($this->db, $this, $columns);
     }
 
     /**

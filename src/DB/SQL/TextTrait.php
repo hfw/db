@@ -20,7 +20,7 @@ trait TextTrait {
      * @return Text
      */
     public function getHex () {
-        return $this->db->factory(Text::class, $this->db, "HEX({$this})");
+        return Text::factory($this->db, "HEX({$this})");
     }
 
     /**
@@ -32,9 +32,9 @@ trait TextTrait {
      */
     public function getLength () {
         if ($this->db->isSQLite()) {
-            return $this->db->factory(Numeric::class, $this->db, "LENGTH(CAST({$this} AS TEXT))");
+            return Numeric::factory($this->db, "LENGTH(CAST({$this} AS TEXT))");
         }
-        return $this->db->factory(Numeric::class, $this->db, "CHAR_LENGTH({$this})");
+        return Numeric::factory($this->db, "CHAR_LENGTH({$this})");
     }
 
     /**
@@ -43,7 +43,7 @@ trait TextTrait {
      * @return Text
      */
     public function getLower () {
-        return $this->db->factory(Text::class, $this->db, "LOWER({$this})");
+        return Text::factory($this->db, "LOWER({$this})");
     }
 
     /**
@@ -57,9 +57,9 @@ trait TextTrait {
     public function getPosition (string $substring) {
         $substring = $this->db->quote($substring);
         if ($this->db->isSQLite()) {
-            return $this->db->factory(Numeric::class, $this->db, "INSTR({$this},{$substring})");
+            return Numeric::factory($this->db, "INSTR({$this},{$substring})");
         }
-        return $this->db->factory(Numeric::class, $this->db, "LOCATE({$substring},{$this})");
+        return Numeric::factory($this->db, "LOCATE({$substring},{$this})");
     }
 
     /**
@@ -72,7 +72,7 @@ trait TextTrait {
     public function getReplacement (string $search, string $replace) {
         $search = $this->db->quote($search);
         $replace = $this->db->quote($replace);
-        return $this->db->factory(Text::class, $this->db, "REPLACE({$this},{$search},{$replace})");
+        return Text::factory($this->db, "REPLACE({$this},{$search},{$replace})");
     }
 
     /**
@@ -82,9 +82,9 @@ trait TextTrait {
      */
     public function getSize () {
         if ($this->db->isSQLite()) {
-            return $this->db->factory(Numeric::class, $this->db, "LENGTH(CAST({$this} AS BLOB))");
+            return Numeric::factory($this->db, "LENGTH(CAST({$this} AS BLOB))");
         }
-        return $this->db->factory(Numeric::class, $this->db, "LENGTH({$this})");
+        return Numeric::factory($this->db, "LENGTH({$this})");
     }
 
     /**
@@ -96,9 +96,9 @@ trait TextTrait {
      */
     public function getSubstring (int $start, int $length = null) {
         if (isset($length)) {
-            return $this->db->factory(Text::class, $this->db, "SUBSTR({$this},{$start},{$length})");
+            return Text::factory($this->db, "SUBSTR({$this},{$start},{$length})");
         }
-        return $this->db->factory(Text::class, $this->db, "SUBSTR({$this},{$start})");
+        return Text::factory($this->db, "SUBSTR({$this},{$start})");
     }
 
     /**
@@ -107,6 +107,6 @@ trait TextTrait {
      * @return Text
      */
     public function getUpper () {
-        return $this->db->factory(Text::class, $this->db, "UPPER({$this})");
+        return Text::factory($this->db, "UPPER({$this})");
     }
 }

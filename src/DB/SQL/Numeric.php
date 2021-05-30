@@ -15,9 +15,9 @@ class Numeric extends Value {
      * @return Text
      */
     public function toText () {
-        if ($this->db == 'sqlite') {
-            return $this->db->factory(Text::class, $this->db, "CAST({$this} AS TEXT)");
+        if ($this->db->isSQLite()) {
+            return Text::factory($this->db, "CAST({$this} AS TEXT)");
         }
-        return $this->db->factory(Text::class, $this->db, "CAST({$this} AS CHAR)");
+        return Text::factory($this->db, "CAST({$this} AS CHAR)");
     }
 }

@@ -31,7 +31,7 @@ trait ComparisonTrait {
     public function coalesce (array $values) {
         array_unshift($values, $this);
         $values = $this->db->quoteList($values);
-        return $this->db->factory(Value::class, $this->db, "COALESCE({$values})");
+        return Value::factory($this->db, "COALESCE({$values})");
     }
 
     /**
@@ -46,11 +46,11 @@ trait ComparisonTrait {
     public function is ($arg): Predicate {
         if ($arg instanceof Select) {
             if ($this->db->isSQLite()) {
-                /** @var Select $sub */
-                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
-                return $sub->where("{$this} IS {$arg[0]}")->isNotEmpty();
+                return Select::factory($this->db, $arg, [$arg[0]])
+                    ->where("{$this} IS {$arg[0]}")
+                    ->isNotEmpty();
             }
-            return $this->db->factory(Predicate::class, "{$this} <=> ANY ({$arg->toSql()})");
+            return Predicate::factory($this->db, "{$this} <=> ANY ({$arg->toSql()})");
         }
         if ($arg === null or is_bool($arg)) {
             $arg = ['' => 'NULL', 1 => 'TRUE', 0 => 'FALSE'][$arg];
@@ -59,9 +59,9 @@ trait ComparisonTrait {
             $arg = $this->db->quote($arg);
         }
         if ($this->db->isMySQL()) {
-            return $this->db->factory(Predicate::class, "{$this} <=> {$arg}");
+            return Predicate::factory($this->db, "{$this} <=> {$arg}");
         }
-        return $this->db->factory(Predicate::class, "{$this} IS {$arg}");
+        return Predicate::factory($this->db, "{$this} IS {$arg}");
     }
 
     /**
@@ -74,7 +74,7 @@ trait ComparisonTrait {
     public function isBetween ($min, $max) {
         $min = $this->db->quote($min);
         $max = $this->db->quote($max);
-        return $this->db->factory(Predicate::class, "{$this} BETWEEN {$min} AND {$max}");
+        return Predicate::factory($this->db, "{$this} BETWEEN {$min} AND {$max}");
     }
 
     /**
@@ -93,7 +93,7 @@ trait ComparisonTrait {
      * @return Predicate
      */
     public function isFalse () {
-        return $this->db->factory(Predicate::class, "{$this} IS FALSE");
+        return Predicate::factory($this->db, "{$this} IS FALSE");
     }
 
     /**
@@ -111,16 +111,15 @@ trait ComparisonTrait {
     public function isGreater ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
             if ($this->db->isSQLite()) {
-                /** @var Select $sub */
-                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                $sub = Select::factory($this->db, $arg, [$arg[0]]);
                 if ($multi === 'ANY') {
                     return $sub->where("{$this} > {$arg[0]}")->isNotEmpty();
                 }
                 return $sub->where("{$this} <= {$arg[0]}")->isEmpty();
             }
-            return $this->db->factory(Predicate::class, "{$this} > {$multi} ({$arg->toSql()})");
+            return Predicate::factory($this->db, "{$this} > {$multi} ({$arg->toSql()})");
         }
-        return $this->db->factory(Predicate::class, "{$this} > {$this->db->quote($arg)}");
+        return Predicate::factory($this->db, "{$this} > {$this->db->quote($arg)}");
     }
 
     /**
@@ -138,16 +137,15 @@ trait ComparisonTrait {
     public function isGreaterOrEqual ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
             if ($this->db->isSQLite()) {
-                /** @var Select $sub */
-                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                $sub = Select::factory($this->db, $arg, [$arg[0]]);
                 if ($multi === 'ANY') {
                     return $sub->where("{$this} >= {$arg[0]}")->isNotEmpty();
                 }
                 return $sub->where("{$this} < {$arg[0]}")->isEmpty();
             }
-            return $this->db->factory(Predicate::class, "{$this} >= {$multi} ({$arg->toSql()})");
+            return Predicate::factory($this->db, "{$this} >= {$multi} ({$arg->toSql()})");
         }
-        return $this->db->factory(Predicate::class, "{$this} >= {$this->db->quote($arg)}");
+        return Predicate::factory($this->db, "{$this} >= {$this->db->quote($arg)}");
     }
 
     /**
@@ -165,16 +163,15 @@ trait ComparisonTrait {
     public function isLess ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
             if ($this->db->isSQLite()) {
-                /** @var Select $sub */
-                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                $sub = Select::factory($this->db, $arg, [$arg[0]]);
                 if ($multi === 'ANY') {
                     return $sub->where("{$this} < {$arg[0]}")->isNotEmpty();
                 }
                 return $sub->where("{$this} >= {$arg[0]}")->isEmpty();
             }
-            return $this->db->factory(Predicate::class, "{$this} < {$multi} ({$arg->toSql()})");
+            return Predicate::factory($this->db, "{$this} < {$multi} ({$arg->toSql()})");
         }
-        return $this->db->factory(Predicate::class, "{$this} < {$this->db->quote($arg)}");
+        return Predicate::factory($this->db, "{$this} < {$this->db->quote($arg)}");
     }
 
     /**
@@ -192,16 +189,15 @@ trait ComparisonTrait {
     public function isLessOrEqual ($arg, string $multi = 'ALL') {
         if ($arg instanceof Select) {
             if ($this->db->isSQLite()) {
-                /** @var Select $sub */
-                $sub = $this->db->factory(Select::class, $this->db, $arg, [$arg[0]]);
+                $sub = Select::factory($this->db, $arg, [$arg[0]]);
                 if ($multi === 'ANY') {
                     return $sub->where("{$this} <= {$arg[0]}")->isNotEmpty();
                 }
                 return $sub->where("{$this} > {$arg[0]}")->isEmpty();
             }
-            return $this->db->factory(Predicate::class, "{$this} <= {$multi} ({$arg->toSql()})");
+            return Predicate::factory($this->db, "{$this} <= {$multi} ({$arg->toSql()})");
         }
-        return $this->db->factory(Predicate::class, "{$this} <= {$this->db->quote($arg)}");
+        return Predicate::factory($this->db, "{$this} <= {$this->db->quote($arg)}");
     }
 
     /**
@@ -212,7 +208,7 @@ trait ComparisonTrait {
      */
     public function isLike (string $pattern) {
         $pattern = $this->db->quote($pattern);
-        return $this->db->factory(Predicate::class, "{$this} LIKE {$pattern}");
+        return Predicate::factory($this->db, "{$this} LIKE {$pattern}");
     }
 
     /**
@@ -235,7 +231,7 @@ trait ComparisonTrait {
     public function isNotBetween ($min, $max) {
         $min = $this->db->quote($min);
         $max = $this->db->quote($max);
-        return $this->db->factory(Predicate::class, "{$this} NOT BETWEEN {$min} AND {$max}");
+        return Predicate::factory($this->db, "{$this} NOT BETWEEN {$min} AND {$max}");
     }
 
     /**
@@ -246,12 +242,12 @@ trait ComparisonTrait {
      */
     public function isNotEqual ($arg) {
         if ($arg instanceof Select) {
-            return $this->db->factory(Predicate::class, "{$this} NOT IN ({$arg->toSql()})");
+            return Predicate::factory($this->db, "{$this} NOT IN ({$arg->toSql()})");
         }
         if (is_array($arg)) {
-            return $this->db->factory(Predicate::class, "{$this} NOT IN ({$this->db->quoteList($arg)})");
+            return Predicate::factory($this->db, "{$this} NOT IN ({$this->db->quoteList($arg)})");
         }
-        return $this->db->factory(Predicate::class, "{$this} <> {$this->db->quote($arg)}");
+        return Predicate::factory($this->db, "{$this} <> {$this->db->quote($arg)}");
     }
 
     /**
@@ -262,7 +258,7 @@ trait ComparisonTrait {
      */
     public function isNotLike (string $pattern) {
         $pattern = $this->db->quote($pattern);
-        return $this->db->factory(Predicate::class, "{$this} NOT LIKE {$pattern}");
+        return Predicate::factory($this->db, "{$this} NOT LIKE {$pattern}");
     }
 
     /**
@@ -271,7 +267,7 @@ trait ComparisonTrait {
      * @return Predicate
      */
     public function isNotNull () {
-        return $this->db->factory(Predicate::class, "{$this} IS NOT NULL");
+        return Predicate::factory($this->db, "{$this} IS NOT NULL");
     }
 
     /**
@@ -282,7 +278,7 @@ trait ComparisonTrait {
      */
     public function isNotRegExp (string $pattern) {
         $pattern = $this->db->quote($pattern);
-        return $this->db->factory(Predicate::class, "{$this} NOT REGEXP {$pattern}");
+        return Predicate::factory($this->db, "{$this} NOT REGEXP {$pattern}");
     }
 
     /**
@@ -291,7 +287,7 @@ trait ComparisonTrait {
      * @return Predicate
      */
     public function isNull () {
-        return $this->db->factory(Predicate::class, "{$this} IS NULL");
+        return Predicate::factory($this->db, "{$this} IS NULL");
     }
 
     /**
@@ -302,7 +298,7 @@ trait ComparisonTrait {
      */
     public function isRegExp (string $pattern) {
         $pattern = $this->db->quote($pattern);
-        return $this->db->factory(Predicate::class, "{$this} REGEXP {$pattern}");
+        return Predicate::factory($this->db, "{$this} REGEXP {$pattern}");
     }
 
     /**
@@ -315,6 +311,6 @@ trait ComparisonTrait {
      * @return Choice
      */
     public function switch (array $values = []) {
-        return $this->db->factory(Choice::class, $this->db, "{$this}", $values);
+        return Choice::factory($this->db, "{$this}", $values);
     }
 }
