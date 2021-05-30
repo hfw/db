@@ -6,8 +6,6 @@ require '../vendor/autoload.php';
 
 use Helix\DB;
 use Helix\DB\Column;
-use Helix\DB\Junction;
-use Helix\DB\Record;
 
 $db = new DB('sqlite:test.db');
 $db->setLogger(function($sql) {
@@ -15,9 +13,9 @@ $db->setLogger(function($sql) {
     echo "{$trace['function']} ==> {$sql}\n\n";
 });
 $db->beginTransaction();
-$Author = $db[Author::class];
-$Book = $db[Book::class];
-$AuthorsToBooks = $db[AuthorsToBooks::class];
+$Author = $db->getRecord(Author::class);
+$Book = $db->getRecord(Book::class);
+$AuthorsToBooks = $db->getJunction(AuthorsToBooks::class);
 
 // define alice.
 $alice = new Author;

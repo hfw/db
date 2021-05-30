@@ -125,8 +125,7 @@ class DB extends PDO implements ArrayAccess {
      * @return Junction
      */
     public function getJunction ($interface) {
-        return $this->junctions[$interface]
-            ?? $this->junctions[$interface] = Junction::fromInterface($this, $interface);
+        return $this->junctions[$interface] ??= Junction::fromInterface($this, $interface);
     }
 
     /**
@@ -146,8 +145,7 @@ class DB extends PDO implements ArrayAccess {
         if (is_object($class)) {
             $class = get_class($class);
         }
-        return $this->records[$class]
-            ?? $this->records[$class] = Record::fromClass($this, $class);
+        return $this->records[$class] ??= Record::fromClass($this, $class);
     }
 
     /**
@@ -228,51 +226,40 @@ class DB extends PDO implements ArrayAccess {
     }
 
     /**
-     * @param string $class Class or interface name.
+     * Whether a table exists.
+     *
+     * @param string $table
      * @return bool
      */
-    public function offsetExists ($class): bool {
-        return (bool)$this->offsetGet($class);
+    final public function offsetExists ($table): bool {
+        return (bool)$this->getTable($table);
     }
 
     /**
-     * @param string $class Class or interface name.
-     * @return null|Table|Record|Junction
+     * Returns a table by name.
+     *
+     * @param string $table
+     * @return null|Table
      */
-    public function offsetGet ($class) {
-        if (is_a($class, EntityInterface::class, true)) {
-            return $this->getRecord($class);
-        }
-        elseif (interface_exists($class)) {
-            return $this->getJunction($class);
-        }
-        else {
-            return $this->getTable($class);
-        }
+    final public function offsetGet ($table) {
+        return $this->getTable($table);
     }
 
     /**
-     * @param mixed $class Class or interface name.
-     * @param Table|Record|Junction $access
+     * @param $offset
+     * @param $value
+     * @throws LogicException
      */
-    public function offsetSet ($class, $access) {
-        if ($access instanceof Record) {
-            $this->setRecord($class, $access);
-        }
-        elseif ($access instanceof Junction) {
-            $this->setJunction($class, $access);
-        }
-        else {
-            throw new LogicException('Raw table access is immutable.');
-        }
+    final public function offsetSet ($offset, $value) {
+        throw new LogicException('Raw table access is immutable.');
     }
 
     /**
-     * @param string $class Class or interface name.
+     * @param $offset
+     * @throws LogicException
      */
-    public function offsetUnset ($class) {
-        unset($this->records[$class]);
-        unset($this->junctions[$class]);
+    final public function offsetUnset ($offset) {
+        throw new LogicException('Raw table access is immutable.');
     }
 
     /**
