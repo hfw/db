@@ -6,6 +6,8 @@ require '../vendor/autoload.php';
 
 use Helix\DB;
 use Helix\DB\Column;
+use Helix\DB\Junction;
+use Helix\DB\Record;
 
 $db = new DB('sqlite:test.db');
 $db->setLogger(function($sql) {
@@ -46,7 +48,7 @@ assert($AuthorsToBooks->delete(['author' => $bob->getId()]) === 0);
 assert($AuthorsToBooks->link(['author' => $bob->getId(), 'book' => $novel->getId()]) === 1);
 
 // alice should have one book, with a note attribute.
-$books = $AuthorsToBooks->getCollection('book', ['author' => $alice->getId()]);
+$books = $AuthorsToBooks->find('book', ['author' => $alice->getId()]);
 assert(count($books) === 1);
 /** @var Book $book */
 $book = $books->getFirst();
@@ -54,7 +56,7 @@ assert($book == $novel); // loose
 assert(isset($book['note']));
 
 // the novel should have two authors, alice and bob
-$authors = $AuthorsToBooks->getCollection('author', ['book' => $novel->getId()]);
+$authors = $AuthorsToBooks->find('author', ['book' => $novel->getId()]);
 assert(count($authors) === 2);
 /** @var Author $author */
 foreach ($authors as $author) {

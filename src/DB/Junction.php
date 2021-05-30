@@ -68,7 +68,7 @@ class Junction extends Table {
      * @param array $match Keyed by junction column.
      * @return Select
      */
-    public function getCollection (string $key, array $match = []) {
+    public function find (string $key, array $match = []) {
         $record = $this->db->getRecord($this->classes[$key]);
         $select = $record->select();
         $select->join($this, $this[$key]->isEqual($record['id']));
