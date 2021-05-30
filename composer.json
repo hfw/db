@@ -1,15 +1,16 @@
 {
   "name": "hfw/db",
   "type": "library",
-  "description": "Database CRUD",
+  "description": "Database CRUD by annotation",
   "keywords": [
     "database",
-    "crud"
+    "crud",
+    "annotation"
   ],
-  "homepage": "https://github.com/hfw/crud",
+  "homepage": "https://github.com/hfw/db",
   "license": "MIT",
   "require": {
-    "php": "~7.3",
+    "php": "~7.4",
     "ext-pdo": "*"
   },
   "autoload": {
