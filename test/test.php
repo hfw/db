@@ -133,10 +133,10 @@ assert($floorId === 1);
 
 // test Choice
 $choice = $Author['name']->switch(['Alice' => 'ALICE', 'Bob' => 'BOB']);
-$names = $Author->select(['name' => $choice])->getAll();
+$names = $Author->asTable()->select(['name' => $choice])->getAll();
 assert($names === [['name' => 'ALICE'], ['name' => 'BOB']]);
 
 // test nested Choice by switching back
 $choice = $choice->switch(['ALICE' => 'Alice', 'BOB' => 'Bob']);
-$names = $Author->select(['name' => $choice])->getAll();
+$names = $Author->asTable()->select(['name' => $choice])->getAll();
 assert($names === [['name' => 'Alice'], ['name' => 'Bob']]);

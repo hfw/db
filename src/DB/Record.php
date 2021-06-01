@@ -124,6 +124,15 @@ class Record extends Table {
     }
 
     /**
+     * Returns basic table access so complex queries will fetch as arrays.
+     *
+     * @return Table
+     */
+    public function asTable () {
+        return $this->db->getTable($this->name);
+    }
+
+    /**
      * Returns a {@link Select}.
      *
      * @see DB::match()
@@ -303,19 +312,15 @@ class Record extends Table {
     }
 
     /**
-     * Sets the fetcher if the default columns are used.
+     * Returns a {@link Select} that fetches instances.
      *
      * @param array $columns Defaults to all columns.
-     * @return Select
+     * @return Select|EntityInterface[]
      */
     public function select (array $columns = []) {
-        $select = parent::select($columns);
-        if (empty($columns)) {
-            $select->setFetcher(function(Statement $statement) {
-                yield from $this->getEach($statement);
-            });
-        }
-        return $select;
+        return parent::select($columns)->setFetcher(function(Statement $statement) {
+            yield from $this->getEach($statement);
+        });
     }
 
     /**
@@ -333,8 +338,13 @@ class Record extends Table {
      */
     protected function setValues (EntityInterface $entity, array $values): void {
         foreach ($values as $name => $value) {
-            settype($value, $this->types[$name]);
-            $this->properties[$name]->setValue($entity, $value);
+            if (isset($this->properties[$name])) {
+                settype($value, $this->types[$name]);
+                $this->properties[$name]->setValue($entity, $value);
+            }
+            else {
+                $entity->{$name} = $value;
+            }
         }
     }
 }
