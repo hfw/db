@@ -74,6 +74,20 @@ class Column implements ValueInterface {
     }
 
     /**
+     * Returns a {@link Select} for the column's values. The column must be qualified.
+     *
+     * @return Select|scalar[]
+     */
+    public function select () {
+        return Select::factory($this->db, $this->qualifier, [$this->name])
+            ->setFetcher(function(Statement $statement) {
+                while (false !== $value = $statement->fetchColumn()) {
+                    yield $value;
+                }
+            });
+    }
+
+    /**
      * @param string $name
      * @return $this
      */
