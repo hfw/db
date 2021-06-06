@@ -82,7 +82,7 @@ $author = $authors->getFirst();
 assert($author->getName() === 'Alice');
 
 // test isEqual(Select)
-$authors = $Author->select()->where(
+$authors = $Author->loadAll()->where(
     $Author['id']->isEqual($Author->select([$Author['id']])->where(
         $Author['name']->isEqual('Alice')
     ))
@@ -92,7 +92,7 @@ $author = $authors->getFirst();
 assert($author->getName() === 'Alice');
 
 // test isLessOrEqual(Select)
-$authors = $Author->select()->where(
+$authors = $Author->loadAll()->where(
     $Author['id']->isLessOrEqual($Author->select([$Author['id']])->where(
         $Author['id']->isEqual(1)
     ))
@@ -102,7 +102,7 @@ $author = $authors->getFirst();
 assert($author->getName() === 'Alice');
 
 // test isLessOrEqual(Select,ANY)
-$authors = $Author->select()->where(
+$authors = $Author->loadAll()->where(
     $Author['id']->isLessOrEqual($Author->select([$Author['id']])->where(
         $Author['id']->isEqual(1)
     ), 'ANY')
@@ -133,10 +133,10 @@ assert($floorId === 1);
 
 // test Choice
 $choice = $Author['name']->switch(['Alice' => 'ALICE', 'Bob' => 'BOB']);
-$names = $Author->asTable()->select(['name' => $choice])->getAll();
+$names = $Author->select(['name' => $choice])->getAll();
 assert($names === [['name' => 'ALICE'], ['name' => 'BOB']]);
 
 // test nested Choice by switching back
 $choice = $choice->switch(['ALICE' => 'Alice', 'BOB' => 'Bob']);
-$names = $Author->asTable()->select(['name' => $choice])->getAll();
+$names = $Author->select(['name' => $choice])->getAll();
 assert($names === [['name' => 'Alice'], ['name' => 'Bob']]);

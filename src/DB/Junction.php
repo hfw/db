@@ -66,11 +66,11 @@ class Junction extends Table {
      *
      * @param string $key The column referencing the class to collect.
      * @param array $match Keyed by junction column.
-     * @return Select
+     * @return Select|EntityInterface[]
      */
     public function find (string $key, array $match = []) {
         $record = $this->db->getRecord($this->classes[$key]);
-        $select = $record->select();
+        $select = $record->loadAll();
         $select->join($this, $this[$key]->isEqual($record['id']));
         foreach ($match as $a => $b) {
             $select->where($this->db->match($this[$a], $b));

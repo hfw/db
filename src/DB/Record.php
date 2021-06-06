@@ -124,25 +124,16 @@ class Record extends Table {
     }
 
     /**
-     * Returns basic table access so complex queries will fetch as arrays.
-     *
-     * @return Table
-     */
-    public function asTable () {
-        return $this->db->getTable($this->name);
-    }
-
-    /**
-     * Returns a {@link Select}.
+     * Returns a {@link Select} that fetches instances.
      *
      * @see DB::match()
      *
      * @param array $match `[property => mixed]`
      * @param array[] $eavMatch `[eav property => attribute => mixed]`
-     * @return Select
+     * @return Select|EntityInterface[]
      */
     public function find (array $match, array $eavMatch = []) {
-        $select = $this->select();
+        $select = $this->loadAll();
         foreach ($match as $a => $b) {
             $select->where($this->db->match($this[$a] ?? $a, $b));
         }
@@ -232,6 +223,17 @@ class Record extends Table {
     }
 
     /**
+     * Returns a {@link Select} that fetches instances.
+     *
+     * @return Select|EntityInterface[]
+     */
+    public function loadAll () {
+        return $this->select()->setFetcher(function(Statement $statement) {
+            yield from $this->getEach($statement);
+        });
+    }
+
+    /**
      * Loads and sets all EAV properties for an array of entities keyed by ID.
      *
      * @param EntityInterface[] $entities
@@ -309,18 +311,6 @@ class Record extends Table {
         });
         $statement->execute($this->getValues($entity));
         $statement->closeCursor();
-    }
-
-    /**
-     * Returns a {@link Select} that fetches instances.
-     *
-     * @param array $columns Defaults to all columns.
-     * @return Select|EntityInterface[]
-     */
-    public function select (array $columns = []) {
-        return parent::select($columns)->setFetcher(function(Statement $statement) {
-            yield from $this->getEach($statement);
-        });
     }
 
     /**
