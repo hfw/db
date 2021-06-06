@@ -9,6 +9,7 @@ use Helix\DB;
  * since it's just an annotation.
  *
  * @method static static factory(DB $db, ...$args)
+ * @internal
  */
 trait FactoryTrait {
 
