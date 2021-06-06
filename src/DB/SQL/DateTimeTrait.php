@@ -2,51 +2,34 @@
 
 namespace Helix\DB\SQL;
 
-use Helix\DB;
-
 /**
  * Produces datetime related expressions for the instance.
+ *
+ * Each DBMS has its own quirks with dates, which is beyond the scope of this library.
  *
  * @see https://sqlite.org/lang_datefunc.html
  * @see https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
  */
 trait DateTimeTrait {
 
-    abstract public function __toString ();
-
-    /**
-     * @var DB
-     */
-    protected $db;
+    use AbstractTrait;
 
     /**
      * `YYYY-MM-DD`
      *
      * @return Text
      */
-    public function getDate () {
-        return Text::factory($this->db, $this->getDateTimeFormat('%Y-%m-%d'));
+    public function date () {
+        return Text::factory($this->db, $this->dateFormat('%Y-%m-%d'));
     }
 
     /**
-     * `YYYY-MM-DD hh:mm:ss`
-     *
-     * @return Text
-     */
-    public function getDateTime () {
-        return Text::factory($this->db, $this->getDateTimeFormat([
-            'mysql' => '%Y-%m-%d %H:%i:%S',
-            'sqlite' => '%Y-%m-%d %H:%M:%S'
-        ]));
-    }
-
-    /**
-     * Returns a text expression using a driver-appropriate format function.
+     * Date formatting expression using a driver-appropriate function.
      *
      * @param string|string[] $format Format, or formats keyed by driver name.
      * @return Text
      */
-    public function getDateTimeFormat ($format) {
+    public function dateFormat ($format) {
         if (is_array($format)) {
             $format = $format[$this->db->getDriver()];
         }
@@ -58,12 +41,24 @@ trait DateTimeTrait {
     }
 
     /**
+     * `YYYY-MM-DD hh:mm:ss`
+     *
+     * @return Text
+     */
+    public function datetime () {
+        return Text::factory($this->db, $this->dateFormat([
+            'mysql' => '%Y-%m-%d %H:%i:%S',
+            'sqlite' => '%Y-%m-%d %H:%M:%S'
+        ]));
+    }
+
+    /**
      * `01` to `31`
      *
      * @return Num
      */
-    public function getDay () {
-        return Num::factory($this->db, $this->getDateTimeFormat('%d'));
+    public function day () {
+        return Num::factory($this->db, $this->dateFormat('%d'));
     }
 
     /**
@@ -71,8 +66,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getDayOfWeek () {
-        return Num::factory($this->db, $this->getDateTimeFormat('%w'));
+    public function dayOfWeek () {
+        return Num::factory($this->db, $this->dateFormat('%w'));
     }
 
     /**
@@ -80,8 +75,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getDayOfYear () {
-        return Num::factory($this->db, $this->getDateTimeFormat('%j'));
+    public function dayOfYear () {
+        return Num::factory($this->db, $this->dateFormat('%j'));
     }
 
     /**
@@ -89,8 +84,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getHours () {
-        return Num::factory($this->db, $this->getDateTimeFormat('%H'));
+    public function hours () {
+        return Num::factory($this->db, $this->dateFormat('%H'));
     }
 
     /**
@@ -98,8 +93,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getMinutes () {
-        return Num::factory($this->db, $this->getDateTimeFormat([
+    public function minutes () {
+        return Num::factory($this->db, $this->dateFormat([
             'mysql' => '%i',
             'sqlite' => '%M'
         ]));
@@ -110,8 +105,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getMonth () {
-        return Num::factory($this->db, $this->getDateTimeFormat('%m'));
+    public function month () {
+        return Num::factory($this->db, $this->dateFormat('%m'));
     }
 
     /**
@@ -119,8 +114,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getSeconds () {
-        return Num::factory($this->db, $this->getDateTimeFormat('%S'));
+    public function seconds () {
+        return Num::factory($this->db, $this->dateFormat('%S'));
     }
 
     /**
@@ -128,8 +123,8 @@ trait DateTimeTrait {
      *
      * @return Text
      */
-    public function getTime () {
-        return Text::factory($this->db, $this->getDateTimeFormat([
+    public function time () {
+        return Text::factory($this->db, $this->dateFormat([
             'mysql' => '%H:%i:%S',
             'sqlite' => '%H:%M:%S'
         ]));
@@ -140,7 +135,7 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getTimestamp () {
+    public function timestamp () {
         if ($this->db->isSQLite()) {
             return Num::factory($this->db, "STRFTIME('%s',{$this})");
         }
@@ -152,8 +147,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getWeekOfYear () {
-        return Num::factory($this->db, $this->getDateTimeFormat([
+    public function weekOfYear () {
+        return Num::factory($this->db, $this->dateFormat([
             'mysql' => '%U',
             'sqlite' => '%W'
         ]));
@@ -164,7 +159,7 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function getYear () {
-        return Num::factory($this->db, $this->getDateTimeFormat('%Y'));
+    public function year () {
+        return Num::factory($this->db, $this->dateFormat('%Y'));
     }
 }

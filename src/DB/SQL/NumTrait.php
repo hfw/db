@@ -2,19 +2,12 @@
 
 namespace Helix\DB\SQL;
 
-use Helix\DB;
-
 /**
  * Produces numeric expressions for the instance.
  */
 trait NumTrait {
 
-    abstract public function __toString ();
-
-    /**
-     * @var DB
-     */
-    protected $db;
+    use AbstractTrait;
 
     /**
      * `ABS($this)`
@@ -105,7 +98,7 @@ trait NumTrait {
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function modulo ($arg) {
+    public function mod ($arg) {
         return Num::factory($this->db, "({$this} % {$arg})");
     }
 

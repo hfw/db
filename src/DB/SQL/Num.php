@@ -8,16 +8,4 @@ namespace Helix\DB\SQL;
 class Num extends Value {
 
     use NumTrait;
-
-    /**
-     * Casts the expression to a character string.
-     *
-     * @return Text
-     */
-    public function toText () {
-        if ($this->db->isSQLite()) {
-            return Text::factory($this->db, "CAST({$this} AS TEXT)");
-        }
-        return Text::factory($this->db, "CAST({$this} AS CHAR)");
-    }
 }

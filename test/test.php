@@ -111,14 +111,14 @@ assert(count($authors) === 1);
 $author = $authors->getFirst();
 assert($author->getName() === 'Alice');
 
-// test column->count()
-$count = (int)$Author->select([$Author['id']->getCount('DISTINCT')])
+// test column->countDistinct()
+$count = (int)$Author->select([$Author['id']->countDistinct()])
     ->execute()
     ->fetchColumn();
 assert($count === 2);
 
 // test text functions
-$upperName = $Author->select([$Author['name']->getUpper()])
+$upperName = $Author->select([$Author['name']->upper()])
     ->where($Author['id']->isEqual($alice->getId()))
     ->execute()
     ->fetchColumn();

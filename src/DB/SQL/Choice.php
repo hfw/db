@@ -68,7 +68,7 @@ class Choice extends Value {
     /**
      * @return string
      */
-    public function __toString () {
+    public function __toString (): string {
         $sql = 'CASE';
         if (isset($this->subject)) {
             $sql .= " {$this->subject}";

@@ -2,7 +2,6 @@
 
 namespace Helix\DB\SQL;
 
-use Helix\DB;
 use Helix\DB\Select;
 
 /**
@@ -15,24 +14,7 @@ use Helix\DB\Select;
  */
 trait ComparisonTrait {
 
-    abstract public function __toString ();
-
-    /**
-     * @var DB
-     */
-    protected $db;
-
-    /**
-     * `COALESCE($this, ...$values)`
-     *
-     * @param array $values
-     * @return Value
-     */
-    public function coalesce (array $values) {
-        array_unshift($values, $this);
-        $values = $this->db->quoteList($values);
-        return Value::factory($this->db, "COALESCE({$values})");
-    }
+    use AbstractTrait;
 
     /**
      * Null-safe equality.
@@ -40,7 +22,7 @@ trait ComparisonTrait {
      * - Mysql: `$this <=> $arg`, or `$this <=> ANY ($arg)`
      * - SQLite: `$this IS $arg`, or `EXISTS (... WHERE $this IS $arg[0])`
      *
-     * @param null|bool|number|string|Select $arg
+     * @param null|scalar|Select $arg
      * @return Predicate
      */
     public function is ($arg): Predicate {
@@ -80,7 +62,7 @@ trait ComparisonTrait {
     /**
      * `$this = $arg` or `$this IN ($arg)`
      *
-     * @param bool|number|string|array|Select $arg
+     * @param scalar|array|Select $arg
      * @return Predicate
      */
     public function isEqual ($arg) {
@@ -214,7 +196,7 @@ trait ComparisonTrait {
     /**
      * Null-safe inequality.
      *
-     * @param null|bool|number|string|Select $arg
+     * @param null|scalar|Select $arg
      * @return Predicate
      */
     public function isNot ($arg) {
@@ -237,7 +219,7 @@ trait ComparisonTrait {
     /**
      * `$this <> $arg` or `$this NOT IN ($arg)`
      *
-     * @param bool|number|string|array|Select $arg
+     * @param scalar|array|Select $arg
      * @return Predicate
      */
     public function isNotEqual ($arg) {

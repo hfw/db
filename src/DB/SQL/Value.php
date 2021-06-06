@@ -3,10 +3,11 @@
 namespace Helix\DB\SQL;
 
 /**
- * Represents a value expression. Produces various transformations.
+ * Represents a value expression. Can produce various transformations.
  */
 class Value extends Expression implements ValueInterface {
 
-    use ComparisonTrait;
     use AggregateTrait;
+    use CastTrait;
+    use ComparisonTrait;
 }

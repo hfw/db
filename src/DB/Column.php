@@ -4,6 +4,7 @@ namespace Helix\DB;
 
 use Helix\DB;
 use Helix\DB\SQL\AggregateTrait;
+use Helix\DB\SQL\CastTrait;
 use Helix\DB\SQL\ComparisonTrait;
 use Helix\DB\SQL\DateTimeTrait;
 use Helix\DB\SQL\NumTrait;
@@ -19,10 +20,11 @@ use Helix\DB\SQL\ValueInterface;
  */
 class Column implements ValueInterface {
 
-    use FactoryTrait;
     use AggregateTrait;
+    use CastTrait;
     use ComparisonTrait;
     use DateTimeTrait;
+    use FactoryTrait;
     use NumTrait;
     use TextTrait;
 
@@ -52,7 +54,7 @@ class Column implements ValueInterface {
      *
      * @return string
      */
-    public function __toString (): string {
+    public function __toString () {
         if (strlen($this->qualifier)) {
             return "{$this->qualifier}.{$this->name}";
         }
