@@ -50,9 +50,9 @@ class EAV extends Table {
         foreach ($match as $attribute => $value) {
             $alias = $this->setName("{$this}__{$attribute}");
             $select->join("{$this} AS {$alias}",
-                $alias['entity']->isEqual($prior['entity'])
-                . ' AND ' . $alias['attribute']->isEqual($attribute)
-                . ' AND ' . $this->db->match($alias['value'], $value)
+                $alias['entity']->isEqual($prior['entity']),
+                $alias['attribute']->isEqual($attribute),
+                $this->db->match($alias['value'], $value)
             );
             $prior = $alias;
         }

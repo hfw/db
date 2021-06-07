@@ -250,17 +250,19 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     }
 
     /**
-     * Adds a condition to the `HAVING` clause.
+     * Adds conditions to the `HAVING` clause.
      *
-     * @param string $condition
+     * @param string ...$conditions
      * @return $this
      */
-    public function having (string $condition) {
+    public function having (string ...$conditions) {
+        assert(count($conditions) > 0);
+        $conditions = implode(' AND ', $conditions);
         if (!strlen($this->_having)) {
-            $this->_having = " HAVING {$condition}";
+            $this->_having = " HAVING {$conditions}";
         }
         else {
-            $this->_having .= " AND {$condition}";
+            $this->_having .= " AND {$conditions}";
         }
         return $this;
     }
@@ -277,11 +279,9 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
         if ($this->db->isMySQL()) {
             // to be standards compliant, this hack must fail if they don't have the same cols.
             assert(count($this->refs) === count($select->refs) and !array_diff_key($this->refs, $select->refs));
-            $conditions = [];
-            foreach ($this->refs as $alias => $column) {
-                $conditions[] = $select[$alias]->is($column);
-            }
-            $this->join($select, implode(' AND ', $conditions));
+            $this->join($select, ...array_map(function(string $alias, Column $ref) {
+                return $ref->is($this->refs[$alias]);
+            }, array_keys($select->refs), $select->refs));
             return $this;
         }
         $select = clone $select;
@@ -310,18 +310,36 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     }
 
     /**
-     * Adds a `JOIN` clause.
+     * Adds `INNER JOIN $table ON $conditions`
      *
      * @param string|Select $table
-     * @param string $condition
-     * @param string $type
+     * @param string ...$conditions
      * @return $this
      */
-    public function join ($table, string $condition, string $type = 'INNER') {
+    public function join ($table, string ...$conditions) {
+        assert(count($conditions) > 0);
         if ($table instanceof Select) {
             $table = $table->toSubquery();
         }
-        $this->_join .= " {$type} JOIN {$table} ON {$condition}";
+        $conditions = implode(' AND ', $conditions);
+        $this->_join .= " INNER JOIN {$table} ON {$conditions}";
+        return $this;
+    }
+
+    /**
+     * Adds `LEFT JOIN $table ON $conditions`
+     *
+     * @param string|Select $table
+     * @param string ...$conditions
+     * @return $this
+     */
+    public function joinLeft ($table, string ...$conditions) {
+        assert(count($conditions) > 0);
+        if ($table instanceof Select) {
+            $table = $table->toSubquery();
+        }
+        $conditions = implode(' AND ', $conditions);
+        $this->_join .= " LEFT JOIN {$table} ON {$conditions}";
         return $this;
     }
 
@@ -486,17 +504,19 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     }
 
     /**
-     * Adds a condition to the `WHERE` clause.
+     * Adds conditions to the `WHERE` clause.
      *
-     * @param string $condition
+     * @param string ...$conditions
      * @return $this
      */
-    public function where (string $condition) {
+    public function where (string ...$conditions) {
+        assert(count($conditions) > 0);
+        $conditions = implode(' AND ', $conditions);
         if (!strlen($this->_where)) {
-            $this->_where = " WHERE {$condition}";
+            $this->_where = " WHERE {$conditions}";
         }
         else {
-            $this->_where .= " AND {$condition}";
+            $this->_where .= " AND {$conditions}";
         }
         return $this;
     }
