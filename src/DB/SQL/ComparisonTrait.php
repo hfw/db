@@ -108,7 +108,7 @@ trait ComparisonTrait {
     }
 
     /**
-     * `$this > $arg`, or driver-specific `$this > ALL (SELECT ...)`
+     * `$this > $arg`, or driver-appropriate `$this > ALL (SELECT ...)`
      *
      * @param number|string|Select $arg
      * @return Predicate
