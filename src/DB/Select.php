@@ -76,6 +76,13 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     protected $_order = '';
 
     /**
+     * Compiled source table.
+     *
+     * @var string
+     */
+    protected $_table;
+
+    /**
      * Compiled predicates.
      *
      * @internal
@@ -85,7 +92,6 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
 
     /**
      * Human-readable alias.
-     * This is initialized using `uniqid()` and the table's name.
      *
      * @var string
      */
@@ -107,25 +113,34 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     protected $refs = [];
 
     /**
-     * @var string
+     * The original table given to the constructor.
+     *
+     * @var AbstractTable
      */
     protected $table;
 
     /**
      * @param DB $db
-     * @param string|Select $table
+     * @param string|AbstractTable $table
      * @param string[] $columns
      */
-    public function __construct (DB $db, $table, array $columns) {
+    public function __construct (DB $db, $table, array $columns = ['*']) {
+        static $autoAlias = 0;
+        $autoAlias++;
         parent::__construct($db);
         if ($table instanceof Select) {
-            $this->table = $table->toSubquery();
-            $this->alias = uniqid('_') . "_{$table->alias}";
+            $this->_table = $table->toSubquery();
+            $this->alias = "_anon{$autoAlias}_{$table->alias}";
         }
         else {
-            $this->table = (string)$table;
-            $this->alias = uniqid('_') . "__{$table}";
+            if (is_string($table)) {
+                $table = $db->getTable($table);
+                assert(isset($table));
+            }
+            $this->_table = (string)$table;
+            $this->alias = "_anon{$autoAlias}_{$table}";
         }
+        $this->table = $table;
         $this->setColumns($columns);
         $this->fetcher = function(Statement $statement) {
             yield from $statement;
@@ -420,13 +435,15 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * Compiles the column list and exposed reference columns.
      *
      * Columns may be expressions, like `COUNT(*)`
-     *
-     * Unless an alias is given for such columns, they can't be referenced externally.
+     * Unless an alias is given for such expressions, they can't be referenced externally.
      *
      * @param string[] $expressions Keyed by alias if applicable.
      * @return $this
      */
-    public function setColumns (array $expressions) {
+    public function setColumns (array $expressions = ['*']) {
+        if ($expressions === ['*']) {
+            $expressions = array_keys($this->table->getColumns());
+        }
         $this->refs = [];
         $_columns = [];
         foreach ($expressions as $alias => $expr) {
@@ -462,7 +479,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @return string
      */
     public function toSql (): string {
-        $sql = "SELECT {$this->_columns} FROM {$this->table}";
+        $sql = "SELECT {$this->_columns} FROM {$this->_table}";
         $sql .= $this->_join;
         $sql .= $this->_where;
         $sql .= $this->_group;

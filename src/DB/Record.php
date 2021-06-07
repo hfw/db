@@ -209,7 +209,7 @@ class Record extends Table {
      */
     public function load (int $id) {
         $statement = $this->cache(__FUNCTION__, function() {
-            return $this->select(array_keys($this->columns))->where('id = ?')->prepare();
+            return $this->select()->where('id = ?')->prepare();
         });
         $values = $statement([$id])->fetch();
         $statement->closeCursor();

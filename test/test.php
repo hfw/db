@@ -12,12 +12,17 @@ $db->setLogger(function($sql) {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[2];
     echo "{$trace['function']} ==> {$sql}\n\n";
 });
-// test transactions and savepoints
-$transaction = $db->newTransaction();
-$savepoint = $db->newTransaction();
+
+// get access objects
 $Author = $db->getRecord(Author::class);
 $Book = $db->getRecord(Book::class);
 $AuthorsToBooks = $db->getJunction(AuthorsToBooks::class);
+
+// test transactions and savepoints
+$transaction = $db->newTransaction();
+$savepoint = $db->newTransaction();
+assert($Author->select()->getAll() === []);
+//exit;
 
 // define alice.
 $alice = new Author;

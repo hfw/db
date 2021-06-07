@@ -157,13 +157,10 @@ class Table extends AbstractTable {
     /**
      * Returns a selection object for columns in the table.
      *
-     * @param string[] $columns Defaults to all columns.
+     * @param string[] $columns
      * @return Select|array[]
      */
-    public function select (array $columns = []) {
-        if (empty($columns)) {
-            $columns = $this->columns;
-        }
+    public function select (array $columns = ['*']) {
         return Select::factory($this->db, $this, $columns);
     }
 

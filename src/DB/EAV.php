@@ -89,9 +89,9 @@ class EAV extends Table {
         if (count($ids) === 1) {
             return [current($ids) => $this->load(current($ids))];
         }
-        $loadAll = $this->select(['entity', 'attribute', 'value']);
-        $loadAll->where($this->db->match('entity', SQL::marks($ids)));
-        $loadAll->order('entity, attribute');
+        $loadAll = $this->select(['entity', 'attribute', 'value'])
+            ->where($this->db->match('entity', SQL::marks($ids)))
+            ->order('entity, attribute');
         $values = array_fill_keys($ids, []);
         foreach ($loadAll->getEach(array_values($ids)) as $row) {
             $values[$row['entity']][$row['attribute']] = $row['value'];
