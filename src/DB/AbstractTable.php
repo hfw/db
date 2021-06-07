@@ -19,6 +19,13 @@ abstract class AbstractTable implements ArrayAccess {
     abstract public function __toString ();
 
     /**
+     * Columns keyed by name/alias.
+     *
+     * @return Column[]
+     */
+    abstract public function getColumns ();
+
+    /**
      * @param int|string $column
      * @return null|Column
      */

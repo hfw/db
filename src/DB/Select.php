@@ -188,6 +188,13 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     }
 
     /**
+     * @return Column[]
+     */
+    public function getColumns () {
+        return $this->refs;
+    }
+
+    /**
      * Executes and yields from the fetcher.
      * This is preferable over `fetchAll()` for iterating large result sets.
      *

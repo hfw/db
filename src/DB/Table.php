@@ -120,7 +120,7 @@ class Table extends AbstractTable {
     /**
      * @return Column[]
      */
-    final public function getColumns (): array {
+    public function getColumns () {
         return $this->columns;
     }
 
