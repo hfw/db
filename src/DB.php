@@ -9,11 +9,13 @@ use Helix\DB\Junction;
 use Helix\DB\Record;
 use Helix\DB\Select;
 use Helix\DB\SQL\ExpressionInterface;
+use Helix\DB\SQL\Num;
 use Helix\DB\SQL\Predicate;
 use Helix\DB\Statement;
 use Helix\DB\Table;
 use LogicException;
 use PDO;
+use ReflectionFunction;
 
 /**
  * Extends `PDO` and acts as a central access point for the schema.
@@ -71,10 +73,38 @@ class DB extends PDO implements ArrayAccess {
         $this->setAttribute(self::ATTR_STRINGIFY_FETCHES, false);
         $this->logger ??= fn() => null;
         $this->driver = $this->getAttribute(self::ATTR_DRIVER_NAME);
+
         if ($this->isSQLite()) {
-            $this->sqliteCreateFunction('CEIL', 'ceil');
-            $this->sqliteCreateFunction('FLOOR', 'floor');
-            $this->sqliteCreateFunction('POW', 'pow');
+            // polyfill sqlite functions
+            $this->sqliteCreateFunctions([ // deterministic functions
+                // https://www.sqlite.org/lang_mathfunc.html
+                'ACOS' => 'acos',
+                'ASIN' => 'asin',
+                'ATAN' => 'atan',
+                'CEIL' => 'ceil',
+                'COS' => 'cos',
+                'DEGREES' => 'rad2deg',
+                'EXP' => 'exp',
+                'FLOOR' => 'floor',
+                'LN' => 'log',
+                'LOG' => fn($b, $x) => log($x, $b),
+                'LOG10' => 'log10',
+                'LOG2' => fn($x) => log($x, 2),
+                'PI' => 'pi',
+                'POW' => 'pow',
+                'RADIANS' => 'deg2rad',
+                'SIN' => 'sin',
+                'SQRT' => 'sqrt',
+                'TAN' => 'tan',
+
+                // these are not in sqlite at all but are in other dbms
+                'CONV' => 'base_convert',
+                'SIGN' => fn($x) => ($x > 0) - ($x < 0),
+            ]);
+
+            $this->sqliteCreateFunctions([ // non-deterministic
+                'RAND' => fn() => mt_rand(0, 1),
+            ], false);
         }
     }
 
@@ -265,6 +295,15 @@ class DB extends PDO implements ArrayAccess {
     }
 
     /**
+     * `PI()`
+     *
+     * @return Num
+     */
+    public function pi () {
+        return Num::factory($this, "PI()");
+    }
+
+    /**
      * Notifies the logger.
      *
      * @param string $sql
@@ -340,6 +379,15 @@ class DB extends PDO implements ArrayAccess {
     }
 
     /**
+     * `RAND()` float between `0` and `1`
+     *
+     * @return Num
+     */
+    public function rand () {
+        return Num::factory($this, "RAND()");
+    }
+
+    /**
      * Forwards to the entity's {@link Record}
      *
      * @param EntityInterface $entity
@@ -376,5 +424,17 @@ class DB extends PDO implements ArrayAccess {
     public function setRecord (string $class, Record $record) {
         $this->records[$class] = $record;
         return $this;
+    }
+
+    /**
+     * @param callable[] $callbacks Keyed by function name.
+     * @param bool $deterministic Whether the callbacks aren't random / are without side-effects.
+     */
+    public function sqliteCreateFunctions (array $callbacks, bool $deterministic = true): void {
+        $deterministic = $deterministic ? self::SQLITE_DETERMINISTIC : 0;
+        foreach ($callbacks as $name => $callback) {
+            $argc = (new ReflectionFunction($callback))->getNumberOfRequiredParameters();
+            $this->sqliteCreateFunction($name, $callback, $argc, $deterministic);
+        }
     }
 }

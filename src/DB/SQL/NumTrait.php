@@ -19,13 +19,41 @@ trait NumTrait {
     }
 
     /**
+     * `ACOS($this)`
+     *
+     * @return Num
+     */
+    public function acos () {
+        return Num::factory($this->db, "ACOS({$this})");
+    }
+
+    /**
      * `($this + $arg)`
      *
      * @param number|ValueInterface $arg
      * @return Num
      */
     public function add ($arg) {
+        $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} + {$arg})");
+    }
+
+    /**
+     * `ASIN($this)`
+     *
+     * @return Num
+     */
+    public function asin () {
+        return Num::factory($this->db, "ASIN({$this})");
+    }
+
+    /**
+     * `ATAN($this)`
+     *
+     * @return Num
+     */
+    public function atan () {
+        return Num::factory($this->db, "ATAN({$this})");
     }
 
     /**
@@ -38,13 +66,45 @@ trait NumTrait {
     }
 
     /**
+     * `COS($this)`
+     *
+     * @return Num
+     */
+    public function cos () {
+        return Num::factory($this->db, "COS({$this})");
+    }
+
+    /**
+     * Radians to degrees.
+     *
+     * `DEGREES($this)`
+     *
+     * @return Num
+     */
+    public function degrees () {
+        return Num::factory($this->db, "DEGREES({$this})");
+    }
+
+    /**
      * `($this / $arg)`
      *
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function divide ($arg) {
+    public function div ($arg) {
+        $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} / {$arg})");
+    }
+
+    /**
+     * Euler's constant raised to the power of the expression.
+     *
+     * `EXP($this)`
+     *
+     * @return Num
+     */
+    public function exp () {
+        return Num::factory($this->db, "EXP({$this})");
     }
 
     /**
@@ -93,13 +153,52 @@ trait NumTrait {
     }
 
     /**
-     * `($this % $arg)`
+     * `LN($this)`
      *
-     * @param number|ValueInterface $arg
      * @return Num
      */
-    public function mod ($arg) {
-        return Num::factory($this->db, "({$this} % {$arg})");
+    public function ln () {
+        return Num::factory($this->db, "LN({$this})");
+    }
+
+    /**
+     * `LOG($base,$this)`
+     *
+     * > Note: This is the cross-DBMS signature. PHP's built-in function has the reverse.
+     *
+     * @param float $base
+     * @return Num
+     */
+    public function log (float $base) {
+        return Num::factory($this->db, "LOG({$base},{$this})");
+    }
+
+    /**
+     * `LOG10($this)`
+     *
+     * @return Num
+     */
+    public function log10 () {
+        return Num::factory($this->db, "LOG10({$this})");
+    }
+
+    /**
+     * `LOG2($this)`
+     *
+     * @return Num
+     */
+    public function log2 () {
+        return Num::factory($this->db, "LOG2({$this})");
+    }
+
+    /**
+     * `($this % $divisor)`
+     *
+     * @param float $divisor
+     * @return Num
+     */
+    public function mod (float $divisor) {
+        return Num::factory($this->db, "({$this} % {$divisor})");
     }
 
     /**
@@ -108,18 +207,30 @@ trait NumTrait {
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function multiply ($arg) {
+    public function mul ($arg) {
+        $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} * {$arg})");
     }
 
     /**
      * `POW($this,$exponent)`
      *
-     * @param number|ValueInterface $exponent
+     * @param float $exponent
      * @return Num
      */
-    public function pow ($exponent) {
+    public function pow (float $exponent) {
         return Num::factory($this->db, "POW({$this},{$exponent})");
+    }
+
+    /**
+     * Degrees to radians.
+     *
+     * `RADIANS($this)`
+     *
+     * @return Num
+     */
+    public function radians () {
+        return Num::factory($this->db, "RADIANS({$this})");
     }
 
     /**
@@ -133,12 +244,49 @@ trait NumTrait {
     }
 
     /**
+     * `SIGN($this)`
+     *
+     * @return Num `-1`, `0`, `1`
+     */
+    public function sign () {
+        return Num::factory($this->db, "SIGN({$this})");
+    }
+
+    /**
+     * `SIN($this)`
+     *
+     * @return Num
+     */
+    public function sin () {
+        return Num::factory($this->db, "SIN({$this})");
+    }
+
+    /**
+     * `SQRT($this)`
+     *
+     * @return Num
+     */
+    public function sqrt () {
+        return Num::factory($this->db, "SQRT({$this})");
+    }
+
+    /**
      * `($this - $arg)`
      *
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function subtract (ValueInterface $arg) {
+    public function sub ($arg) {
+        $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} - {$arg})");
+    }
+
+    /**
+     * `TAN($this)`
+     *
+     * @return Num
+     */
+    public function tan () {
+        return Num::factory($this->db, "TAN({$this})");
     }
 }
