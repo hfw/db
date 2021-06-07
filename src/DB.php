@@ -53,6 +53,13 @@ class DB extends PDO implements ArrayAccess {
     protected $tables = [];
 
     /**
+     * The count of open transactions/savepoints.
+     *
+     * @var int
+     */
+    protected $transactions = 0;
+
+    /**
      * Sets various attributes to streamline operations.
      *
      * Registers missing SQLite functions.
@@ -115,6 +122,42 @@ class DB extends PDO implements ArrayAccess {
      */
     final public function __toString () {
         return $this->driver;
+    }
+
+    /**
+     * Allows nested transactions by using `SAVEPOINT`
+     *
+     * @return bool
+     */
+    public function beginTransaction () {
+        assert($this->transactions >= 0);
+        if ($this->transactions === 0) {
+            $this->logger->__invoke("BEGIN TRANSACTION");
+            parent::beginTransaction();
+        }
+        else {
+            $this->exec("SAVEPOINT SAVEPOINT_{$this->transactions}");
+        }
+        $this->transactions++;
+        return true;
+    }
+
+    /**
+     * Allows nested transactions by using `RELEASE SAVEPOINT`
+     *
+     * @return bool
+     */
+    public function commit () {
+        assert($this->transactions > 0);
+        if ($this->transactions === 1) {
+            $this->logger->__invoke("COMMIT TRANSACTION");
+            parent::commit();
+        }
+        else {
+            $this->exec("RELEASE SAVEPOINT SAVEPOINT_{$this->transactions}");
+        }
+        $this->transactions--;
+        return true;
     }
 
     /**
@@ -385,6 +428,24 @@ class DB extends PDO implements ArrayAccess {
      */
     public function rand () {
         return Num::factory($this, "RAND()");
+    }
+
+    /**
+     * Allows nested transactions by using `ROLLBACK TO SAVEPOINT`
+     *
+     * @return bool
+     */
+    public function rollBack () {
+        assert($this->transactions > 0);
+        if ($this->transactions === 1) {
+            $this->logger->__invoke("ROLLBACK TRANSACTION");
+            parent::rollBack();
+        }
+        else {
+            $this->exec("ROLLBACK TO SAVEPOINT SAVEPOINT_{$this->transactions}");
+        }
+        $this->transactions--;
+        return true;
     }
 
     /**

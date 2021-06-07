@@ -12,6 +12,10 @@ $db->setLogger(function($sql) {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[2];
     echo "{$trace['function']} ==> {$sql}\n\n";
 });
+// test transactions and savepoints
+$db->beginTransaction();
+$db->beginTransaction();
+$db->beginTransaction();
 $db->beginTransaction();
 $Author = $db->getRecord(Author::class);
 $Book = $db->getRecord(Book::class);
