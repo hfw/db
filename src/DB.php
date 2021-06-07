@@ -13,6 +13,7 @@ use Helix\DB\SQL\Num;
 use Helix\DB\SQL\Predicate;
 use Helix\DB\Statement;
 use Helix\DB\Table;
+use Helix\DB\Transaction;
 use LogicException;
 use PDO;
 use ReflectionFunction;
@@ -127,7 +128,9 @@ class DB extends PDO implements ArrayAccess {
     /**
      * Allows nested transactions by using `SAVEPOINT`
      *
-     * @return bool
+     * Use {@link DB::newTransaction()} to work with {@link Transaction} instead.
+     *
+     * @return true
      */
     public function beginTransaction () {
         assert($this->transactions >= 0);
@@ -145,7 +148,9 @@ class DB extends PDO implements ArrayAccess {
     /**
      * Allows nested transactions by using `RELEASE SAVEPOINT`
      *
-     * @return bool
+     * Use {@link DB::newTransaction()} to work with {@link Transaction} instead.
+     *
+     * @return true
      */
     public function commit () {
         assert($this->transactions > 0);
@@ -154,7 +159,8 @@ class DB extends PDO implements ArrayAccess {
             parent::commit();
         }
         else {
-            $this->exec("RELEASE SAVEPOINT SAVEPOINT_{$this->transactions}");
+            $savepoint = $this->transactions - 1;
+            $this->exec("RELEASE SAVEPOINT SAVEPOINT_{$savepoint}");
         }
         $this->transactions--;
         return true;
@@ -301,6 +307,15 @@ class DB extends PDO implements ArrayAccess {
     }
 
     /**
+     * Returns a scoped transaction.
+     *
+     * @return Transaction
+     */
+    public function newTransaction () {
+        return Transaction::factory($this);
+    }
+
+    /**
      * Whether a table exists.
      *
      * @param string $table
@@ -433,7 +448,9 @@ class DB extends PDO implements ArrayAccess {
     /**
      * Allows nested transactions by using `ROLLBACK TO SAVEPOINT`
      *
-     * @return bool
+     * Use {@link DB::newTransaction()} to work with {@link Transaction} instead.
+     *
+     * @return true
      */
     public function rollBack () {
         assert($this->transactions > 0);
@@ -442,7 +459,8 @@ class DB extends PDO implements ArrayAccess {
             parent::rollBack();
         }
         else {
-            $this->exec("ROLLBACK TO SAVEPOINT SAVEPOINT_{$this->transactions}");
+            $savepoint = $this->transactions - 1;
+            $this->exec("ROLLBACK TO SAVEPOINT SAVEPOINT_{$savepoint}");
         }
         $this->transactions--;
         return true;
@@ -497,5 +515,20 @@ class DB extends PDO implements ArrayAccess {
             $argc = (new ReflectionFunction($callback))->getNumberOfRequiredParameters();
             $this->sqliteCreateFunction($name, $callback, $argc, $deterministic);
         }
+    }
+
+    /**
+     * Performs work within a scoped transaction.
+     *
+     * The work is rolled back if an exception is thrown.
+     *
+     * @param callable $work
+     * @return mixed The return value of `$work`
+     */
+    public function transact (callable $work) {
+        $transaction = $this->newTransaction();
+        $return = call_user_func($work);
+        $transaction->commit();
+        return $return;
     }
 }

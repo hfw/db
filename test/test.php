@@ -13,10 +13,8 @@ $db->setLogger(function($sql) {
     echo "{$trace['function']} ==> {$sql}\n\n";
 });
 // test transactions and savepoints
-$db->beginTransaction();
-$db->beginTransaction();
-$db->beginTransaction();
-$db->beginTransaction();
+$transaction = $db->newTransaction();
+$savepoint = $db->newTransaction();
 $Author = $db->getRecord(Author::class);
 $Book = $db->getRecord(Book::class);
 $AuthorsToBooks = $db->getJunction(AuthorsToBooks::class);
