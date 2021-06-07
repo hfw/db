@@ -458,22 +458,30 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     }
 
     /**
-     * `UNION` or `UNION ALL`
+     * `UNION SELECT ...`
      *
      * @param Select $select
-     * @param bool $all
      * @return $this
      */
-    public function union (Select $select, $all = false) {
+    public function union (Select $select) {
         $select = clone $select;
         $select->_order = '';
         $select->_limit = '';
-        if ($all) {
-            $this->_import .= " UNION ALL {$select->toSql()}";
-        }
-        else {
-            $this->_import .= " UNION {$select->toSql()}";
-        }
+        $this->_import .= " UNION {$select->toSql()}";
+        return $this;
+    }
+
+    /**
+     * `UNION ALL SELECT ...`
+     *
+     * @param Select $select
+     * @return $this
+     */
+    public function unionAll (Select $select) {
+        $select = clone $select;
+        $select->_order = '';
+        $select->_limit = '';
+        $this->_import .= " UNION ALL {$select->toSql()}";
         return $this;
     }
 
