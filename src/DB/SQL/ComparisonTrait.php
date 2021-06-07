@@ -17,6 +17,35 @@ trait ComparisonTrait {
     use AbstractTrait;
 
     /**
+     * Relational comparison helper.
+     *
+     * @param number|string|Select $arg
+     * @param string $oper Relational operator
+     * @param string $multi `ALL|ANY`
+     * @return Predicate
+     * @internal
+     */
+    protected function _isRelational ($arg, string $oper, string $multi) {
+        static $inverse = [
+            '<' => '>=',
+            '<=' => '>',
+            '>=' => '<',
+            '>' => '<='
+        ];
+        if ($arg instanceof Select) {
+            if ($this->db->isSQLite()) {
+                $sub = Select::factory($this->db, $arg, [$arg[0]]);
+                if ($multi === 'ANY') {
+                    return $sub->where("{$this} {$oper} {$arg[0]}")->isNotEmpty();
+                }
+                return $sub->where("{$this} {$inverse[$oper]} {$arg[0]}")->isEmpty();
+            }
+            return Predicate::factory($this->db, "{$this} {$oper} {$multi} ({$arg->toSql()})");
+        }
+        return Predicate::factory($this->db, "{$this} {$oper} {$this->db->quote($arg)}");
+    }
+
+    /**
      * Null-safe equality.
      *
      * - Mysql: `$this <=> $arg`, or `$this <=> ANY ($arg)`
@@ -79,107 +108,43 @@ trait ComparisonTrait {
     }
 
     /**
-     * `$this > $arg`, or driver-specific subquery comparison.
-     *
-     * - MySQL: `$this > ALL ($arg)` or `$this > ANY ($arg)`
-     * - SQLite:
-     *      - ALL: `NOT EXISTS (... WHERE $this <= $arg[0])`
-     *      - ANY: `EXISTS (... WHERE $this > $arg[0])`
+     * `$this > $arg`, or driver-specific `$this > ALL (SELECT ...)`
      *
      * @param number|string|Select $arg
-     * @param string $multi `ALL|ANY`
      * @return Predicate
      */
-    public function isGreater ($arg, string $multi = 'ALL') {
-        if ($arg instanceof Select) {
-            if ($this->db->isSQLite()) {
-                $sub = Select::factory($this->db, $arg, [$arg[0]]);
-                if ($multi === 'ANY') {
-                    return $sub->where("{$this} > {$arg[0]}")->isNotEmpty();
-                }
-                return $sub->where("{$this} <= {$arg[0]}")->isEmpty();
-            }
-            return Predicate::factory($this->db, "{$this} > {$multi} ({$arg->toSql()})");
-        }
-        return Predicate::factory($this->db, "{$this} > {$this->db->quote($arg)}");
+    public function isGt ($arg) {
+        return $this->_isRelational($arg, '>', 'ALL');
     }
 
     /**
-     * `$this >= $arg`, or driver-specific subquery comparison.
+     * Driver-appropriate `$this > ANY (SELECT ...)`
      *
-     * - MySQL: `$this >= ALL ($arg)` or `$this >= ANY ($arg)`
-     * - SQLite:
-     *      - ALL: `NOT EXISTS (... WHERE $this < $arg[0])`
-     *      - ANY: `EXISTS (... WHERE $this >= $arg[0])`
-     *
-     * @param number|string|Select $arg
-     * @param string $multi `ALL|ANY`
+     * @param Select $select
      * @return Predicate
      */
-    public function isGreaterOrEqual ($arg, string $multi = 'ALL') {
-        if ($arg instanceof Select) {
-            if ($this->db->isSQLite()) {
-                $sub = Select::factory($this->db, $arg, [$arg[0]]);
-                if ($multi === 'ANY') {
-                    return $sub->where("{$this} >= {$arg[0]}")->isNotEmpty();
-                }
-                return $sub->where("{$this} < {$arg[0]}")->isEmpty();
-            }
-            return Predicate::factory($this->db, "{$this} >= {$multi} ({$arg->toSql()})");
-        }
-        return Predicate::factory($this->db, "{$this} >= {$this->db->quote($arg)}");
+    public function isGtAny (Select $select) {
+        return $this->_isRelational($select, '>', 'ANY');
     }
 
     /**
-     * `$this < $arg`, or driver-specific subquery comparison.
-     *
-     * - MySQL: `$this < ALL ($arg)` or `$this < ANY ($arg)`
-     * - SQLite:
-     *      - ALL: `NOT EXISTS (... WHERE $this >= $arg[0])`
-     *      - ANY: `EXISTS (... WHERE $this < $arg[0])`
+     * `$this >= $arg`, or driver-appropriate `$this >= ALL (SELECT ...)`
      *
      * @param number|string|Select $arg
-     * @param string $multi `ALL|ANY`
      * @return Predicate
      */
-    public function isLess ($arg, string $multi = 'ALL') {
-        if ($arg instanceof Select) {
-            if ($this->db->isSQLite()) {
-                $sub = Select::factory($this->db, $arg, [$arg[0]]);
-                if ($multi === 'ANY') {
-                    return $sub->where("{$this} < {$arg[0]}")->isNotEmpty();
-                }
-                return $sub->where("{$this} >= {$arg[0]}")->isEmpty();
-            }
-            return Predicate::factory($this->db, "{$this} < {$multi} ({$arg->toSql()})");
-        }
-        return Predicate::factory($this->db, "{$this} < {$this->db->quote($arg)}");
+    public function isGte ($arg) {
+        return $this->_isRelational($arg, '>=', 'ALL');
     }
 
     /**
-     * `$this <= $arg`, or driver-specific subquery comparison.
+     * Driver-appropriate `$this >= ANY (SELECT ...)`
      *
-     * - MySQL: `$this <= ALL ($arg)` or `$this <= ANY ($arg)`
-     * - SQLite:
-     *      - ALL: `NOT EXISTS (... WHERE $this > $arg[0])`
-     *      - ANY: `EXISTS (... WHERE $this <= $arg[0])`
-     *
-     * @param number|string|Select $arg
-     * @param string $multi `ALL|ANY`
+     * @param Select $select
      * @return Predicate
      */
-    public function isLessOrEqual ($arg, string $multi = 'ALL') {
-        if ($arg instanceof Select) {
-            if ($this->db->isSQLite()) {
-                $sub = Select::factory($this->db, $arg, [$arg[0]]);
-                if ($multi === 'ANY') {
-                    return $sub->where("{$this} <= {$arg[0]}")->isNotEmpty();
-                }
-                return $sub->where("{$this} > {$arg[0]}")->isEmpty();
-            }
-            return Predicate::factory($this->db, "{$this} <= {$multi} ({$arg->toSql()})");
-        }
-        return Predicate::factory($this->db, "{$this} <= {$this->db->quote($arg)}");
+    public function isGteAny (Select $select) {
+        return $this->_isRelational($select, '>=', 'ANY');
     }
 
     /**
@@ -191,6 +156,46 @@ trait ComparisonTrait {
     public function isLike (string $pattern) {
         $pattern = $this->db->quote($pattern);
         return Predicate::factory($this->db, "{$this} LIKE {$pattern}");
+    }
+
+    /**
+     * `$this < $arg`, or driver-appropriate `$this < ALL (SELECT ...)`
+     *
+     * @param number|string|Select $arg
+     * @return Predicate
+     */
+    public function isLt ($arg) {
+        return $this->_isRelational($arg, '<', 'ALL');
+    }
+
+    /**
+     * Driver-appropriate `$this < ANY (SELECT ...)`
+     *
+     * @param Select $select
+     * @return Predicate
+     */
+    public function isLtAny (Select $select) {
+        return $this->_isRelational($select, '<', 'ANY');
+    }
+
+    /**
+     * `$this <= $arg`, or driver-appropriate `$this <= ALL (SELECT ...)`
+     *
+     * @param number|string|Select $arg
+     * @return Predicate
+     */
+    public function isLte ($arg) {
+        return $this->_isRelational($arg, '<=', 'ALL');
+    }
+
+    /**
+     * Driver-appropriate `$this <= ANY (SELECT ...)`
+     *
+     * @param Select $select
+     * @return Predicate
+     */
+    public function isLteAny (Select $select) {
+        return $this->_isRelational($select, '<=', 'ANY');
     }
 
     /**

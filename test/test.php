@@ -91,9 +91,9 @@ assert(count($authors) === 1);
 $author = $authors->getFirst();
 assert($author->getName() === 'Alice');
 
-// test isLessOrEqual(Select)
+// test isLte(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isLessOrEqual($Author->select([$Author['id']])->where(
+    $Author['id']->isLte($Author->select([$Author['id']])->where(
         $Author['id']->isEqual(1)
     ))
 );
@@ -101,11 +101,11 @@ assert(count($authors) === 1);
 $author = $authors->getFirst();
 assert($author->getName() === 'Alice');
 
-// test isLessOrEqual(Select,ANY)
+// test isLteAny(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isLessOrEqual($Author->select([$Author['id']])->where(
+    $Author['id']->isLteAny($Author->select([$Author['id']])->where(
         $Author['id']->isEqual(1)
-    ), 'ANY')
+    ))
 );
 assert(count($authors) === 1);
 $author = $authors->getFirst();
