@@ -266,22 +266,28 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     }
 
     /**
-     * `INTERSECT` or `INTERSECT ALL`
+     * `INTERSECT SELECT ...`
+     *
+     * > Note: MySQL does not support `INTERSECT`. An `INNER JOIN` on every column is used instead.
      *
      * @param Select $select
-     * @param bool $all
      * @return $this
      */
-    public function intersect (Select $select, $all = false) {
+    public function intersect (Select $select) {
+        if ($this->db->isMySQL()) {
+            // to be standards compliant, this hack must fail if they don't have the same cols.
+            assert(count($this->refs) === count($select->refs) and !array_diff_key($this->refs, $select->refs));
+            $conditions = [];
+            foreach ($this->refs as $alias => $column) {
+                $conditions[] = $select[$alias]->is($column);
+            }
+            $this->join($select, implode(' AND ', $conditions));
+            return $this;
+        }
         $select = clone $select;
         $select->_order = '';
         $select->_limit = '';
-        if ($all) {
-            $this->_import .= " INTERSECT ALL {$select->toSql()}";
-        }
-        else {
-            $this->_import .= " INTERSECT {$select->toSql()}";
-        }
+        $this->_import .= " INTERSECT {$select->toSql()}";
         return $this;
     }
 
