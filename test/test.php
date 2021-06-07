@@ -113,22 +113,19 @@ assert($author->getName() === 'Alice');
 
 // test column->countDistinct()
 $count = (int)$Author->select([$Author['id']->countDistinct()])
-    ->execute()
-    ->fetchColumn();
+    ->getResult();
 assert($count === 2);
 
 // test text functions
 $upperName = $Author->select([$Author['name']->upper()])
     ->where($Author['id']->isEqual($alice->getId()))
-    ->execute()
-    ->fetchColumn();
+    ->getResult();
 assert($upperName === 'ALICE');
 
 // test FLOOR (sqlite custom function)
 $floorId = (int)$Author->select([$Author['id']->floor()])
     ->where($Author['id']->isEqual($alice->getId()))
-    ->execute()
-    ->fetchColumn();
+    ->getResult();
 assert($floorId === 1);
 
 // test Choice

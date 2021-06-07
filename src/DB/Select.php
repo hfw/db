@@ -224,6 +224,16 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     }
 
     /**
+     * Executes and returns the first column of the first row.
+     * Use this for reductive queries that only have a single result.
+     *
+     * @return mixed
+     */
+    public function getResult (array $args = []) {
+        return $this->execute($args)->fetchColumn();
+    }
+
+    /**
      * Adds a column to the `GROUP BY` clause.
      *
      * @param string $column
