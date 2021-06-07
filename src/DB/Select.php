@@ -78,6 +78,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     /**
      * Compiled source table.
      *
+     * @internal
      * @var string
      */
     protected $_table;
