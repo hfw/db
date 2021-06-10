@@ -7,7 +7,7 @@ require '../vendor/autoload.php';
 use Helix\DB;
 use Helix\DB\Column;
 
-$db = new DB('sqlite:test.db');
+$db = DB::fromConfig();
 $db->setLogger(function($sql) {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[2];
     echo "{$trace['function']} ==> {$sql}\n\n";

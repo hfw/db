@@ -61,6 +61,20 @@ class DB extends PDO implements ArrayAccess {
     protected $transactions = 0;
 
     /**
+     * Returns an instance using a configuration file.
+     *
+     * See `db.config.php` in the `test` directory for an example.
+     *
+     * @param string $connection
+     * @param string $file
+     * @return static
+     */
+    public static function fromConfig (string $connection = 'default', string $file = 'db.config.php') {
+        $config = (include "{$file}")[$connection];
+        return new static($config['dsn'], $config['username'] ?? null, $config['password'] ?? null, $config['options'] ?? []);
+    }
+
+    /**
      * Sets various attributes to streamline operations.
      *
      * Registers missing SQLite functions.
@@ -71,9 +85,7 @@ class DB extends PDO implements ArrayAccess {
      * @param array $options
      */
     public function __construct ($dsn, $username = null, $password = null, array $options = []) {
-        $options += [
-            self::ATTR_STATEMENT_CLASS => [Statement::class, [$this]]
-        ];
+        $options[self::ATTR_STATEMENT_CLASS] ??= [Statement::class, [$this]];
         parent::__construct($dsn, $username, $password, $options);
         $this->setAttribute(self::ATTR_DEFAULT_FETCH_MODE, self::FETCH_ASSOC);
         $this->setAttribute(self::ATTR_EMULATE_PREPARES, false);
