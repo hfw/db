@@ -111,7 +111,7 @@ class DB extends PDO implements ArrayAccess {
             ]);
 
             $this->sqliteCreateFunctions([ // non-deterministic
-                'RAND' => fn() => mt_rand(0, 1),
+                'RAND' => fn() => mt_rand() / mt_getrandmax(),
             ], false);
         }
     }
