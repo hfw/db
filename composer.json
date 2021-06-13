@@ -5,7 +5,8 @@
   "keywords": [
     "database",
     "crud",
-    "annotation"
+    "annotation",
+    "migration"
   ],
   "homepage": "https://github.com/hfw/db",
   "license": "MIT",
@@ -13,6 +14,9 @@
     "php": "~7.4",
     "ext-pdo": "*"
   },
+  "bin": [
+    "bin/helix.db.migrate.php"
+  ],
   "autoload": {
     "psr-4": {
       "Helix\\": "src/",

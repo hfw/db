@@ -135,7 +135,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
         }
         else {
             if (is_string($table)) {
-                $table = $db->getTable($table);
+                $table = $db[$table];
                 assert(isset($table));
             }
             $this->_table = (string)$table;
@@ -250,7 +250,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * Executes and returns the first column of the first row.
      * Use this for reductive queries that only have a single result.
      *
-     * @return mixed
+     * @return null|mixed
      */
     public function getResult (array $args = []) {
         return $this->execute($args)->fetchColumn();

@@ -19,7 +19,11 @@ use ReflectionProperty;
  * - `@col` or `@column`
  * - `@eav TABLE`
  *
- * Property value types are preserved as long as they are annotated with `@var`.
+ * Property value types are preserved as long as they are scalar and annotated with `@var`.
+ * Types may be nullable.
+ *
+ * > Note: Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
+ * > respectfully during {@link Schema::createRecordTable()}
  *
  * @method static static factory(DB $db, EntityInterface $proto, string $table, array $columns, array $eav = [])
  */
@@ -31,6 +35,13 @@ class Record extends Table {
      * @var EAV[]
      */
     protected $eav = [];
+
+    /**
+     * `[ property => is nullable ]`
+     *
+     * @var bool[]
+     */
+    protected $nullable = [];
 
     /**
      * `[property => ReflectionProperty]`
@@ -48,16 +59,16 @@ class Record extends Table {
     protected $proto;
 
     /**
-     * Scalar property types.
+     * Scalar property types. Types may be nullable.
      *
-     *  - bool
-     *  - float (or double)
-     *  - int
-     *  - string
+     *  - `bool`
+     *  - `float` or `double`
+     *  - `int`
+     *  - `string`
      *
      * `[property => type]`
      *
-     * @var array
+     * @var string[]
      */
     protected $types = [];
 
@@ -67,25 +78,24 @@ class Record extends Table {
      * @return Record
      */
     public static function fromClass (DB $db, $class) {
-        return (function() use ($db, $class) {
-            $rClass = new ReflectionClass($class);
-            $columns = [];
-            /** @var EAV[] $eav */
-            $eav = [];
-            foreach ($rClass->getProperties() as $rProp) {
-                if (preg_match('/@col(umn)?[\s$]/', $rProp->getDocComment())) {
-                    $columns[] = $rProp->getName();
-                }
-                elseif (preg_match('/@eav\s+(?<table>\S+)/', $rProp->getDocComment(), $attr)) {
-                    $eav[$rProp->getName()] = EAV::factory($db, $attr['table']);
-                }
+        $rClass = new ReflectionClass($class);
+        assert($rClass->isInstantiable());
+        $columns = [];
+        /** @var EAV[] $eav */
+        $eav = [];
+        foreach ($rClass->getProperties() as $rProp) {
+            if (preg_match('/@col(umn)?[\s$]/', $rProp->getDocComment())) {
+                $columns[] = $rProp->getName();
             }
-            preg_match('/@record\s+(?<table>\S+)/', $rClass->getDocComment(), $record);
-            if (!is_object($class)) {
-                $class = $rClass->newInstanceWithoutConstructor();
+            elseif (preg_match('/@eav\s+(?<table>\S+)/', $rProp->getDocComment(), $attr)) {
+                $eav[$rProp->getName()] = EAV::factory($db, $attr['table']);
             }
-            return static::factory($db, $class, $record['table'], $columns, $eav);
-        })();
+        }
+        preg_match('/@record\s+(?<table>\S+)/', $rClass->getDocComment(), $record);
+        if (!is_object($class)) {
+            $class = $rClass->newInstanceWithoutConstructor();
+        }
+        return static::factory($db, $class, $record['table'], $columns, $eav);
     }
 
     /**
@@ -98,29 +108,45 @@ class Record extends Table {
     public function __construct (DB $db, EntityInterface $proto, string $table, array $columns, array $eav = []) {
         parent::__construct($db, $table, $columns);
         $this->proto = $proto;
-        (function() use ($proto, $columns, $eav) {
-            $rClass = new ReflectionClass($proto);
-            $defaults = $rClass->getDefaultProperties();
-            foreach ($columns as $name) {
-                $rProp = $rClass->getProperty($name);
-                $rProp->setAccessible(true);
-                $this->properties[$name] = $rProp;
-                // infer the type from the default value
-                $type = gettype($defaults[$name] ?? 'string');
-                // check for explicit type via annotation
-                if (preg_match('/@var\s+(?<type>[a-z]+)[\s$]/', $rProp->getDocComment(), $var)) {
-                    $type = $var['type'];
-                }
-                $this->types[$name] = $type;
+        $rClass = new ReflectionClass($proto);
+        $defaults = $rClass->getDefaultProperties();
+        foreach ($columns as $name) {
+            $rProp = $rClass->getProperty($name);
+            $rProp->setAccessible(true);
+            $this->properties[$name] = $rProp;
+            // assume nullable string
+            $type = 'null|string';
+            // infer the type from the default value
+            if (isset($defaults[$name])) {
+                $type = gettype($defaults[$name]);
             }
-            $this->types['id'] = 'int';
-            $this->eav = $eav;
-            foreach (array_keys($eav) as $name) {
-                $rProp = $rClass->getProperty($name);
-                $rProp->setAccessible(true);
-                $this->properties[$name] = $rProp;
+            // check for explicit type annotation
+            if (preg_match('/\*\h*@var\h+(?<type>\S+)/', $rProp->getDocComment(), $var)) {
+                $type = $var['type'];
             }
-        })();
+            // convert "boolean" to "bool"
+            $type = preg_replace('/\bboolean\b/i', 'bool', $type);
+            // convert "integer" to "int"
+            $type = preg_replace('/\binteger\b/i', 'int', $type);
+            // convert "number" to "string"
+            $type = preg_replace('/\bnumber|numeric\b/i', 'string', $type);
+            // extract nullable
+            $type = preg_replace('/\bnull\b/i', '', $type, -1, $nullable);
+            $this->nullable[$name] = (bool)$nullable;
+            // fall back to "string" if it's not scalar
+            if (!preg_match('/^bool|int|float|double|string$/i', $type)) {
+                $type = 'string';
+            }
+            $this->types[$name] = $type;
+        }
+        $this->nullable['id'] = false;
+        $this->types['id'] = 'int';
+        $this->eav = $eav;
+        foreach (array_keys($eav) as $name) {
+            $rProp = $rClass->getProperty($name);
+            $rProp->setAccessible(true);
+            $this->properties[$name] = $rProp;
+        }
     }
 
     /**
@@ -155,6 +181,13 @@ class Record extends Table {
     }
 
     /**
+     * @return string
+     */
+    final public function getClass (): string {
+        return get_class($this->proto);
+    }
+
+    /**
      * Fetches in chunks and yields each loaded entity.
      * This is preferable over {@link getAll()} for iterating large result sets.
      *
@@ -183,10 +216,30 @@ class Record extends Table {
     }
 
     /**
+     * Enumerated property names.
+     *
+     * @return string[]
+     */
+    final public function getProperties (): array {
+        return array_keys($this->properties);
+    }
+
+    /**
      * @return EntityInterface
      */
     public function getProto () {
         return $this->proto;
+    }
+
+    /**
+     * Returns the native/annotated property types.
+     *
+     * This doesn't include whether the property is nullable. Use {@link isNullable()} for that.
+     *
+     * @return string[]
+     */
+    final public function getTypes (): array {
+        return $this->types;
     }
 
     /**
@@ -199,6 +252,14 @@ class Record extends Table {
             $values[$name] = $this->properties[$name]->getValue($entity);
         }
         return $values;
+    }
+
+    /**
+     * @param string $property
+     * @return bool
+     */
+    final public function isNullable (string $property): bool {
+        return $this->nullable[$property];
     }
 
     /**
@@ -285,7 +346,7 @@ class Record extends Table {
      */
     protected function saveInsert (EntityInterface $entity): void {
         $statement = $this->cache(__FUNCTION__, function() {
-            $slots = SQL::slots(array_keys($this->columns));
+            $slots = $this->db->slots(array_keys($this->columns));
             unset($slots['id']);
             $columns = implode(',', array_keys($slots));
             $slots = implode(',', $slots);
@@ -304,7 +365,7 @@ class Record extends Table {
      */
     protected function saveUpdate (EntityInterface $entity): void {
         $statement = $this->cache(__FUNCTION__, function() {
-            $slots = SQL::slotsEqual(array_keys($this->columns));
+            $slots = $this->db->slotsEqual(array_keys($this->columns));
             unset($slots['id']);
             $slots = implode(', ', $slots);
             return $this->db->prepare("UPDATE {$this} SET {$slots} WHERE id = :id");
@@ -329,7 +390,7 @@ class Record extends Table {
     protected function setValues (EntityInterface $entity, array $values): void {
         foreach ($values as $name => $value) {
             if (isset($this->properties[$name])) {
-                settype($value, $this->types[$name]);
+                settype($value, $this->types[$name]); // doesn't care about letter case
                 $this->properties[$name]->setValue($entity, $value);
             }
             else {

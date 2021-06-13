@@ -7,16 +7,23 @@ use Helix\DB;
 /**
  * Array storage in an extension table.
  *
- * @method static static factory(DB $db, string $name)
+ * @method static static factory(DB $db, string $name, string $valueType = 'string')
  */
 class EAV extends Table {
 
     /**
+     * @var string
+     */
+    protected $valueType;
+
+    /**
      * @param DB $db
      * @param string $name
+     * @param string $valueType PHP-native scalar type (implied nullable).
      */
-    public function __construct (DB $db, string $name) {
+    public function __construct (DB $db, string $name, string $valueType = 'string') {
         parent::__construct($db, $name, ['entity', 'attribute', 'value']);
+        $this->valueType = $valueType;
     }
 
     /**
@@ -61,6 +68,13 @@ class EAV extends Table {
     }
 
     /**
+     * @return string
+     */
+    final public function getValueType (): string {
+        return $this->valueType;
+    }
+
+    /**
      * Returns an entity's attributes.
      *
      * @param int $id
@@ -73,7 +87,7 @@ class EAV extends Table {
             $select->order('attribute');
             return $select->prepare();
         });
-        return $statement([$id])->fetchAll(DB::FETCH_KEY_PAIR);
+        return array_map([$this, 'setType'], $statement([$id])->fetchAll(DB::FETCH_KEY_PAIR));
     }
 
     /**
@@ -90,11 +104,11 @@ class EAV extends Table {
             return [current($ids) => $this->load(current($ids))];
         }
         $loadAll = $this->select(['entity', 'attribute', 'value'])
-            ->where($this->db->match('entity', SQL::marks($ids)))
+            ->where($this->db->match('entity', $this->db->marks($ids)))
             ->order('entity, attribute');
         $values = array_fill_keys($ids, []);
         foreach ($loadAll->getEach(array_values($ids)) as $row) {
-            $values[$row['entity']][$row['attribute']] = $row['value'];
+            $values[$row['entity']][$row['attribute']] = $this->setType($row['value']);
         }
         return $values;
     }
@@ -129,5 +143,16 @@ class EAV extends Table {
         }
         $statement->closeCursor();
         return $this;
+    }
+
+    /**
+     * @param mixed $value
+     * @return null|scalar
+     */
+    protected function setType ($value) {
+        if (isset($value)) {
+            settype($value, $this->valueType);
+        }
+        return $value;
     }
 }

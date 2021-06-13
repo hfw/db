@@ -4,9 +4,12 @@ namespace Helix;
 
 use ArrayAccess;
 use Closure;
+use Countable;
 use Helix\DB\EntityInterface;
 use Helix\DB\Junction;
+use Helix\DB\Migrator;
 use Helix\DB\Record;
+use Helix\DB\Schema;
 use Helix\DB\Select;
 use Helix\DB\SQL\ExpressionInterface;
 use Helix\DB\SQL\Num;
@@ -44,14 +47,25 @@ class DB extends PDO implements ArrayAccess {
     protected $logger;
 
     /**
+     * The migrations directory for this connection.
+     *
+     * This can be set via class override, or configuration file (recommended).
+     *
+     * When using {@link DB::fromConfig()}, this defaults to `migrations/<CONNECTION NAME>`
+     *
+     * @var string
+     */
+    protected $migrations = 'migrations/default';
+
+    /**
      * @var Record[]
      */
     protected $records = [];
 
     /**
-     * @var Table[]
+     * @var Schema
      */
-    protected $tables = [];
+    protected $schema;
 
     /**
      * The count of open transactions/savepoints.
@@ -71,7 +85,62 @@ class DB extends PDO implements ArrayAccess {
      */
     public static function fromConfig (string $connection = 'default', string $file = 'db.config.php') {
         $config = (include "{$file}")[$connection];
-        return new static($config['dsn'], $config['username'] ?? null, $config['password'] ?? null, $config['options'] ?? []);
+        $args = [
+            $config['dsn'],
+            $config['username'] ?? null,
+            $config['password'] ?? null,
+            $config['options'] ?? []
+        ];
+        $class = $config['class'] ?? static::class;
+        $db = new $class(...$args);
+        $db->migrations = $config['migrations'] ?? "migrations/{$connection}";
+        return $db;
+    }
+
+    /**
+     * Returns an array of `?` placeholders.
+     *
+     * @param int|array|Countable $count
+     * @return ExpressionInterface[]
+     */
+    public static function marks ($count): array {
+        static $mark;
+        $mark ??= new class implements ExpressionInterface {
+
+            public function __toString () {
+                return '?';
+            }
+        };
+        if (is_array($count) or $count instanceof Countable) {
+            $count = count($count);
+        }
+        return array_fill(0, $count, $mark);
+    }
+
+    /**
+     * Converts an array of columns to `:named` placeholders for prepared queries.
+     *
+     * Qualified columns are slotted as `qualifier__column` (two underscores).
+     *
+     * @param string[] $columns
+     * @return string[] `["column" => ":column"]`
+     */
+    public static function slots (array $columns): array {
+        return array_combine($columns, array_map(function(string $column) {
+            return ':' . str_replace('.', '__', $column);
+        }, $columns));
+    }
+
+    /**
+     * @param string[] $columns
+     * @return string[] `["column" => "column=:column"]`
+     */
+    public static function slotsEqual (array $columns): array {
+        $slots = static::slots($columns);
+        foreach ($slots as $column => $slot) {
+            $slots[$column] = "{$column} = {$slot}";
+        }
+        return $slots;
     }
 
     /**
@@ -91,8 +160,9 @@ class DB extends PDO implements ArrayAccess {
         $this->setAttribute(self::ATTR_EMULATE_PREPARES, false);
         $this->setAttribute(self::ATTR_ERRMODE, self::ERRMODE_EXCEPTION);
         $this->setAttribute(self::ATTR_STRINGIFY_FETCHES, false);
-        $this->logger ??= fn() => null;
         $this->driver = $this->getAttribute(self::ATTR_DRIVER_NAME);
+        $this->logger ??= fn() => null;
+        $this->schema ??= Schema::factory($this);
 
         if ($this->isSQLite()) {
             // polyfill sqlite functions
@@ -229,6 +299,14 @@ class DB extends PDO implements ArrayAccess {
     }
 
     /**
+     * @param string $dir
+     * @return Migrator
+     */
+    public function getMigrator () {
+        return Migrator::factory($this, $this->migrations);
+    }
+
+    /**
      * Returns a {@link Record} access object based on an annotated class.
      *
      * @param string|EntityInterface $class
@@ -242,26 +320,10 @@ class DB extends PDO implements ArrayAccess {
     }
 
     /**
-     * @param string $name
-     * @return null|Table
+     * @return Schema
      */
-    public function getTable (string $name) {
-        if (!isset($this->tables[$name])) {
-            if ($this->isSQLite()) {
-                $info = $this->query("PRAGMA table_info({$this->quote($name)})")->fetchAll();
-                $cols = array_column($info, 'name');
-            }
-            else {
-                $cols = $this->query(
-                    "SELECT column_name FROM information_schema.tables WHERE table_name = {$this->quote($name)}"
-                )->fetchAll(self::FETCH_COLUMN);
-            }
-            if (!$cols) {
-                return null;
-            }
-            $this->tables[$name] = Table::factory($this, $name, $cols);
-        }
-        return $this->tables[$name];
+    public function getSchema () {
+        return $this->schema;
     }
 
     /**
@@ -297,6 +359,8 @@ class DB extends PDO implements ArrayAccess {
      * If `$b` is a {@link Select}, returns `$a IN ($b->toSql())`
      *
      * Otherwise predicates `$a = quoted $b`
+     *
+     * TODO this is not null safe.
      *
      * @param mixed $a
      * @param mixed $b
@@ -334,7 +398,7 @@ class DB extends PDO implements ArrayAccess {
      * @return bool
      */
     final public function offsetExists ($table): bool {
-        return (bool)$this->getTable($table);
+        return (bool)$this->offsetGet($table);
     }
 
     /**
@@ -343,8 +407,8 @@ class DB extends PDO implements ArrayAccess {
      * @param string $table
      * @return null|Table
      */
-    final public function offsetGet ($table) {
-        return $this->getTable($table);
+    public function offsetGet ($table) {
+        return $this->schema->getTable($table);
     }
 
     /**
@@ -353,7 +417,7 @@ class DB extends PDO implements ArrayAccess {
      * @throws LogicException
      */
     final public function offsetSet ($offset, $value) {
-        throw new LogicException('Raw table access is immutable.');
+        throw new LogicException('The schema cannot be altered this way.');
     }
 
     /**
@@ -361,7 +425,7 @@ class DB extends PDO implements ArrayAccess {
      * @throws LogicException
      */
     final public function offsetUnset ($offset) {
-        throw new LogicException('Raw table access is immutable.');
+        throw new LogicException('The schema cannot be altered this way.');
     }
 
     /**

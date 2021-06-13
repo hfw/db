@@ -165,7 +165,9 @@ class Table extends AbstractTable {
     }
 
     /**
-     * Returns a clone with a different name. Columns are also re-qualified.
+     * Returns an aliased clone for joins. Columns are also re-qualified.
+     *
+     * If you want to rename the table in the schema, use {@link Schema::renameTable()}
      *
      * @param string $name
      * @return Table

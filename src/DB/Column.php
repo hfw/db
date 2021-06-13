@@ -90,6 +90,10 @@ class Column implements ValueInterface {
     }
 
     /**
+     * Returns an aliased clone.
+     *
+     * If you want to rename the column in the schema, use {@link Schema::renameColumn()}
+     *
      * @param string $name
      * @return $this
      */

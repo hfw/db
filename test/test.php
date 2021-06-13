@@ -18,8 +18,15 @@ $Author = $db->getRecord(Author::class);
 $Book = $db->getRecord(Book::class);
 $AuthorsToBooks = $db->getJunction(AuthorsToBooks::class);
 
-// test transactions and savepoints
+// test transactions and savepoints, so we can auto-rollback at the end of the script.
 $transaction = $db->newTransaction();
+
+// test migrations
+$migrator = $db->getMigrator();
+$migrator->up();
+$migrator->down();
+$migrator->up();
+
 $savepoint = $db->newTransaction();
 assert($Author->select()->getAll() === []);
 //exit;

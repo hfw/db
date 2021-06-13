@@ -3,17 +3,15 @@
 namespace Helix\DB;
 
 use Helix\DB;
-use LogicException;
 use ReflectionClass;
-use ReflectionException;
 
 /**
  * Represents a junction table, derived from an annotated interface.
  *
  * Interface Annotations:
  *
- * - `@junction TABLE`
- * - `@foreign COLUMN CLASS` or `@for COLUMN CLASS`
+ * - `@junction <TABLE>`
+ * - `@foreign <COLUMN> <CLASS>` or `@for <COLUMN> <CLASS>`
  *
  * @method static static factory(DB $db, string $table, array $classes)
  */
@@ -32,12 +30,8 @@ class Junction extends Table {
      * @return Junction
      */
     public static function fromInterface (DB $db, string $interface) {
-        try {
-            $ref = new ReflectionClass($interface);
-        }
-        catch (ReflectionException $exception) {
-            throw new LogicException('Unexpected ReflectionException', 0, $exception);
-        }
+        $ref = new ReflectionClass($interface);
+        assert($ref->isInterface());
         $doc = $ref->getDocComment();
         $classes = [];
         foreach (explode("\n", $doc) as $line) {
@@ -69,13 +63,43 @@ class Junction extends Table {
      * @return Select|EntityInterface[]
      */
     public function find (string $key, array $match = []) {
-        $record = $this->db->getRecord($this->classes[$key]);
+        $record = $this->getRecord($key);
         $select = $record->loadAll();
         $select->join($this, $this[$key]->isEqual($record['id']));
         foreach ($match as $a => $b) {
             $select->where($this->db->match($this[$a], $b));
         }
         return $select;
+    }
+
+    /**
+     * @param string $column
+     * @return string
+     */
+    final public function getClass (string $column): string {
+        return $this->classes[$column];
+    }
+
+    /**
+     * @return string[]
+     */
+    final public function getClasses () {
+        return $this->classes;
+    }
+
+    /**
+     * @param string $column
+     * @return Record
+     */
+    public function getRecord (string $column) {
+        return $this->db->getRecord($this->classes[$column]);
+    }
+
+    /**
+     * @return Record[]
+     */
+    public function getRecords () {
+        return array_map(fn($class) => $this->db->getRecord($class), $this->classes);
     }
 
     /**
@@ -87,15 +111,14 @@ class Junction extends Table {
     public function link (array $ids): int {
         $statement = $this->cache(__FUNCTION__, function() {
             $columns = implode(',', array_keys($this->columns));
-            $slots = implode(',', SQL::slots(array_keys($this->columns)));
+            $slots = implode(',', $this->db->slots(array_keys($this->columns)));
             if ($this->db->isSQLite()) {
-                return $this->db->prepare(
-                    "INSERT OR IGNORE INTO {$this} ({$columns}) VALUES ({$slots})"
-                );
+                $sql = "INSERT OR IGNORE INTO {$this} ({$columns}) VALUES ({$slots})";
             }
-            return $this->db->prepare(
-                "INSERT IGNORE INTO {$this} ({$columns}) VALUES ({$slots})"
-            );
+            else {
+                $sql = "INSERT IGNORE INTO {$this} ({$columns}) VALUES ({$slots})";
+            }
+            return $this->db->prepare($sql);
         });
         $affected = $statement($ids)->rowCount();
         $statement->closeCursor();
