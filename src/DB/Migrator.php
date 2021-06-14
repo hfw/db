@@ -5,7 +5,11 @@ namespace Helix\DB;
 use Helix\DB;
 
 /**
+ * Migrates.
+ *
  * @method static static factory(DB $db, string $dir);
+ *
+ * @see MigrationInterface
  */
 class Migrator {
 
@@ -42,23 +46,21 @@ class Migrator {
      * Migrates down within a transaction.
      *
      * @param string $to Migration sequence identifier, or `null` to step down once.
-     * @return false|string The resulting current sequence identifier.
+     * @return null|string The resulting current sequence identifier.
      */
-    public function down (string $to = null) {
+    public function down (string $to = null): ?string {
         return $this->db->transact(function() use ($to) {
             $current = $this->getCurrent();
             // walk newest to oldest
-            foreach (array_reverse($this->glob(), true) as $sequence => $spec) {
+            foreach (array_reverse($this->glob(), true) as $sequence => $file) {
                 if ($current and $to === $current) {
                     break;
                 }
                 if ($current < $sequence) {
                     continue;
                 }
-                $this->db->transact(function() use ($sequence, $spec) {
-                    $this->getMigration($spec)->down($this->db);
-                    $this->table->delete(['sequence' => $sequence]);
-                });
+                $this->db->transact(fn() => $this->getMigration($file)->down($this->db->getSchema()));
+                $this->table->delete(['sequence' => $sequence]);
                 $current = $this->getCurrent();
                 if ($to === null) {
                     break;
@@ -81,52 +83,44 @@ class Migrator {
      * @param array $spec
      * @return MigrationInterface
      */
-    protected function getMigration (array $spec) {
-        include_once "{$spec['file']}";
-        $migration = new $spec['class'];
+    protected function getMigration (string $file) {
+        $migration = include "{$file}";
         assert($migration instanceof MigrationInterface);
         return $migration;
     }
 
     /**
-     * Scans the migration directory for `<SEQUENCE>_<CLASS>.php` files.
+     * Scans the migration directory for `<SEQUENCE>.php` files.
      *
-     * @return array[] [ file => spec array ]
+     * @return string[] [ sequence => file ]
      */
     protected function glob () {
-        $specs = [];
-        $files = glob("{$this->dir}/?*_?*.php");
-        foreach ($files as $file) {
-            preg_match('/^(?<sequence>[^_]+)_(?<class>.*)\.php$/', basename($file), $spec);
-            $specs[$spec['sequence']] = [
-                'file' => $file,
-                'class' => "\\{$spec['class']}"
-            ];
+        $files = [];
+        foreach (glob("{$this->dir}/*.php") as $file) {
+            $files[basename($file, '.php')] = $file;
         }
-        return $specs;
+        return $files;
     }
 
     /**
      * Migrates up within a transaction.
      *
      * @param null|string $to Migration sequence identifier, or `null` for all upgrades.
-     * @return false|string The resulting current sequence identifier.
+     * @return null|string The resulting current sequence identifier.
      */
-    public function up (string $to = null) {
+    public function up (string $to = null): ?string {
         return $this->db->transact(function() use ($to) {
             $current = $this->getCurrent();
             // walk oldest to newest
-            foreach ($this->glob() as $sequence => $spec) {
+            foreach ($this->glob() as $sequence => $file) {
                 if ($current and $to === $current) {
                     break;
                 }
                 if ($current >= $sequence) {
                     continue;
                 }
-                $this->db->transact(function() use ($sequence, $spec) {
-                    $this->getMigration($spec)->up($this->db);
-                    $this->table->insert(['sequence' => $sequence]);
-                });
+                $this->db->transact(fn() => $this->getMigration($file)->up($this->db->getSchema()));
+                $this->table->insert(['sequence' => $sequence]);
                 $current = $sequence;
             }
             return $current;

@@ -1,12 +1,15 @@
 <?php
 
 use Helix\DB\MigrationInterface;
+use Helix\DB\Schema;
 
-final class init implements MigrationInterface {
+return new class implements MigrationInterface {
 
-    public function down ($db) {
-        $schema = $db->getSchema();
-
+    /**
+     * @param Schema $schema
+     */
+    public function down ($schema) {
+        $db = $schema->getDb();
         $schema->dropTable($db->getJunction(AuthorsToBooks::class));
 
         $Book = $db->getRecord(Book::class);
@@ -18,8 +21,11 @@ final class init implements MigrationInterface {
         $schema->dropTable($Author);
     }
 
-    public function up ($db) {
-        $schema = $db->getSchema();
+    /**
+     * @param Schema $schema
+     */
+    public function up ($schema) {
+        $db = $schema->getDb();
 
         $Author = $db->getRecord(Author::class);
         $schema->createRecordTable($Author);
@@ -31,4 +37,4 @@ final class init implements MigrationInterface {
 
         $schema->createJunctionTable($db->getJunction(AuthorsToBooks::class));
     }
-}
+};

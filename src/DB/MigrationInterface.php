@@ -8,36 +8,34 @@ use Helix\DB;
  * Migrations must implement this.
  *
  * Migration files must be contained in their own directory.
- * The default directory is `migrations/` (see {@link DB::getMigrator()} and {@link Migrator::glob()})
+ * The default directory is `migrations/default/`
  *
- * Migration files must be named `<SEQUENCE>_<CLASS>.php`,
- * where `SEQUENCE` is a non-zero ascending identifier,
- * and `CLASS` is the name of the class implementing this interface.
- * `SEQUENCE` must not contain underscores. `CLASS` on the other hand may contain underscores.
- * The implementing class must not be namespaced.
- * No two migrations may share the same class name.
- * Migrations must allow construction without arguments.
+ * Migration files must be named `<SEQUENCE>.php`, where `SEQUENCE` is a non-zero ascending identifier.
+ * The file must `return` an instance of this interface (e.g. an anonymous class).
  *
- * Standard practice is to use a date-time for `SEQUENCE`,
- * and to name `CLASS` a description of the migration's work.
+ * Standard practice is to have file names prefixed with a date-time,
+ * followed by a description of what they do.
  *
- * Migrations can execute direct SQL or use the {@link Schema} helpers.
+ * Migrations are given the {@link Schema} helper, but can directly execute SQL if needed.
  *
  * Each migration is performed within a transaction savepoint.
  *
  * See the test migration in `test/migrations/default/`
+ *
+ * @see DB::getMigrator()
+ * @see Migrator::glob()
  */
 interface MigrationInterface {
 
     /**
-     * @param DB $db
+     * @param Schema $schema
      * @return void
      */
-    public function down ($db);
+    public function down ($schema);
 
     /**
-     * @param DB $db
+     * @param Schema $schema
      * @return void
      */
-    public function up ($db);
+    public function up ($schema);
 }

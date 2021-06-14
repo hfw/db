@@ -51,9 +51,9 @@ class Schema implements ArrayAccess {
     const I_PRIMARY = 0x8000;
 
     /**
-     * `<I_CONST>`: Column is the primary key and auto-increments.
+     * Partial definition for `T_AUTOINCREMENT`, use that in compositions instead of this.
      */
-    const I_AUTOINCREMENT = 0x4000 | self::I_PRIMARY;
+    protected const I_AUTOINCREMENT = 0x4000 | self::I_PRIMARY;
 
     /**
      * `<I_CONST>`: Column is unique.
@@ -123,6 +123,7 @@ class Schema implements ArrayAccess {
         'String' => self::T_TEXT,
         'STRING' => self::T_BLOB
     ];
+
     /**
      * Driver-specific schema phrases.
      */
@@ -257,16 +258,17 @@ class Schema implements ArrayAccess {
      * At least one column must be given.
      *
      * `$constraints` is a multidimensional array of table-level constraints.
-     * - `C_PRIMARY => [col, col, col]`
-     *      - A list of columns composing the primary key.
-     * - `C_UNIQUE => [ [col, col, col] , ... ]`
-     *      - One or more column groups, each group composing a unique key.
-     * - `C_FOREIGN => [ local column => <Column> ]`
-     *      - Associative local columns that are each foreign keys to a {@link Column}
+     * - `TABLE_PRIMARY => [col, col, col]`
+     *      - String list of columns composing the primary key.
+     *      - Not needed for single-column primary keys. Use `I_PRIMARY` or `T_AUTOINCREMENT` for that.
+     * - `TABLE_UNIQUE => [ [col, col, col] , ... ]`
+     *      - One or more string lists of columns, each grouping composing a unique key together.
+     * - `TABLE_FOREIGN => [ col => <External Column> ]`
+     *      - Associative columns that are each foreign keys to a {@link Column} instance.
      *
      * @param string $table
      * @param int[] $columns `[ name => <I_CONST> | <T_CONST> ]`
-     * @param array[] $constraints `[ <TABLE_CONST> => table constraint spec ]`
+     * @param array[] $constraints `[ <TABLE_CONST> => spec ]`
      * @return $this
      */
     public function createTable (string $table, array $columns, array $constraints = []) {
@@ -319,6 +321,13 @@ class Schema implements ArrayAccess {
     public function dropTable (string $table): void {
         $this->db->exec("DROP TABLE IF EXISTS {$table}");
         unset($this->tables[$table]);
+    }
+
+    /**
+     * @return DB
+     */
+    public function getDb () {
+        return $this->db;
     }
 
     /**
