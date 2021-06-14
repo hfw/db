@@ -156,7 +156,7 @@ switch (true) {
                 }
                 $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
                 $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
-                $addUp("\$schema->createTable('{$access}',{$columns});");
+                $addUp("\$schema->createTable('{$access}', {$columns});");
                 $addDown("\$schema->dropTable('{$access}');");
             }
 
