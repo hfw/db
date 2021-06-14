@@ -7,7 +7,7 @@ namespace Helix\DB;
  *
  * `ArrayAccess` must be implemented by the class using this trait.
  * The `$attributes` property must also be defined in the class,
- * and annotated with `@eav TABLE`.
+ * and annotated with `@eav <TABLE>`.
  *
  * The instance must have its attributes loaded before use as an array,
  * otherwise existing EAV data may be lost when the instance is saved.
@@ -20,12 +20,16 @@ trait AttributesTrait {
     /**
      * Override this property with your own annotation.
      *
-     * The property must remain `null` when not in use.
+     * This is nullable, and must remain null until it's used.
+     * Once this is an array, {@link Record::save()} will delete any attributes not in the array.
+     * So for example, this must not default to an empty array during construction.
      *
-     * @eav EAV_TABLE
-     * @var array
+     * All of the {@link Record} methods that return/fetch entities will automatically preload these.
+     *
+     * @eav table_name_here
+     * @var string[] This can be changed to other scalar-typed arrays.
      */
-    protected $attributes;
+    protected ?array $attributes;
 
     /**
      * @return array

@@ -11,11 +11,16 @@ use ReflectionClass;
  * Interface Annotations:
  *
  * - `@junction <TABLE>`
- * - `@foreign <COLUMN> <CLASS>` or `@for <COLUMN> <CLASS>`
+ * - `@foreign <COLUMN> <CLASS FQN>` or `@for <COLUMN> <CLASS FQN>`
  *
  * @method static static factory(DB $db, string $table, array $classes)
+ *
+ * @TODO Remove the `for` tag, it's vague.
  */
 class Junction extends Table {
+
+    protected const RX_JUNCTION = '/\*\h*@junction\h+(?<table>\w+)/i';
+    protected const RX_FOREIGN = '/\*\h*@for(eign)?\h+(?<column>\w+)\h+(?<class>\S+)/i';
 
     /**
      * `[column => class]`
@@ -33,13 +38,9 @@ class Junction extends Table {
         $ref = new ReflectionClass($interface);
         assert($ref->isInterface());
         $doc = $ref->getDocComment();
-        $classes = [];
-        foreach (explode("\n", $doc) as $line) {
-            if (preg_match('/@for(eign)?\s+(?<column>\S+)\s+(?<class>\S+)/', $line, $foreign)) {
-                $classes[$foreign['column']] = $foreign['class'];
-            }
-        }
-        preg_match('/@junction\s+(?<table>\S+)/', $doc, $junction);
+        preg_match(static::RX_JUNCTION, $doc, $junction);
+        preg_match_all(static::RX_FOREIGN, $doc, $foreign, PREG_SET_ORDER);
+        $classes = array_column($foreign, 'class', 'column');
         return static::factory($db, $junction['table'], $classes);
     }
 
@@ -62,7 +63,7 @@ class Junction extends Table {
      * @param array $match Keyed by junction column.
      * @return Select|EntityInterface[]
      */
-    public function find (string $key, array $match = []) {
+    public function findAll (string $key, array $match = []) {
         $record = $this->getRecord($key);
         $select = $record->loadAll();
         $select->join($this, $this[$key]->isEqual($record['id']));

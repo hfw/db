@@ -7,23 +7,25 @@ use Helix\DB;
 /**
  * Array storage in an extension table.
  *
- * @method static static factory(DB $db, string $name, string $valueType = 'string')
+ * @method static static factory(DB $db, string $name, string $type = 'string')
  */
 class EAV extends Table {
 
     /**
+     * The PHP-native scalar type for the `value` column (implied nullable).
+     *
      * @var string
      */
-    protected $valueType;
+    protected $type;
 
     /**
      * @param DB $db
      * @param string $name
-     * @param string $valueType PHP-native scalar type (implied nullable).
+     * @param string $type
      */
-    public function __construct (DB $db, string $name, string $valueType = 'string') {
+    public function __construct (DB $db, string $name, string $type = 'string') {
         parent::__construct($db, $name, ['entity', 'attribute', 'value']);
-        $this->valueType = $valueType;
+        $this->type = $type;
     }
 
     /**
@@ -51,7 +53,7 @@ class EAV extends Table {
      * @param array $match `[attribute => value]`. If empty, selects all IDs for entities having at least one attribute.
      * @return Select
      */
-    public function find (array $match) {
+    public function findAll (array $match) {
         $select = $this->select([$this['entity']]);
         $prior = $this;
         foreach ($match as $attribute => $value) {
@@ -70,8 +72,8 @@ class EAV extends Table {
     /**
      * @return string
      */
-    final public function getValueType (): string {
-        return $this->valueType;
+    final public function getType (): string {
+        return $this->type;
     }
 
     /**
@@ -151,7 +153,7 @@ class EAV extends Table {
      */
     protected function setType ($value) {
         if (isset($value)) {
-            settype($value, $this->valueType);
+            settype($value, $this->type);
         }
         return $value;
     }

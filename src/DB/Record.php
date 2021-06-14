@@ -5,6 +5,7 @@ namespace Helix\DB;
 use Generator;
 use Helix\DB;
 use ReflectionClass;
+use ReflectionNamedType;
 use ReflectionProperty;
 
 /**
@@ -17,16 +18,26 @@ use ReflectionProperty;
  * Property Annotations:
  *
  * - `@col` or `@column`
- * - `@eav TABLE`
+ * - `@eav <TABLE>`
  *
- * Property value types are preserved as long as they are scalar and annotated with `@var`.
+ * Property value types are preserved as long as they are scalar or annotated with `@var`.
  * Types may be nullable.
  *
  * > Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
  *
  * @method static static factory(DB $db, EntityInterface $proto, string $table, array $columns, array $eav = [])
+ *
+ * @TODO Allow constraints in the `column` tag, supporting single and multi-column.
  */
 class Record extends Table {
+
+    protected const RX_RECORD = '/\*\h*@record\h+(?<table>\w+)/i';
+    protected const RX_IS_COLUMN = '/\*\h*@col(umn)?\b/i';
+    protected const RX_VAR = '/\*\h*@var\h+(?<type>\S+)/i'; // includes pipes
+    protected const RX_NULL = '/\b\|?null\|?\b/i'; // leading or trailing only
+    protected const RX_IS_SCALAR = '/^bool(ean)?|int(eger)?|float|double|string$/i';
+    protected const RX_EAV = '/\*\h*@eav\h+(?<table>\w+)/i';
+    protected const RX_EAV_VAR = '/\*\h*@var\h+(?<type>\w+)\[\]/i'; // typed array
 
     /**
      * `[property => EAV]`
@@ -80,21 +91,22 @@ class Record extends Table {
         $rClass = new ReflectionClass($class);
         assert($rClass->isInstantiable());
         $columns = [];
-        /** @var EAV[] $eav */
-        $eav = [];
+        $EAV = [];
         foreach ($rClass->getProperties() as $rProp) {
-            if (preg_match('/@col(umn)?[\s$]/', $rProp->getDocComment())) {
+            $doc = $rProp->getDocComment();
+            if (preg_match(static::RX_IS_COLUMN, $doc)) {
                 $columns[] = $rProp->getName();
             }
-            elseif (preg_match('/@eav\s+(?<table>\S+)/', $rProp->getDocComment(), $attr)) {
-                $eav[$rProp->getName()] = EAV::factory($db, $attr['table']);
+            elseif (preg_match(static::RX_EAV, $doc, $eav)) {
+                preg_match(static::RX_EAV_VAR, $doc, $var);
+                $EAV[$rProp->getName()] = EAV::factory($db, $eav['table'], $var['type'] ?? 'string');
             }
         }
-        preg_match('/@record\s+(?<table>\S+)/', $rClass->getDocComment(), $record);
+        preg_match(static::RX_RECORD, $rClass->getDocComment(), $record);
         if (!is_object($class)) {
             $class = $rClass->newInstanceWithoutConstructor();
         }
-        return static::factory($db, $class, $record['table'], $columns, $eav);
+        return static::factory($db, $class, $record['table'], $columns, $EAV);
     }
 
     /**
@@ -115,25 +127,24 @@ class Record extends Table {
             $this->properties[$name] = $rProp;
             // assume nullable string
             $type = 'null|string';
+            // infer the type from reflection
+            if ($rType = $rProp->getType() and $rType instanceof ReflectionNamedType) {
+                assert($rType->isBuiltin());
+                $type = $rType->allowsNull() ? "null|{$rType->getName()}" : $rType->getName();
+            }
             // infer the type from the default value
-            if (isset($defaults[$name])) {
+            elseif (isset($defaults[$name])) {
                 $type = gettype($defaults[$name]);
             }
-            // check for explicit type annotation
-            if (preg_match('/\*\h*@var\h+(?<type>\S+)/', $rProp->getDocComment(), $var)) {
+            // always go with @var if present
+            if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
                 $type = $var['type'];
             }
-            // convert "boolean" to "bool"
-            $type = preg_replace('/\bboolean\b/i', 'bool', $type);
-            // convert "integer" to "int"
-            $type = preg_replace('/\binteger\b/i', 'int', $type);
-            // convert "number" to "string"
-            $type = preg_replace('/\bnumber|numeric\b/i', 'string', $type);
             // extract nullable
-            $type = preg_replace('/\bnull\b/i', '', $type, -1, $nullable);
+            $type = preg_replace(static::RX_NULL, '', $type, -1, $nullable);
             $this->nullable[$name] = (bool)$nullable;
-            // fall back to "string" if it's not scalar
-            if (!preg_match('/^bool|int|float|double|string$/i', $type)) {
+            // fall back to "string" if it's not a native scalar (e.g. "number")
+            if (!preg_match(static::RX_IS_SCALAR, $type)) {
                 $type = 'string';
             }
             $this->types[$name] = $type;
@@ -149,51 +160,23 @@ class Record extends Table {
     }
 
     /**
-     * Returns a {@link Select} that fetches instances.
-     *
-     * @see DB::match()
-     *
-     * @param array $match `[property => mixed]`
-     * @param array[] $eavMatch `[eav property => attribute => mixed]`
-     * @return Select|EntityInterface[]
-     */
-    public function find (array $match, array $eavMatch = []) {
-        $select = $this->loadAll();
-        foreach ($match as $a => $b) {
-            $select->where($this->db->match($this[$a] ?? $a, $b));
-        }
-        foreach ($eavMatch as $property => $attributes) {
-            $inner = $this->eav[$property]->find($attributes);
-            $select->join($inner, $inner['entity']->isEqual($this['id']));
-        }
-        return $select;
-    }
-
-    /**
      * Fetches from a statement into clones of the entity prototype.
      *
      * @param Statement $statement
      * @return EntityInterface[] Keyed by ID
      */
-    public function getAll (Statement $statement): array {
-        return iterator_to_array($this->getEach($statement));
-    }
-
-    /**
-     * @return string
-     */
-    final public function getClass (): string {
-        return get_class($this->proto);
+    public function fetchAll (Statement $statement): array {
+        return iterator_to_array($this->fetchEach($statement));
     }
 
     /**
      * Fetches in chunks and yields each loaded entity.
-     * This is preferable over {@link getAll()} for iterating large result sets.
+     * This is preferable over {@link fetchAll()} for iterating large result sets.
      *
      * @param Statement $statement
      * @return Generator|EntityInterface[] Keyed by ID
      */
-    public function getEach (Statement $statement) {
+    public function fetchEach (Statement $statement) {
         do {
             $entities = [];
             for ($i = 0; $i < 256 and false !== $row = $statement->fetch(); $i++) {
@@ -204,6 +187,45 @@ class Record extends Table {
             $this->loadEav($entities);
             yield from $entities;
         } while (!empty($entities));
+    }
+
+    /**
+     * Similar to {@link loadAll()} except this can additionally search by {@link EAV} values.
+     *
+     * @see DB::match()
+     *
+     * @param array $match `[property => value]`
+     * @param array[] $eavMatch `[eav property => attribute => value]`
+     * @return Select|EntityInterface[]
+     */
+    public function findAll (array $match, array $eavMatch = []) {
+        $select = $this->loadAll();
+        foreach ($match as $a => $b) {
+            $select->where($this->db->match($this[$a] ?? $a, $b));
+        }
+        foreach ($eavMatch as $property => $attributes) {
+            $inner = $this->eav[$property]->findAll($attributes);
+            $select->join($inner, $inner['entity']->isEqual($this['id']));
+        }
+        return $select;
+    }
+
+    /**
+     * Returns an instance for the first row matching the criteria.
+     *
+     * @param array $match `[property => value]`
+     * @param array $eavMatch `[eav property => attribute => value]`
+     * @return null|EntityInterface
+     */
+    public function findFirst (array $match, array $eavMatch = []) {
+        return $this->findAll($match, $eavMatch)->limit(1)->getFirst();
+    }
+
+    /**
+     * @return string
+     */
+    final public function getClass (): string {
+        return get_class($this->proto);
     }
 
     /**
@@ -288,7 +310,7 @@ class Record extends Table {
      */
     public function loadAll () {
         return $this->select()->setFetcher(function(Statement $statement) {
-            yield from $this->getEach($statement);
+            yield from $this->fetchEach($statement);
         });
     }
 
@@ -382,16 +404,31 @@ class Record extends Table {
     }
 
     /**
+     * Converts a value from storage into the native/annotated type.
+     *
+     * @param string $property
+     * @param mixed $value
+     * @return mixed
+     */
+    protected function setType (string $property, $value) {
+        if (isset($value)) {
+            // doesn't care about the type's letter case
+            settype($value, $this->types[$property]);
+        }
+        return $value;
+    }
+
+    /**
      * @param EntityInterface $entity
      * @param array $values
      */
     protected function setValues (EntityInterface $entity, array $values): void {
         foreach ($values as $name => $value) {
             if (isset($this->properties[$name])) {
-                settype($value, $this->types[$name]); // doesn't care about letter case
-                $this->properties[$name]->setValue($entity, $value);
+                $this->properties[$name]->setValue($entity, $this->setType($name, $value));
             }
             else {
+                // attempt to set unknown fields directly on the instance.
                 $entity->{$name} = $value;
             }
         }

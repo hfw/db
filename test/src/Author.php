@@ -9,9 +9,9 @@ class Author extends AbstractEntity {
 
     /**
      * @eav authors_eav
-     * @var array
+     * @var string[]
      */
-    protected $attributes;
+    protected ?array $attributes;
 
     /**
      * @col

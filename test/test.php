@@ -62,7 +62,7 @@ assert($AuthorsToBooks->delete(['author' => $bob->getId()]) === 0);
 assert($AuthorsToBooks->link(['author' => $bob->getId(), 'book' => $novel->getId()]) === 1);
 
 // alice should have one book, with a note attribute.
-$books = $AuthorsToBooks->find('book', ['author' => $alice->getId()]);
+$books = $AuthorsToBooks->findAll('book', ['author' => $alice->getId()]);
 assert(count($books) === 1);
 /** @var Book $book */
 $book = $books->getFirst();
@@ -70,7 +70,7 @@ assert($book == $novel); // loose
 assert(isset($book['note']));
 
 // the novel should have two authors, alice and bob
-$authors = $AuthorsToBooks->find('author', ['book' => $novel->getId()]);
+$authors = $AuthorsToBooks->findAll('author', ['book' => $novel->getId()]);
 assert(count($authors) === 2);
 /** @var Author $author */
 foreach ($authors as $author) {
@@ -84,12 +84,10 @@ $AuthorsToBooks->link(['author' => $bob->getId(), 'book' => $novel->getId()]);
 assert($AuthorsToBooks->count(['author' => $bob->getId()]) === 1);
 
 // eav search for alice
-$authors = $Author->find([], [
+$authors = $Author->findAll([], [
     'attributes' => [
         'dob' => 'January 1st',
-        'favColor' => function(Column $value) {
-            return $value->isNotEqual('red'); // ! bob's color
-        }
+        'favColor' => fn(Column $value) => $value->isNotEqual('red') // ! bob's color
     ]
 ]);
 assert(count($authors) === 1);

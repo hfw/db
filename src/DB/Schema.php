@@ -116,9 +116,11 @@ class Schema implements ArrayAccess {
      */
     protected const PHP_TYPES = [
         'bool' => self::T_BOOL,
+        'boolean' => self::T_BOOL,
         'double' => self::T_FLOAT,
         'float' => self::T_FLOAT,
         'int' => self::T_INT,
+        'integer' => self::T_INT,
         'string' => self::T_STRING,
         'String' => self::T_TEXT,
         'STRING' => self::T_BLOB
@@ -130,9 +132,11 @@ class Schema implements ArrayAccess {
      */
     const PHP_TYPE_NAMES = [
         'bool' => 'T_BOOL',
+        'boolean' => 'T_BOOL',
         'double' => 'T_BLOB',
         'float' => 'T_FLOAT',
         'int' => 'T_INT',
+        'integer' => 'T_INT',
         'string' => 'T_STRING',
         'String' => 'T_TEXT',
         'STRING' => 'T_BLOB',

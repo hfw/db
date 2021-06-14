@@ -7,15 +7,16 @@ class Book extends AbstractEntity {
 
     /**
      * @eav books_eav
-     * @var array
+     * @var string[]
      */
-    protected $attributes;
+    protected ?array $attributes;
 
     /**
+     * This verifies explicit type declaration.
+     *
      * @col
-     * @var string
      */
-    protected $title;
+    protected string $title;
 
     /**
      * @return string

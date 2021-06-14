@@ -164,7 +164,7 @@ switch (true) {
             foreach ($access->getEav() as $eav) {
                 // create table
                 if (!$db[$eav->getName()]) {
-                    $T_CONST = Schema::PHP_TYPE_NAMES[$eav->getValueType()];
+                    $T_CONST = Schema::PHP_TYPE_NAMES[$eav->getType()];
                     $columns = [
                         "'entity' => Schema::T_INT_STRICT",
                         "'attribute' => Schema::T_STRING_STRICT",
