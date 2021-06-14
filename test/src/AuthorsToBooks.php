@@ -5,7 +5,7 @@
  *
  * Verifies the `@junction`, `@foreign`, and `@for` annotations.
  *
- * @junction AuthorsToBooks
+ * @junction authors_to_books
  * @foreign author Author
  * @for book Book
  */

@@ -1,12 +1,12 @@
 <?php
 
 /**
- * @record Book
+ * @record books
  */
 class Book extends AbstractEntity {
 
     /**
-     * @eav BookEAV
+     * @eav books_eav
      * @var array
      */
     protected $attributes;

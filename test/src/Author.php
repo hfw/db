@@ -3,12 +3,12 @@
 /**
  * Verifies the `@record`, `@col`, and `@eav` annotations.
  *
- * @record Author
+ * @record authors
  */
 class Author extends AbstractEntity {
 
     /**
-     * @eav AuthorEAV
+     * @eav authors_eav
      * @var array
      */
     protected $attributes;
