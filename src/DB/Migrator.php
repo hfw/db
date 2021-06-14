@@ -80,6 +80,13 @@ class Migrator {
     }
 
     /**
+     * @return string
+     */
+    final public function getDir (): string {
+        return $this->dir;
+    }
+
+    /**
      * @param array $spec
      * @return MigrationInterface
      */

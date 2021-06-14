@@ -24,7 +24,9 @@ $transaction = $db->newTransaction();
 // test migrations
 $migrator = $db->getMigrator();
 $migrator->up();
-$migrator->down();
+$migrator->down(); // once
+$migrator->up();
+$migrator->down(0); // all the way
 $migrator->up();
 
 $savepoint = $db->newTransaction();

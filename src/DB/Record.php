@@ -22,8 +22,7 @@ use ReflectionProperty;
  * Property value types are preserved as long as they are scalar and annotated with `@var`.
  * Types may be nullable.
  *
- * > Note: Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
- * > respectfully during {@link Schema::createRecordTable()}
+ * > Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
  *
  * @method static static factory(DB $db, EntityInterface $proto, string $table, array $columns, array $eav = [])
  */
@@ -164,7 +163,7 @@ class Record extends Table {
             $select->where($this->db->match($this[$a] ?? $a, $b));
         }
         foreach ($eavMatch as $property => $attributes) {
-            $inner = $this->getEav($property)->find($attributes);
+            $inner = $this->eav[$property]->find($attributes);
             $select->join($inner, $inner['entity']->isEqual($this['id']));
         }
         return $select;
@@ -208,11 +207,10 @@ class Record extends Table {
     }
 
     /**
-     * @param string $property
-     * @return EAV
+     * @return EAV[]
      */
-    final public function getEav (string $property) {
-        return $this->eav[$property];
+    public function getEav () {
+        return $this->eav;
     }
 
     /**

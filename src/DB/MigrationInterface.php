@@ -13,7 +13,7 @@ use Helix\DB;
  * Migration files must be named `<SEQUENCE>.php`, where `SEQUENCE` is a non-zero ascending identifier.
  * The file must `return` an instance of this interface (e.g. an anonymous class).
  *
- * Standard practice is to have file names prefixed with a date-time,
+ * Standard practice is to have file names prefixed with a UTC ISO-8601 datetime,
  * followed by a description of what they do.
  *
  * Migrations are given the {@link Schema} helper, but can directly execute SQL if needed.

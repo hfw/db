@@ -112,7 +112,7 @@ class Schema implements ArrayAccess {
     const T_BLOB_STRICT = self::T_BLOB | self::T_STRICT;
 
     /**
-     * Maps native/annotated types to storage types.
+     * Maps native/annotated types to `T_CONST` values.
      */
     protected const PHP_TYPES = [
         'bool' => self::T_BOOL,
@@ -122,6 +122,20 @@ class Schema implements ArrayAccess {
         'string' => self::T_STRING,
         'String' => self::T_TEXT,
         'STRING' => self::T_BLOB
+    ];
+
+    /**
+     * Maps native/annotated types to `T_CONST` names.
+     * This is used when generating migrations on the command-line.
+     */
+    const PHP_TYPE_NAMES = [
+        'bool' => 'T_BOOL',
+        'double' => 'T_BLOB',
+        'float' => 'T_FLOAT',
+        'int' => 'T_INT',
+        'string' => 'T_STRING',
+        'String' => 'T_TEXT',
+        'STRING' => 'T_BLOB',
     ];
 
     /**
@@ -200,56 +214,6 @@ class Schema implements ArrayAccess {
         $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
         unset($this->tables[$table]);
         return $this;
-    }
-
-    /**
-     * Creates the underlying storage for an {@link EAV}
-     *
-     * @param Record $record From {@link DB::getRecord()}
-     * @param string $property The EAV property name in the record.
-     * @return $this
-     */
-    public function createEavTable (Record $record, string $property) {
-        $eav = $record->getEav($property);
-        return $this->createTable($eav, [
-            'entity' => self::T_INT_STRICT,
-            'attribute' => self::T_STRING_STRICT,
-            'value' => self::PHP_TYPES[$eav->getValueType()],
-        ], [
-            self::TABLE_PRIMARY => ['entity', 'attribute'],
-            self::TABLE_FOREIGN => ['entity' => $record['id']]
-        ]);
-    }
-
-    /**
-     * Creates the underlying storage for a {@link Junction}
-     *
-     * @param Junction $junction From {@link DB::getJunction()}
-     * @return $this
-     */
-    public function createJunctionTable (Junction $junction) {
-        $records = $junction->getRecords();
-        return $this->createTable($junction, array_map(fn() => self::T_INT_STRICT, $records), [
-            self::TABLE_PRIMARY => array_keys($records),
-            self::TABLE_FOREIGN => array_map(fn(Record $record) => $record['id'], $records)
-        ]);
-    }
-
-    /**
-     * Creates the underlying storage for a {@link Record}
-     *
-     * @param Record $record From {@link DB::getRecord()}
-     * @param array[] $constraints See {@link Schema::createTable()}
-     * @return $this
-     */
-    public function createRecordTable (Record $record, array $constraints = []) {
-        $columns = $record->getTypes();
-        array_walk($columns, function(string &$type, string $property) use ($record) {
-            $type = self::PHP_TYPES[$type] | ($record->isNullable($property) ? 0 : self::T_STRICT);
-        });
-        $columns['id'] = self::T_AUTOINCREMENT; // force to autoincrement
-        unset($constraints[self::TABLE_PRIMARY]); // `id` is the sole pk
-        return $this->createTable($record, $columns, $constraints);
     }
 
     /**
