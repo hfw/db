@@ -26,6 +26,8 @@ $opt = getopt('h', [
 
     private DB $db;
 
+    private Schema $schema;
+
     public function __construct (array $argv, array $opt) {
         $this->argv = $argv;
         $opt['connection'] ??= 'default';
@@ -34,6 +36,7 @@ $opt = getopt('h', [
         $this->db = DB::fromConfig($opt['connection'], $opt['config']);
         $realLogger = $this->db->getLogger();
         $this->db->setLogger(fn($sql) => $this->_stdout($sql) and $realLogger($sql));
+        $this->schema = $this->db->getSchema();
     }
 
     private function _stderr (string $text): void {
@@ -198,11 +201,12 @@ $opt = getopt('h', [
             $down[] = "\$schema->dropTable('{$record}');";
         }
         else { // add or drop columns. we can't detect whether they've simply been renamed.
+            $columns = $this->schema->getColumnInfo($table);
             /** @see Schema::addColumn() */
             /** @see Schema::dropColumn() */
             // add columns
             foreach ($record->getTypes() as $property => $type) {
-                if (!$table[$property]) {
+                if (!isset($columns[$property])) {
                     $T_CONST = Schema::PHP_TYPE_NAMES[$type];
                     if (!$record->isNullable($property)) {
                         $T_CONST .= '_STRICT';
@@ -212,11 +216,14 @@ $opt = getopt('h', [
                 }
             }
             // drop columns
-            foreach (array_keys($table->getColumns()) as $column) {
+            foreach ($columns as $column => $info) {
                 if (!$record[$column]) {
+                    $T_CONST = Schema::PHP_TYPE_NAMES[$info['type']];
+                    if (!$info['nullable']) {
+                        $T_CONST .= '_STRICT';
+                    }
                     $up[] = "\$schema->dropColumn('{$table}', '{$column}');";
-                    // TODO add a schema helper to get the existing type
-                    $down[] = "\$schema->addColumn('{$table}', '{$column}');";
+                    $down[] = "\$schema->addColumn('{$table}', '{$column}', Schema::{$T_CONST});";
                 }
             }
         }
@@ -236,7 +243,7 @@ $opt = getopt('h', [
                 $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
                 $constraints = [
                     "Schema::TABLE_PRIMARY => ['entity', 'attribute']",
-                    "Schema::TABLE_FOREIGN => \$schema['{$record}']['id']"
+                    "Schema::TABLE_FOREIGN => ['entity' => \$schema['{$record}']['id']]"
                 ];
                 $constraints = "[\n\t\t\t" . implode(",\n\t\t\t", $constraints) . "\n\t\t]";
                 $up[] = "\$schema->createTable('{$eav}', {$columns}, {$constraints});";
