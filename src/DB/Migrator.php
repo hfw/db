@@ -99,10 +99,11 @@ class Migrator {
      * @return Table
      */
     public function getTable () {
-        return $this->table ??= $db['__migrations__']
-            ?? $this->db->getSchema()->createTable('__migrations__', [
+        return $this->table ??= ($this->db['__migrations__'] ??
+            $this->db->getSchema()->createTable('__migrations__', [
                 'sequence' => Schema::T_STRING_STRICT | Schema::I_PRIMARY
-            ])['__migrations__'];
+            ])['__migrations__']
+        );
     }
 
     /**
