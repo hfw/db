@@ -37,9 +37,6 @@ class Migrator {
     public function __construct (DB $db, string $dir) {
         $this->db = $db;
         $this->dir = $dir;
-        $this->table ??= $db['__migrations__'] ?? $db->getSchema()->createTable('__migrations__', [
-                'sequence' => Schema::T_STRING_STRICT | Schema::I_PRIMARY
-            ])['__migrations__'];
     }
 
     /**
@@ -60,7 +57,7 @@ class Migrator {
                     continue;
                 }
                 $this->db->transact(fn() => $this->getMigration($file)->down($this->db->getSchema()));
-                $this->table->delete(['sequence' => $sequence]);
+                $this->getTable()->delete(['sequence' => $sequence]);
                 $current = $this->getCurrent();
                 if ($to === null) {
                     break;
@@ -76,7 +73,7 @@ class Migrator {
      * @return null|string
      */
     public function getCurrent (): ?string {
-        return $this->table['sequence']['max'];
+        return $this->getTable()['sequence']['max'];
     }
 
     /**
@@ -94,6 +91,18 @@ class Migrator {
         $migration = include "{$file}";
         assert($migration instanceof MigrationInterface);
         return $migration;
+    }
+
+    /**
+     * Returns the `__migrations__` table, creating it if needed.
+     *
+     * @return Table
+     */
+    public function getTable () {
+        return $this->table ??= $db['__migrations__']
+            ?? $this->db->getSchema()->createTable('__migrations__', [
+                'sequence' => Schema::T_STRING_STRICT | Schema::I_PRIMARY
+            ])['__migrations__'];
     }
 
     /**
@@ -127,7 +136,7 @@ class Migrator {
                     continue;
                 }
                 $this->db->transact(fn() => $this->getMigration($file)->up($this->db->getSchema()));
-                $this->table->insert(['sequence' => $sequence]);
+                $this->getTable()->insert(['sequence' => $sequence]);
                 $current = $sequence;
             }
             return $current;
