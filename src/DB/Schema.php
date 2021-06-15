@@ -255,7 +255,7 @@ class Schema implements ArrayAccess {
         /** @var string $local */
         /** @var Column $foreign */
         foreach ($constraints[self::TABLE_FOREIGN] ?? [] as $local => $foreign) {
-            $defs[] = $this->toForeignKeyConstraint($table, $local, $foreign);
+            $defs[] = $this->toForeignKeyConstraint($table, $local, $columns[$local], $foreign);
         }
 
         $sql = sprintf(
@@ -425,16 +425,18 @@ class Schema implements ArrayAccess {
     /**
      * @param string $table
      * @param string $local
+     * @param int $type
      * @param Column $foreign
      * @return string
      */
-    protected function toForeignKeyConstraint (string $table, string $local, Column $foreign): string {
+    protected function toForeignKeyConstraint (string $table, string $local, int $type, Column $foreign): string {
         return sprintf(
-            'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE',
+            'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE CASCADE ON DELETE %s',
             $this->toForeignKeyConstraint_name($table, $local),
             $local,
             $foreign->getQualifier(),
-            $foreign->getName()
+            $foreign->getName(),
+            $type | self::T_STRICT ? 'CASCADE' : 'SET NULL'
         );
     }
 
