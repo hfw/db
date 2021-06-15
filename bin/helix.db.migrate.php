@@ -181,25 +181,52 @@ $opt = getopt('h', [
         $down = [];
 
         // create table
-        if (!$this->db[$record->getName()]) {
+        if (!$table = $this->db[$record->getName()]) {
+            /** @see Schema::createTable() */
+            /** @see Schema::dropTable() */
             $columns = [];
             foreach ($record->getTypes() as $property => $type) {
                 $T_CONST = Schema::PHP_TYPE_NAMES[$type];
-                $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
                 if (!$record->isNullable($property)) {
-                    $columns[$property] .= '_STRICT';
+                    $T_CONST .= '_STRICT';
                 }
+                $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
             }
             $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
             $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
             $up[] = "\$schema->createTable('{$record}', {$columns});";
             $down[] = "\$schema->dropTable('{$record}');";
         }
+        else { // add or drop columns. we can't detect whether they've simply been renamed.
+            /** @see Schema::addColumn() */
+            /** @see Schema::dropColumn() */
+            // add columns
+            foreach ($record->getTypes() as $property => $type) {
+                if (!$table[$property]) {
+                    $T_CONST = Schema::PHP_TYPE_NAMES[$type];
+                    if (!$record->isNullable($property)) {
+                        $T_CONST .= '_STRICT';
+                    }
+                    $up[] = "\$schema->addColumn('{$table}', '{$property}', Schema::{$T_CONST});";
+                    $down[] = "\$schema->dropColumn('{$table}', '{$property}');";
+                }
+            }
+            // drop columns
+            foreach (array_keys($table->getColumns()) as $column) {
+                if (!$record[$column]) {
+                    $up[] = "\$schema->dropColumn('{$table}', '{$column}');";
+                    // TODO add a schema helper to get the existing type
+                    $down[] = "\$schema->addColumn('{$table}', '{$column}');";
+                }
+            }
+        }
 
         // check each eav
         foreach ($record->getEav() as $eav) {
             // create table
             if (!$this->db[$eav->getName()]) {
+                /** @see Schema::createTable() */
+                /** @see Schema::dropTable() */
                 $T_CONST = Schema::PHP_TYPE_NAMES[$eav->getType()];
                 $columns = [
                     "'entity' => Schema::T_INT_STRICT",
@@ -229,6 +256,8 @@ $opt = getopt('h', [
 
         // create table
         if (!$this->db[$junction->getName()]) {
+            /** @see Schema::createTable() */
+            /** @see Schema::dropTable() */
             $records = $junction->getRecords();
             $columns = array_map(
                 fn(string $column) => "'{$column}' => Schema::T_INT_STRICT",
