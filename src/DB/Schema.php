@@ -114,7 +114,7 @@ class Schema implements ArrayAccess {
     /**
      * Maps native/annotated types to `T_CONST` values.
      */
-    protected const PHP_TYPES = [
+    protected const SCHEMA_TYPES = [
         'bool' => self::T_BOOL,
         'boolean' => self::T_BOOL,  // gettype()
         'double' => self::T_FLOAT,  // gettype()
@@ -130,7 +130,7 @@ class Schema implements ArrayAccess {
      * Maps native/annotated types to `T_CONST` names.
      * This is used when generating migrations on the command-line.
      */
-    const PHP_TYPE_NAMES = [
+    const SCHEMA_TYPE_NAMES = [
         'bool' => 'T_BOOL',
         'boolean' => 'T_BOOL',  // gettype()
         'double' => 'T_BLOB',   // gettype()
@@ -145,7 +145,7 @@ class Schema implements ArrayAccess {
     /**
      * Maps column types reported by the database into PHP native/annotated types.
      */
-    protected const SCHEMA_TYPES = [
+    protected const PHP_TYPES = [
         // bool
         'BOOLEAN' => 'bool',
         // int
@@ -156,10 +156,10 @@ class Schema implements ArrayAccess {
         // string <= 255
         'VARCHAR(255)' => 'string',
         // string <= 64k
-        'TEXT' => 'String',
+        'TEXT' => 'String',     // @var String
         // string > 64k
-        'BLOB' => 'STRING',     // sqlite
-        'LONGBLOB' => 'STRING', // mysql
+        'BLOB' => 'STRING',     // @var STRING (sqlite)
+        'LONGBLOB' => 'STRING', // @var STRING (mysql)
     ];
 
     /**
@@ -328,14 +328,14 @@ class Schema implements ArrayAccess {
             $info = $this->db->query("PRAGMA table_info({$table})")->fetchAll();
             return array_combine(array_column($info, 'name'), array_map(fn(array $each) => [
                 'name' => $each['name'],
-                'type' => static::SCHEMA_TYPES[$each['type']] ?? 'string',
+                'type' => static::PHP_TYPES[$each['type']] ?? 'string',
                 'nullable' => !$each['notnull'],
             ], $info));
         }
         $info = $this->db->query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = \"{$table}\" ORDER BY ordinal_position")->fetchAll();
         return array_combine(array_column($info, 'column_name'), array_map(fn(array $each) => [
             'name' => $each['column_name'],
-            'type' => static::SCHEMA_TYPES[$each['data_type']] ?? 'string',
+            'type' => static::PHP_TYPES[$each['data_type']] ?? 'string',
             'nullable' => $each['is_nullable'] === 'YES',
         ], $info));
     }
@@ -488,7 +488,7 @@ class Schema implements ArrayAccess {
     }
 
     /**
-     * `FK_TABLE__COLUMN__COLUMN__COLUMN`
+     * `FK_TABLE__COLUMN`
      *
      * @param string $table
      * @param string $column
