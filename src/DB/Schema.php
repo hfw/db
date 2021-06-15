@@ -116,14 +116,14 @@ class Schema implements ArrayAccess {
      */
     protected const PHP_TYPES = [
         'bool' => self::T_BOOL,
-        'boolean' => self::T_BOOL,
-        'double' => self::T_FLOAT,
+        'boolean' => self::T_BOOL,  // gettype()
+        'double' => self::T_FLOAT,  // gettype()
         'float' => self::T_FLOAT,
         'int' => self::T_INT,
-        'integer' => self::T_INT,
+        'integer' => self::T_INT,   // gettype()
         'string' => self::T_STRING,
-        'String' => self::T_TEXT,
-        'STRING' => self::T_BLOB
+        'String' => self::T_TEXT,   // @var String
+        'STRING' => self::T_BLOB    // @var STRING
     ];
 
     /**
@@ -132,14 +132,34 @@ class Schema implements ArrayAccess {
      */
     const PHP_TYPE_NAMES = [
         'bool' => 'T_BOOL',
-        'boolean' => 'T_BOOL',
-        'double' => 'T_BLOB',
+        'boolean' => 'T_BOOL',  // gettype()
+        'double' => 'T_BLOB',   // gettype()
         'float' => 'T_FLOAT',
         'int' => 'T_INT',
-        'integer' => 'T_INT',
+        'integer' => 'T_INT',   // gettype()
         'string' => 'T_STRING',
-        'String' => 'T_TEXT',
-        'STRING' => 'T_BLOB',
+        'String' => 'T_TEXT',   // @var String
+        'STRING' => 'T_BLOB',   // @var STRING
+    ];
+
+    /**
+     * Maps column types reported by the database into PHP native/annotated types.
+     */
+    protected const SCHEMA_TYPES = [
+        // bool
+        'BOOLEAN' => 'bool',
+        // int
+        'BIGINT' => 'int',  // mysql
+        'INTEGER' => 'int', // sqlite (must be this type to allow AUTOINCREMENT)
+        // float
+        'DOUBLE PRECISION' => 'float',
+        // string <= 255
+        'VARCHAR(255)' => 'string',
+        // string <= 64k
+        'TEXT' => 'String',
+        // string > 64k
+        'BLOB' => 'STRING',     // sqlite
+        'LONGBLOB' => 'STRING', // mysql
     ];
 
     /**
@@ -169,15 +189,15 @@ class Schema implements ArrayAccess {
             self::I_UNIQUE => 'UNIQUE',
             self::T_BLOB => 'BLOB DEFAULT NULL',
             self::T_BOOL => 'BOOLEAN DEFAULT NULL',
-            self::T_FLOAT => 'REAL DEFAULT NULL',
+            self::T_FLOAT => 'DOUBLE PRECISION DEFAULT NULL',
             self::T_INT => 'INTEGER DEFAULT NULL',
-            self::T_STRING => 'TEXT DEFAULT NULL',
+            self::T_STRING => 'VARCHAR(255) DEFAULT NULL',
             self::T_TEXT => 'TEXT DEFAULT NULL',
             self::T_BLOB_STRICT => 'BLOB NOT NULL DEFAULT ""',
             self::T_BOOL_STRICT => 'BOOLEAN NOT NULL DEFAULT 0',
-            self::T_FLOAT_STRICT => 'REAL NOT NULL DEFAULT 0',
+            self::T_FLOAT_STRICT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
             self::T_INT_STRICT => 'INTEGER NOT NULL DEFAULT 0',
-            self::T_STRING_STRICT => 'TEXT NOT NULL DEFAULT ""',
+            self::T_STRING_STRICT => 'VARCHAR(255) NOT NULL DEFAULT ""',
             self::T_TEXT_STRICT => 'TEXT NOT NULL DEFAULT ""',
         ]
     ];
@@ -292,6 +312,35 @@ class Schema implements ArrayAccess {
     }
 
     /**
+     * Returns column metadata in an associative array.
+     *
+     * Elements are:
+     * - `name`
+     * - `type`: PHP native/annotated type (as a string)
+     * - `nullable`: boolean
+     *
+     * @param string $table
+     * @param string $column
+     * @return array[] Keyed by name.
+     */
+    public function getColumnInfo (string $table): array {
+        if ($this->db->isSQLite()) {
+            $info = $this->db->query("PRAGMA table_info({$table})")->fetchAll();
+            return array_combine(array_column($info, 'name'), array_map(fn(array $each) => [
+                'name' => $each['name'],
+                'type' => static::SCHEMA_TYPES[$each['type']] ?? 'string',
+                'nullable' => !$each['notnull'],
+            ], $info));
+        }
+        $info = $this->db->query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = \"{$table}\" ORDER BY ordinal_position")->fetchAll();
+        return array_combine(array_column($info, 'column_name'), array_map(fn(array $each) => [
+            'name' => $each['column_name'],
+            'type' => static::SCHEMA_TYPES[$each['data_type']] ?? 'string',
+            'nullable' => $each['is_nullable'] === 'YES',
+        ], $info));
+    }
+
+    /**
      * @return DB
      */
     public function getDb () {
@@ -309,9 +358,7 @@ class Schema implements ArrayAccess {
                 $cols = array_column($info, 'name');
             }
             else {
-                $cols = $this->db->query(
-                    "SELECT column_name FROM information_schema.tables WHERE table_name = \"{$name}\""
-                )->fetchAll(DB::FETCH_COLUMN);
+                $cols = $this->db->query("SELECT column_name FROM information_schema.tables WHERE table_name = \"{$name}\"")->fetchAll(DB::FETCH_COLUMN);
             }
             if (!$cols) {
                 return null;
