@@ -123,10 +123,9 @@ assert(count($authors) === 1);
 $author = $authors->getFirst();
 assert($author->getName() === 'Alice');
 
-// test column->countDistinct()
-$count = (int)$Author->select([$Author['id']->countDistinct()])
-    ->getResult();
-assert($count === 2);
+// test array-access aggregate result using a messy function name
+$count = $Author['id'][' COUNT ( DISTINCT ) ']; // ->countDistinct()
+assert($count == 2);
 
 // test text functions
 $upperName = $Author->select([$Author['name']->upper()])

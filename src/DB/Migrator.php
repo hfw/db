@@ -76,7 +76,7 @@ class Migrator {
      * @return null|string
      */
     public function getCurrent (): ?string {
-        return $this->table->select([$this->table['sequence']->max()])->getResult();
+        return $this->table['sequence']['max'];
     }
 
     /**
