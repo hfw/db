@@ -13,17 +13,18 @@ use Helix\DB;
  * Migration files must be named `<SEQUENCE>.php`, where `SEQUENCE` is a non-zero ascending identifier.
  * The file must `return` an instance of this interface (e.g. an anonymous class).
  *
- * Standard practice is to have file names prefixed with a UTC ISO-8601 datetime,
+ * Good practice is to have file names start with an ISO/UTC datetime,
  * followed by a description of what they do.
  *
  * Migrations are given the {@link Schema} helper, but can directly execute SQL if needed.
  *
  * Each migration is performed within a transaction savepoint.
  *
- * See the test migration in `test/migrations/default/`
+ * See the test migrations in `test/migrations/default/`, and the migration helper script in `bin/`
  *
  * @see DB::getMigrator()
  * @see Migrator::glob()
+ * @see Schema::getDb()
  */
 interface MigrationInterface {
 

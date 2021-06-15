@@ -1,17 +1,6 @@
 #!/usr/bin/php
 <?php
-error_reporting(E_ALL);
-ini_set('assert.exception', 1);
-set_error_handler(function($code, $message, $file, $line) {
-    throw new ErrorException($message, $code, 1, $file, $line);
-});
-
-// scan for and include the autoloader
-$root = __DIR__;
-while ($root !== '.' and !file_exists("{$root}/vendor/autoload.php")) {
-    $root = dirname($root);
-}
-include_once "{$root}/vendor/autoload.php";
+include_once __DIR__ . "/.init.php";
 
 use Helix\DB;
 use Helix\DB\Junction;
@@ -124,10 +113,11 @@ switch (true) {
             exit(1);
         }
         $access = isset($opt['record']) ? $db->getRecord($class) : $db->getJunction($class);
-        $sequence = gmdate(DATE_ATOM) . '_' . $class;
+        // rfc3339 extended zulu
+        $date = DateTime::createFromFormat('U.u', microtime(true))->format('Y-m-d\TH:i:s.v\Z');
+        $sequence = "{$date}_" . str_replace('\\', '_', $class);
         $file = "{$dir}/{$sequence}.php";
         $stdout("-- Preparing {$file}");
-        sleep(1); // prevent fast CLI from clobbering sequences with identical times
         is_dir($dir) or mkdir($dir, 0775, true);
 
         // method bodies, each an operation, each will be indented twice.
