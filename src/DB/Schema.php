@@ -94,10 +94,17 @@ class Schema implements ArrayAccess {
     const T_FLOAT_NULL = 0xfa;
 
     /**
+     * `<T_CONST>`: Native `DATETIME` type, stored as `YYYY-MM-DD hh:mm:ss` UTC.
+     */
+    const T_DATETIME = 0xf9;
+    const T_DATETIME_NULL = 0xf8;
+    const DATETIME_FORMAT = 'Y-m-d H:i:s';
+
+    /**
      * `<T_CONST>`: UTF-8 up to 255 bytes.
      */
-    const T_STRING = 0xf9;
-    const T_STRING_NULL = 0xf8;
+    const T_STRING = 0xf7;
+    const T_STRING_NULL = 0xf6;
 
     /**
      * `<T_CONST>`: UTF-8 up to 64KiB.
@@ -112,38 +119,25 @@ class Schema implements ArrayAccess {
     const T_BLOB_NULL = 0x02;
 
     /**
-     * Maps native/annotated types to `T_CONST` values.
-     */
-    protected const SCHEMA_TYPES = [
-        'bool' => self::T_BOOL,
-        'boolean' => self::T_BOOL,  // gettype()
-        'double' => self::T_FLOAT,  // gettype()
-        'float' => self::T_FLOAT,
-        'int' => self::T_INT,
-        'integer' => self::T_INT,   // gettype()
-        'string' => self::T_STRING,
-        'String' => self::T_TEXT,   // @var String
-        'STRING' => self::T_BLOB    // @var STRING
-    ];
-
-    /**
      * Maps native/annotated types to `T_CONST` names.
      * This is used when generating migrations on the command-line.
      */
-    const SCHEMA_TYPE_NAMES = [
+    const T_CONST_NAMES = [
         'bool' => 'T_BOOL',
-        'boolean' => 'T_BOOL',  // gettype()
-        'double' => 'T_BLOB',   // gettype()
+        'boolean' => 'T_BOOL',      // gettype()
+        'DateTime' => 'T_DATETIME', // dehydrated (see Record)
+        'double' => 'T_BLOB',       // gettype()
         'float' => 'T_FLOAT',
         'int' => 'T_INT',
-        'integer' => 'T_INT',   // gettype()
+        'integer' => 'T_INT',       // gettype()
         'string' => 'T_STRING',
-        'String' => 'T_TEXT',   // @var String
-        'STRING' => 'T_BLOB',   // @var STRING
+        'String' => 'T_TEXT',       // @var String
+        'STRING' => 'T_BLOB',       // @var STRING
     ];
 
     /**
      * Maps column types reported by the database into PHP native/annotated types.
+     * This is used by {@link Schema::getColumnInfo()}
      */
     protected const PHP_TYPES = [
         // bool
@@ -160,6 +154,8 @@ class Schema implements ArrayAccess {
         // string > 64k
         'BLOB' => 'STRING',     // @var STRING (sqlite)
         'LONGBLOB' => 'STRING', // @var STRING (mysql)
+        // DateTime
+        'DATETIME' => 'DateTime',
     ];
 
     /**
@@ -176,12 +172,14 @@ class Schema implements ArrayAccess {
             self::T_INT => 'BIGINT NOT NULL DEFAULT 0',
             self::T_STRING => 'VARCHAR(255) NOT NULL DEFAULT ""',
             self::T_TEXT => 'TEXT NOT NULL DEFAULT ""',
+            self::T_DATETIME => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
             self::T_BLOB_NULL => 'LONGBLOB NULL DEFAULT NULL',
             self::T_BOOL_NULL => 'BOOLEAN NULL DEFAULT NULL',
             self::T_FLOAT_NULL => 'DOUBLE PRECISION NULL DEFAULT NULL',
             self::T_INT_NULL => 'BIGINT NULL DEFAULT NULL',
             self::T_STRING_NULL => 'VARCHAR(255) NULL DEFAULT NULL',
             self::T_TEXT_NULL => 'TEXT NULL DEFAULT NULL',
+            self::T_DATETIME_NULL => 'DATETIME NULL DEFAULT NULL',
         ],
         'sqlite' => [
             self::I_AUTOINCREMENT => 'PRIMARY KEY AUTOINCREMENT',
@@ -193,12 +191,14 @@ class Schema implements ArrayAccess {
             self::T_INT => 'INTEGER NOT NULL DEFAULT 0',
             self::T_STRING => 'VARCHAR(255) NOT NULL DEFAULT ""',
             self::T_TEXT => 'TEXT NOT NULL DEFAULT ""',
+            self::T_DATETIME => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
             self::T_BLOB_NULL => 'BLOB DEFAULT NULL',
             self::T_BOOL_NULL => 'BOOLEAN DEFAULT NULL',
             self::T_FLOAT_NULL => 'DOUBLE PRECISION DEFAULT NULL',
             self::T_INT_NULL => 'INTEGER DEFAULT NULL',
             self::T_STRING_NULL => 'VARCHAR(255) DEFAULT NULL',
             self::T_TEXT_NULL => 'TEXT DEFAULT NULL',
+            self::T_DATETIME_NULL => 'DATETIME NULL DEFAULT NULL',
         ]
     ];
 
@@ -319,6 +319,8 @@ class Schema implements ArrayAccess {
      * - `type`: PHP native/annotated type (as a string)
      * - `nullable`: boolean
      *
+     * The returned `type` can be used to get a `T_CONST` name from {@link Schema::T_CONST_NAMES}
+     * 
      * @param string $table
      * @param string $column
      * @return array[] Keyed by name.

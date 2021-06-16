@@ -2,7 +2,7 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-06-16T10:26:25.669Z_Book */
+/** 2021-06-16T13:36:51.263Z_Author */
 return new class implements MigrationInterface {
 
     /**
@@ -10,17 +10,17 @@ return new class implements MigrationInterface {
      */
     public function up ($schema)
     {
-        $schema->createTable('books', [
-            'title' => Schema::T_STRING,
+        $schema->createTable('authors', [
+            'name' => Schema::T_STRING,
             'id' => Schema::T_AUTOINCREMENT
         ]);
-        $schema->createTable('books_eav', [
+        $schema->createTable('authors_eav', [
             'entity' => Schema::T_INT,
             'attribute' => Schema::T_STRING,
             'value' => Schema::T_STRING_NULL
         ], [
             Schema::TABLE_PRIMARY => ['entity', 'attribute'],
-            Schema::TABLE_FOREIGN => ['entity' => $schema['books']['id']]
+            Schema::TABLE_FOREIGN => ['entity' => $schema['authors']['id']]
         ]);
     }
 
@@ -29,8 +29,8 @@ return new class implements MigrationInterface {
      */
     public function down ($schema)
     {
-        $schema->dropTable('books_eav');
-        $schema->dropTable('books');
+        $schema->dropTable('authors_eav');
+        $schema->dropTable('authors');
     }
 
 };

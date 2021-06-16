@@ -189,7 +189,7 @@ $opt = getopt('h', [
             /** @see Schema::dropTable() */
             $columns = [];
             foreach ($record->getTypes() as $property => $type) {
-                $T_CONST = Schema::SCHEMA_TYPE_NAMES[$type];
+                $T_CONST = Schema::T_CONST_NAMES[$type];
                 if ($record->isNullable($property)) {
                     $T_CONST .= '_NULL';
                 }
@@ -207,7 +207,7 @@ $opt = getopt('h', [
             // add columns
             foreach ($record->getTypes() as $property => $type) {
                 if (!isset($columns[$property])) {
-                    $T_CONST = Schema::SCHEMA_TYPE_NAMES[$type];
+                    $T_CONST = Schema::T_CONST_NAMES[$type];
                     if ($record->isNullable($property)) {
                         $T_CONST .= '_NULL';
                     }
@@ -218,7 +218,7 @@ $opt = getopt('h', [
             // drop columns
             foreach ($columns as $column => $info) {
                 if (!$record[$column]) {
-                    $T_CONST = Schema::SCHEMA_TYPE_NAMES[$info['type']];
+                    $T_CONST = Schema::T_CONST_NAMES[$info['type']];
                     if ($info['nullable']) {
                         $T_CONST .= '_NULL';
                     }
@@ -234,7 +234,7 @@ $opt = getopt('h', [
             if (!$this->db[$eav->getName()]) {
                 /** @see Schema::createTable() */
                 /** @see Schema::dropTable() */
-                $T_CONST = Schema::SCHEMA_TYPE_NAMES[$eav->getType()] . '_NULL';
+                $T_CONST = Schema::T_CONST_NAMES[$eav->getType()] . '_NULL';
                 $columns = [
                     "'entity' => Schema::T_INT",
                     "'attribute' => Schema::T_STRING",

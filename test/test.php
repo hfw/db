@@ -5,6 +5,9 @@ include_once "../bin/.init.php";
 use Helix\DB;
 use Helix\DB\Column;
 
+$now = new DateTimeImmutable();
+$utc = new DateTimeZone('UTC');
+
 $db = DB::fromConfig();
 $db->setLogger(function($sql) {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[2];
@@ -50,6 +53,7 @@ assert($db->save($bob));
 // define their novel.
 $novel = new Book;
 $novel->setTitle("Alice and Bob's Novel");
+$novel->setPublished($now);
 $novel['note'] = 'Scribbles in the margins.';
 assert($db->save($novel));
 
@@ -64,8 +68,10 @@ $books = $AuthorsToBooks->findAll('book', ['author' => $alice->getId()]);
 assert(count($books) === 1);
 /** @var Book $book */
 $book = $books->getFirst();
-assert($book == $novel); // loose
-assert(isset($book['note']));
+var_dump($book->getPublished());
+assert($book->getTitle() === $novel->getTitle());
+assert($book->getPublished()->getTimestamp() === $novel->getPublished()->getTimestamp());
+assert($book['note'] === $novel['note']);
 
 // the novel should have two authors, alice and bob
 $authors = $AuthorsToBooks->findAll('author', ['book' => $novel->getId()]);

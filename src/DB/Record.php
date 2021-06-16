@@ -2,11 +2,15 @@
 
 namespace Helix\DB;
 
+use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use Generator;
 use Helix\DB;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionProperty;
+use stdClass;
 
 /**
  * Represents an "active record" table, derived from an annotated class implementing {@link EntityInterface}.
@@ -20,8 +24,9 @@ use ReflectionProperty;
  * - `@col` or `@column`
  * - `@eav <TABLE>`
  *
- * Property value types are preserved as long as they are scalar or annotated with `@var`.
- * Types may be nullable.
+ * Property types are preserved.
+ * Properties which are objects can be dehydrated/rehydrated if they're strictly typed.
+ * Strict typing is preferred, but annotations and finally default values are used as fallbacks.
  *
  * > Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
  *
@@ -40,11 +45,31 @@ class Record extends Table {
     protected const RX_EAV_VAR = '/\*\h*@var\h+(?<type>\w+)\[\]/i'; // typed array
 
     /**
+     * @see Schema::T_CONST_NAMES
+     */
+    protected const DEHYDRATE_AS = [
+        'array' => 'string', // eav is better than this
+        'object' => 'string',
+        stdClass::class => 'string',
+        DateTime::class => 'DateTime',
+        DateTimeImmutable::class => 'DateTime',
+    ];
+
+    /**
      * `[property => EAV]`
      *
      * @var EAV[]
      */
     protected $eav = [];
+
+    /**
+     * The specific classes used to hydrate classed properties, like `DateTime`.
+     *
+     * `[ property => class ]`
+     *
+     * @var string[]
+     */
+    protected $hydration = [];
 
     /**
      * `[ property => is nullable ]`
@@ -83,6 +108,11 @@ class Record extends Table {
     protected $types = [];
 
     /**
+     * @var DateTimeZone
+     */
+    protected DateTimeZone $utc;
+
+    /**
      * @param DB $db
      * @param string|EntityInterface $class
      * @return Record
@@ -119,38 +149,49 @@ class Record extends Table {
     public function __construct (DB $db, EntityInterface $proto, string $table, array $columns, array $eav = []) {
         parent::__construct($db, $table, $columns);
         $this->proto = $proto;
+        $this->utc = new DateTimeZone('UTC');
         $rClass = new ReflectionClass($proto);
         $defaults = $rClass->getDefaultProperties();
-        foreach ($columns as $name) {
-            $rProp = $rClass->getProperty($name);
+        foreach ($columns as $prop) { // TODO maybe break this up into helper methods
+            $rProp = $rClass->getProperty($prop);
             $rProp->setAccessible(true);
-            $this->properties[$name] = $rProp;
-            // assume nullable string
-            $type = 'null|string';
+            $this->properties[$prop] = $rProp;
             // infer the type from reflection
             if ($rType = $rProp->getType() and $rType instanceof ReflectionNamedType) {
-                assert($rType->isBuiltin());
-                $type = $rType->allowsNull() ? "null|{$rType->getName()}" : $rType->getName();
+                if (preg_match(static::RX_IS_SCALAR, $rType->getName())) {
+                    $type = $rType->getName();
+                }
+                else { // "array", "object", class name
+                    $type = self::DEHYDRATE_AS[$rType->getName()];
+                    $this->hydration[$prop] = $rType->getName();
+                }
+                $nullable = $rType->allowsNull();
+            }
+            // infer scalar type from @var
+            elseif (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
+                $type = $var['type'];
+                // extract nullable
+                $type = preg_replace(static::RX_NULL, '', $type, -1, $nullable);
+                $nullable = (bool)$nullable;
+                // must be scalar
+                assert(preg_match(static::RX_IS_SCALAR, $type));
             }
             // infer the type from the default value
-            elseif (isset($defaults[$name])) {
-                $type = gettype($defaults[$name]);
+            else {
+                if (isset($defaults[$prop])) {
+                    $type = gettype($defaults[$prop]);
+                    $nullable = false;
+                }
+                else {
+                    $type = 'string';
+                    $nullable = true;
+                }
             }
-            // always go with @var if present
-            if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
-                $type = $var['type'];
-            }
-            // extract nullable
-            $type = preg_replace(static::RX_NULL, '', $type, -1, $nullable);
-            $this->nullable[$name] = (bool)$nullable;
-            // fall back to "string" if it's not a native scalar (e.g. "number")
-            if (!preg_match(static::RX_IS_SCALAR, $type)) {
-                $type = 'string';
-            }
-            $this->types[$name] = $type;
+            $this->types[$prop] = $type;
+            $this->nullable[$prop] = $nullable;
         }
-        $this->nullable['id'] = false;
         $this->types['id'] = 'int';
+        $this->nullable['id'] = false;
         $this->eav = $eav;
         foreach (array_keys($eav) as $name) {
             $rProp = $rClass->getProperty($name);
@@ -252,9 +293,21 @@ class Record extends Table {
     }
 
     /**
+     * Returns a native/annotated property type.
+     *
+     * This doesn't include whether the property is nullable. Use {@link Record::isNullable()} for that.
+     *
+     * @param string $property
+     * @return string
+     */
+    final public function getType (string $property): string {
+        return $this->types[$property];
+    }
+
+    /**
      * Returns the native/annotated property types.
      *
-     * This doesn't include whether the property is nullable. Use {@link isNullable()} for that.
+     * This doesn't include whether the properties are nullable. Use {@link Record::isNullable()} for that.
      *
      * @return string[]
      */
@@ -269,9 +322,36 @@ class Record extends Table {
     protected function getValues (EntityInterface $entity): array {
         $values = [];
         foreach (array_keys($this->columns) as $name) {
-            $values[$name] = $this->properties[$name]->getValue($entity);
+            $value = $this->properties[$name]->getValue($entity);
+            if (isset($value, $this->hydration[$name])) {
+                $from = $this->hydration[$name];
+                $to = static::DEHYDRATE_AS[$from];
+                $value = $this->getValues_dehydrate($to, $from, $value);
+            }
+            $values[$name] = $value;
         }
         return $values;
+    }
+
+    /**
+     * Dehydrates a complex property's value for storage in a scalar column.
+     *
+     * @see Record::setType_hydrate() inverse
+     *
+     * @param string $to The storage type.
+     * @param string $from The strict type from the class definition.
+     * @param array|object $hydrated
+     * @return scalar
+     */
+    protected function getValues_dehydrate (string $to, string $from, $hydrated) {
+        unset($from); // we don't need it here but it's given for posterity
+        switch ($to) {
+            case 'DateTime':
+                assert($hydrated instanceof DateTime or $hydrated instanceof DateTimeImmutable);
+                return (clone $hydrated)->setTimezone($this->utc)->format(Schema::DATETIME_FORMAT);
+            default:
+                return serialize($hydrated);
+        }
     }
 
     /**
@@ -412,10 +492,45 @@ class Record extends Table {
      */
     protected function setType (string $property, $value) {
         if (isset($value)) {
-            // doesn't care about the type's letter case
+            // complex?
+            if (isset($this->hydration[$property])) {
+                $to = $this->hydration[$property];
+                $from = static::DEHYDRATE_AS[$to];
+                return $this->setType_hydrate($to, $from, $value);
+            }
+            // scalar. this function doesn't care about the type's letter case.
             settype($value, $this->types[$property]);
         }
         return $value;
+    }
+
+    /**
+     * Hydrates a complex value from scalar storage.
+     *
+     * @see Record::getValues_dehydrate() inverse
+     *
+     * @param string $to The strict type from the class definition.
+     * @param string $from The storage type.
+     * @param scalar $dehydrated
+     * @return array|object
+     */
+    protected function setType_hydrate (string $to, string $from, $dehydrated) {
+        switch ($from) {
+            case 'DateTime':
+                /**
+                 * $to might be "DateTime", "DateTimeImmutable", or an extension.
+                 *
+                 * @see DateTime::createFromFormat()
+                 */
+                return call_user_func(
+                    [$to, 'createFromFormat'],
+                    'Y-m-d H:i:s',
+                    $dehydrated,
+                    $this->utc
+                );
+            default:
+                return unserialize($dehydrated);
+        }
     }
 
     /**
