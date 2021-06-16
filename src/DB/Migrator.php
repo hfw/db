@@ -101,7 +101,7 @@ class Migrator {
     public function getTable () {
         return $this->table ??= ($this->db['__migrations__'] ??
             $this->db->getSchema()->createTable('__migrations__', [
-                'sequence' => Schema::T_STRING_STRICT | Schema::I_PRIMARY
+                'sequence' => Schema::T_STRING | Schema::I_PRIMARY
             ])['__migrations__']
         );
     }

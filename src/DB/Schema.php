@@ -11,13 +11,13 @@ use LogicException;
  *
  * The column definition constants are two bytes each, used in bitwise composition.
  * - The high-byte (`<I_CONST>`) is used for the specific index type.
- *      - Descending index priority. For example, `I_PRIMARY` is `0x8000` (highest bit)
+ *      - Ascending index priority. For example, `I_AUTOINCREMENT` is `0xff00`
  * - The low-byte (`<T_CONST>`) is used for the specific storage type.
- *      - Inverse size complexity. For example, `BOOL` is `0x0080`, and `T_BLOB` is `0x0002`
- *      - The final bit `0x0001` flags nullability.
- *      - Bit `0x0010` is reserved for future use (probably `DateTime`).
+ *      - The final bit `0x01` flags `NOT NULL`
  * - The literal values may change in the future, do not hard code them.
  * - The values may expand to use a total of 4 or 8 bytes to accommodate more stuff.
+ *
+ * Definition constants are never returned by this class' methods. The methods can only receive them.
  *
  * @method static static factory(DB $db)
  */
@@ -31,85 +31,85 @@ class Schema implements ArrayAccess {
     const TABLE_PRIMARY = 0;
 
     /**
-     * `<TABLE_CONST>`: Associative foreign keys.
-     */
-    const TABLE_FOREIGN = 1;
-
-    /**
      * `<TABLE_CONST>`: Groups of columns are unique together.
      */
-    const TABLE_UNIQUE = 2;
+    const TABLE_UNIQUE = 1;
+
+    /**
+     * `<TABLE_CONST>`: Associative foreign keys.
+     */
+    const TABLE_FOREIGN = 2;
 
     /**
      * Higher byte mask (column index type).
      */
-    protected const I_MASK = 0xFF00;
-
-    /**
-     * `<I_CONST>`: Column is the primary key.
-     */
-    const I_PRIMARY = 0x8000;
+    protected const I_MASK = 0xff00;
 
     /**
      * Partial definition for `T_AUTOINCREMENT`, use that in compositions instead of this.
      */
-    protected const I_AUTOINCREMENT = 0x4000 | self::I_PRIMARY;
+    protected const I_AUTOINCREMENT = 0xff00;
+
+    /**
+     * `<I_CONST>`: Column is the primary key.
+     */
+    const I_PRIMARY = 0xfe00;
 
     /**
      * `<I_CONST>`: Column is unique.
      */
-    const I_UNIQUE = 0x2000;
+    const I_UNIQUE = 0xfd00;
 
     /**
      * Lower-byte mask (column storage type).
      */
-    protected const T_MASK = 0x00FF;
+    protected const T_MASK = 0xff;
 
     /**
      * `<T_CONST>`: Column is the primary key and auto-increments (8-byte signed integer).
      */
-    const T_AUTOINCREMENT = self::I_AUTOINCREMENT | self::T_INT_STRICT;
+    const T_AUTOINCREMENT = self::I_AUTOINCREMENT | self::T_INT;
 
     /**
      * Flags whether a type is `NOT NULL`
      */
-    protected const T_STRICT = 0x0001;
+    protected const T_STRICT = 0x01;
 
     /**
      * `<T_CONST>`: Boolean analog (numeric).
      */
-    const T_BOOL = 0x0080;
-    const T_BOOL_STRICT = self::T_BOOL | self::T_STRICT;
+    const T_BOOL = 0xff;
+    const T_BOOL_NULL = 0xfe;
 
     /**
      * `<T_CONST>`: 8-byte signed integer.
      */
-    const T_INT = 0x0040;
-    const T_INT_STRICT = self::T_INT | self::T_STRICT;
+    const T_INT = 0xfd;
+    const T_INT_NULL = 0xfc;
 
     /**
      * `<T_CONST>`: 8-byte IEEE floating point number.
      */
-    const T_FLOAT = 0x0020;
-    const T_FLOAT_STRICT = self::T_FLOAT | self::T_STRICT;
+    const T_FLOAT = 0xfb;
+    const T_FLOAT_NULL = 0xfa;
 
     /**
      * `<T_CONST>`: UTF-8 up to 255 bytes.
      */
-    const T_STRING = 0x0008;
-    const T_STRING_STRICT = self::T_STRING | self::T_STRICT;
+    const T_STRING = 0xf9;
+    const T_STRING_NULL = 0xf8;
 
     /**
      * `<T_CONST>`: UTF-8 up to 64KiB.
      */
-    const T_TEXT = 0x0004;
-    const T_TEXT_STRICT = self::T_TEXT | self::T_STRICT;
+    const T_TEXT = 0x05;
+    const T_TEXT_NULL = 0x04;
 
     /**
      * `<T_CONST>`: Arbitrary binary data up to 4GiB.
      */
-    const T_BLOB = 0x0002;
-    const T_BLOB_STRICT = self::T_BLOB | self::T_STRICT;
+    const T_BLOB = 0x03;
+    const T_BLOB_NULL = 0x02;
 
     /**
      * Maps native/annotated types to `T_CONST` values.
@@ -170,35 +170,35 @@ class Schema implements ArrayAccess {
             self::I_AUTOINCREMENT => 'PRIMARY KEY AUTO_INCREMENT',
             self::I_PRIMARY => 'PRIMARY KEY',
             self::I_UNIQUE => 'UNIQUE',
-            self::T_BLOB => 'LONGBLOB NULL DEFAULT NULL',
-            self::T_BOOL => 'BOOLEAN NULL DEFAULT NULL',
-            self::T_FLOAT => 'DOUBLE PRECISION NULL DEFAULT NULL',
-            self::T_INT => 'BIGINT NULL DEFAULT NULL',
-            self::T_STRING => 'VARCHAR(255) NULL DEFAULT NULL',
-            self::T_TEXT => 'TEXT NULL DEFAULT NULL',
-            self::T_BLOB_STRICT => 'LONGBLOB NOT NULL DEFAULT ""',
-            self::T_BOOL_STRICT => 'BOOLEAN NOT NULL DEFAULT 0',
-            self::T_FLOAT_STRICT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
-            self::T_INT_STRICT => 'BIGINT NOT NULL DEFAULT 0',
-            self::T_STRING_STRICT => 'VARCHAR(255) NOT NULL DEFAULT ""',
-            self::T_TEXT_STRICT => 'TEXT NOT NULL DEFAULT ""',
+            self::T_BLOB => 'LONGBLOB NOT NULL DEFAULT ""',
+            self::T_BOOL => 'BOOLEAN NOT NULL DEFAULT 0',
+            self::T_FLOAT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
+            self::T_INT => 'BIGINT NOT NULL DEFAULT 0',
+            self::T_STRING => 'VARCHAR(255) NOT NULL DEFAULT ""',
+            self::T_TEXT => 'TEXT NOT NULL DEFAULT ""',
+            self::T_BLOB_NULL => 'LONGBLOB NULL DEFAULT NULL',
+            self::T_BOOL_NULL => 'BOOLEAN NULL DEFAULT NULL',
+            self::T_FLOAT_NULL => 'DOUBLE PRECISION NULL DEFAULT NULL',
+            self::T_INT_NULL => 'BIGINT NULL DEFAULT NULL',
+            self::T_STRING_NULL => 'VARCHAR(255) NULL DEFAULT NULL',
+            self::T_TEXT_NULL => 'TEXT NULL DEFAULT NULL',
         ],
         'sqlite' => [
             self::I_AUTOINCREMENT => 'PRIMARY KEY AUTOINCREMENT',
             self::I_PRIMARY => 'PRIMARY KEY',
             self::I_UNIQUE => 'UNIQUE',
-            self::T_BLOB => 'BLOB DEFAULT NULL',
-            self::T_BOOL => 'BOOLEAN DEFAULT NULL',
-            self::T_FLOAT => 'DOUBLE PRECISION DEFAULT NULL',
-            self::T_INT => 'INTEGER DEFAULT NULL',
-            self::T_STRING => 'VARCHAR(255) DEFAULT NULL',
-            self::T_TEXT => 'TEXT DEFAULT NULL',
-            self::T_BLOB_STRICT => 'BLOB NOT NULL DEFAULT ""',
-            self::T_BOOL_STRICT => 'BOOLEAN NOT NULL DEFAULT 0',
-            self::T_FLOAT_STRICT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
-            self::T_INT_STRICT => 'INTEGER NOT NULL DEFAULT 0',
-            self::T_STRING_STRICT => 'VARCHAR(255) NOT NULL DEFAULT ""',
-            self::T_TEXT_STRICT => 'TEXT NOT NULL DEFAULT ""',
+            self::T_BLOB => 'BLOB NOT NULL DEFAULT ""',
+            self::T_BOOL => 'BOOLEAN NOT NULL DEFAULT 0',
+            self::T_FLOAT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
+            self::T_INT => 'INTEGER NOT NULL DEFAULT 0',
+            self::T_STRING => 'VARCHAR(255) NOT NULL DEFAULT ""',
+            self::T_TEXT => 'TEXT NOT NULL DEFAULT ""',
+            self::T_BLOB_NULL => 'BLOB DEFAULT NULL',
+            self::T_BOOL_NULL => 'BOOLEAN DEFAULT NULL',
+            self::T_FLOAT_NULL => 'DOUBLE PRECISION DEFAULT NULL',
+            self::T_INT_NULL => 'INTEGER DEFAULT NULL',
+            self::T_STRING_NULL => 'VARCHAR(255) DEFAULT NULL',
+            self::T_TEXT_NULL => 'TEXT DEFAULT NULL',
         ]
     ];
 
@@ -233,7 +233,7 @@ class Schema implements ArrayAccess {
      * @param int $type
      * @return $this
      */
-    public function addColumn (string $table, string $column, int $type = self::T_STRING) {
+    public function addColumn (string $table, string $column, int $type = self::T_STRING_NULL) {
         $type = $this->colDefs[$type & self::T_MASK];
         $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
         unset($this->tables[$table]);
@@ -440,7 +440,7 @@ class Schema implements ArrayAccess {
      */
     protected function sortColumns (array $types): array {
         uksort($types, function(string $a, string $b) use ($types) {
-            // descending index priority, increasing size, name
+            // descending type constant, ascending name
             return $types[$b] <=> $types[$a] ?: $a <=> $b;
         });
         return $types;

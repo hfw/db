@@ -2,7 +2,7 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-06-15T12:01:02.845Z_Book */
+/** 2021-06-16T10:26:25.669Z_Book */
 return new class implements MigrationInterface {
 
     /**
@@ -11,13 +11,13 @@ return new class implements MigrationInterface {
     public function up ($schema)
     {
         $schema->createTable('books', [
-            'title' => Schema::T_STRING_STRICT,
+            'title' => Schema::T_STRING,
             'id' => Schema::T_AUTOINCREMENT
         ]);
         $schema->createTable('books_eav', [
-            'entity' => Schema::T_INT_STRICT,
-            'attribute' => Schema::T_STRING_STRICT,
-            'value' => Schema::T_STRING
+            'entity' => Schema::T_INT,
+            'attribute' => Schema::T_STRING,
+            'value' => Schema::T_STRING_NULL
         ], [
             Schema::TABLE_PRIMARY => ['entity', 'attribute'],
             Schema::TABLE_FOREIGN => ['entity' => $schema['books']['id']]

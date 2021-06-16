@@ -190,8 +190,8 @@ $opt = getopt('h', [
             $columns = [];
             foreach ($record->getTypes() as $property => $type) {
                 $T_CONST = Schema::SCHEMA_TYPE_NAMES[$type];
-                if (!$record->isNullable($property)) {
-                    $T_CONST .= '_STRICT';
+                if ($record->isNullable($property)) {
+                    $T_CONST .= '_NULL';
                 }
                 $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
             }
@@ -208,8 +208,8 @@ $opt = getopt('h', [
             foreach ($record->getTypes() as $property => $type) {
                 if (!isset($columns[$property])) {
                     $T_CONST = Schema::SCHEMA_TYPE_NAMES[$type];
-                    if (!$record->isNullable($property)) {
-                        $T_CONST .= '_STRICT';
+                    if ($record->isNullable($property)) {
+                        $T_CONST .= '_NULL';
                     }
                     $up[] = "\$schema->addColumn('{$table}', '{$property}', Schema::{$T_CONST});";
                     $down[] = "\$schema->dropColumn('{$table}', '{$property}');";
@@ -219,8 +219,8 @@ $opt = getopt('h', [
             foreach ($columns as $column => $info) {
                 if (!$record[$column]) {
                     $T_CONST = Schema::SCHEMA_TYPE_NAMES[$info['type']];
-                    if (!$info['nullable']) {
-                        $T_CONST .= '_STRICT';
+                    if ($info['nullable']) {
+                        $T_CONST .= '_NULL';
                     }
                     $up[] = "\$schema->dropColumn('{$table}', '{$column}');";
                     $down[] = "\$schema->addColumn('{$table}', '{$column}', Schema::{$T_CONST});";
@@ -234,10 +234,10 @@ $opt = getopt('h', [
             if (!$this->db[$eav->getName()]) {
                 /** @see Schema::createTable() */
                 /** @see Schema::dropTable() */
-                $T_CONST = Schema::SCHEMA_TYPE_NAMES[$eav->getType()];
+                $T_CONST = Schema::SCHEMA_TYPE_NAMES[$eav->getType()] . '_NULL';
                 $columns = [
-                    "'entity' => Schema::T_INT_STRICT",
-                    "'attribute' => Schema::T_STRING_STRICT",
+                    "'entity' => Schema::T_INT",
+                    "'attribute' => Schema::T_STRING",
                     "'value' => Schema::{$T_CONST}"
                 ];
                 $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
@@ -267,7 +267,7 @@ $opt = getopt('h', [
             /** @see Schema::dropTable() */
             $records = $junction->getRecords();
             $columns = array_map(
-                fn(string $column) => "'{$column}' => Schema::T_INT_STRICT",
+                fn(string $column) => "'{$column}' => Schema::T_INT",
                 array_keys($records)
             );
             $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
