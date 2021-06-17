@@ -38,14 +38,15 @@ class Record extends Table {
 
     protected const RX_RECORD = '/\*\h*@record\h+(?<table>\w+)/i';
     protected const RX_IS_COLUMN = '/\*\h*@col(umn)?\b/i';
-    protected const RX_VAR = '/\*\h*@var\h+(?<type>\S+)/i'; // includes pipes
-    protected const RX_NULL = '/\b\|?null\|?\b/i'; // leading or trailing only
-    protected const RX_IS_SCALAR = '/^bool(ean)?|int(eger)?|float|double|string$/i';
+    protected const RX_VAR = '/\*\h*@var\h+(?<type>\S+)/i'; // includes pipes and backslashes
+    protected const RX_NULL = '/(\bnull\|)|(\|null\b)/i';
     protected const RX_EAV = '/\*\h*@eav\h+(?<table>\w+)/i';
     protected const RX_EAV_VAR = '/\*\h*@var\h+(?<type>\w+)\[\]/i'; // typed array
 
     /**
-     * @see Schema::T_CONST_NAMES
+     * Maps complex types to storage types.
+     *
+     * @see Schema::T_CONST_NAMES keys
      */
     protected const DEHYDRATE_AS = [
         'array' => 'STRING', // blob. eav is better than this for 1D arrays.
@@ -53,6 +54,27 @@ class Record extends Table {
         stdClass::class => 'STRING', // blob
         DateTime::class => 'DateTime',
         DateTimeImmutable::class => 'DateTime',
+    ];
+
+    /**
+     * Maps annotated/native scalar types to storage types acceptable for `settype()`
+     *
+     * @see Schema::T_CONST_NAMES keys
+     */
+    const SCALARS = [
+        'bool' => 'bool',
+        'boolean' => 'bool',
+        'double' => 'float',
+        'false' => 'bool',
+        'float' => 'float',
+        'int' => 'int',
+        'integer' => 'int',
+        'number' => 'string',
+        'scalar' => 'string',
+        'string' => 'string',
+        'String' => 'String',
+        'STRING' => 'STRING',
+        'true' => 'bool',
     ];
 
     /**
@@ -87,19 +109,13 @@ class Record extends Table {
 
     /**
      * A boilerplate instance of the class, to clone and populate.
-     * This defaults to a naively created instance without invoking the constructor.
      *
      * @var EntityInterface
      */
     protected $proto;
 
     /**
-     * Scalar property types. Types may be nullable.
-     *
-     *  - `bool`
-     *  - `float` or `double`
-     *  - `int`
-     *  - `string`
+     * Storage types.
      *
      * `[property => type]`
      *
@@ -113,8 +129,13 @@ class Record extends Table {
     protected DateTimeZone $utc;
 
     /**
+     * Constructs record-access from an annotated class.
+     *
+     * If a prototype isn't given for `$class`, this defaults to creating an instance
+     * via reflection (without invoking the constructor).
+     *
      * @param DB $db
-     * @param string|EntityInterface $class
+     * @param string|EntityInterface $class Class or prototype instance.
      * @return Record
      */
     public static function fromClass (DB $db, $class) {
@@ -143,50 +164,26 @@ class Record extends Table {
      * @param DB $db
      * @param EntityInterface $proto
      * @param string $table
-     * @param string[] $columns Property names.
+     * @param string[] $properties Property names.
      * @param EAV[] $eav Keyed by property name.
      */
-    public function __construct (DB $db, EntityInterface $proto, string $table, array $columns, array $eav = []) {
-        parent::__construct($db, $table, $columns);
+    public function __construct (DB $db, EntityInterface $proto, string $table, array $properties, array $eav = []) {
+        parent::__construct($db, $table, $properties);
         $this->proto = $proto;
         $this->utc = new DateTimeZone('UTC');
         $rClass = new ReflectionClass($proto);
         $defaults = $rClass->getDefaultProperties();
-        foreach ($columns as $prop) { // TODO maybe break this up into helper methods
+        foreach ($properties as $prop) {
             $rProp = $rClass->getProperty($prop);
+            if (null === $type = $this->__construct_getType($prop, $rProp)) {
+                $type = isset($defaults[$prop]) ? static::SCALARS[gettype($defaults[$prop])] : 'string';
+            }
+            if (null === $nullable = $this->__construct_isNullable($prop, $rProp)) {
+                $nullable = !isset($defaults[$prop]);
+            }
+            assert(isset($type, $nullable));
             $rProp->setAccessible(true);
             $this->properties[$prop] = $rProp;
-            // infer the type from reflection
-            if ($rType = $rProp->getType() and $rType instanceof ReflectionNamedType) {
-                if (preg_match(static::RX_IS_SCALAR, $rType->getName())) {
-                    $type = $rType->getName();
-                }
-                else { // "array", "object", class name
-                    $type = self::DEHYDRATE_AS[$rType->getName()];
-                    $this->hydration[$prop] = $rType->getName();
-                }
-                $nullable = $rType->allowsNull();
-            }
-            // infer scalar type from @var
-            elseif (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
-                $type = $var['type'];
-                // extract nullable
-                $type = preg_replace(static::RX_NULL, '', $type, -1, $nullable);
-                $nullable = (bool)$nullable;
-                // must be scalar
-                assert(preg_match(static::RX_IS_SCALAR, $type));
-            }
-            // infer the type from the default value
-            else {
-                if (isset($defaults[$prop])) {
-                    $type = gettype($defaults[$prop]);
-                    $nullable = false;
-                }
-                else {
-                    $type = 'string';
-                    $nullable = true;
-                }
-            }
             $this->types[$prop] = $type;
             $this->nullable[$prop] = $nullable;
         }
@@ -198,6 +195,103 @@ class Record extends Table {
             $rProp->setAccessible(true);
             $this->properties[$name] = $rProp;
         }
+    }
+
+    /**
+     * Resolves a property's storage type during {@link Record::__construct()}
+     *
+     * Returns `null` for unknown. The constructor will fall back to checking the class default.
+     *
+     * @param string $prop
+     * @param ReflectionProperty $rProp
+     * @return null|string Storage type, or `null` for unknown.
+     */
+    protected function __construct_getType (string $prop, ReflectionProperty $rProp): ?string {
+        return $this->__construct_getType_fromReflection($prop, $rProp)
+            ?? $this->__construct_getType_fromVar($prop, $rProp);
+    }
+
+    /**
+     * This also sets {@link Record::$hydration} for complex types.
+     *
+     * @param string $prop
+     * @param ReflectionProperty $rProp
+     * @return null|string
+     */
+    protected function __construct_getType_fromReflection (string $prop, ReflectionProperty $rProp): ?string {
+        if ($rType = $rProp->getType() and $rType instanceof ReflectionNamedType) {
+            $type = $rType->getName();
+            if (isset(static::SCALARS[$type])) {
+                return static::SCALARS[$type];
+            }
+            assert(isset(static::DEHYDRATE_AS[$type]));
+            $this->hydration[$prop] = $type;
+            return static::DEHYDRATE_AS[$type];
+        }
+        return null;
+    }
+
+    /**
+     * This also sets {@link Record::$hydration} for complex types ONLY IF `@var` uses a FQN.
+     *
+     * @param string $prop
+     * @param ReflectionProperty $rProp
+     * @return null|string
+     */
+    protected function __construct_getType_fromVar (string $prop, ReflectionProperty $rProp): ?string {
+        if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
+            $type = preg_replace(static::RX_NULL, '', $var['type']); // remove null
+            if (isset(static::SCALARS[$type])) {
+                return static::SCALARS[$type];
+            }
+            // it's beyond the scope of this class to parse "use" statements,
+            // @var <CLASS> must be a FQN in order to work.
+            $type = ltrim($type, '\\');
+            if (isset(static::DEHYDRATE_AS[$type])) {
+                $this->hydration[$prop] = $type;
+                return static::DEHYDRATE_AS[$type];
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Resolves a property's nullability during {@link Record::__construct()}
+     *
+     * Returns `null` for unknown. The constructor will fall back to checking the class default.
+     *
+     * @param string $prop
+     * @param ReflectionProperty $rProp
+     * @return null|bool
+     */
+    protected function __construct_isNullable (string $prop, ReflectionProperty $rProp): ?bool {
+        return $this->__construct_isNullable_fromReflection($prop, $rProp)
+            ?? $this->__construct_isNullable_fromVar($prop, $rProp);
+    }
+
+    /**
+     * @param string $prop
+     * @param ReflectionProperty $rProp
+     * @return null|bool
+     */
+    protected function __construct_isNullable_fromReflection (string $prop, ReflectionProperty $rProp): ?bool {
+        if ($rType = $rProp->getType()) {
+            return $rType->allowsNull();
+        }
+        return null;
+    }
+
+    /**
+     * @param string $prop
+     * @param ReflectionProperty $rProp
+     * @return null|bool
+     */
+    protected function __construct_isNullable_fromVar (string $prop, ReflectionProperty $rProp): ?bool {
+        if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
+            preg_replace(static::RX_NULL, '', $var['type'], -1, $nullable);
+            return (bool)$nullable;
+        }
+        return null;
     }
 
     /**
