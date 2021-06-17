@@ -164,7 +164,10 @@ class DB extends PDO implements ArrayAccess {
         $this->logger ??= fn() => null;
         $this->schema ??= Schema::factory($this);
 
-        if ($this->isSQLite()) {
+        if ($this->isMySQL()) {
+            $this->exec("SET time_zone = 'UTC'");
+        }
+        elseif ($this->isSQLite()) {
             // polyfill sqlite functions
             $this->sqliteCreateFunctions([ // deterministic functions
                 // https://www.sqlite.org/lang_mathfunc.html
