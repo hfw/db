@@ -89,6 +89,20 @@ trait DateTimeTrait {
     }
 
     /**
+     * ISO-8601 compatible datetime string, offset `Z` (UTC/Zulu)
+     *
+     * https://en.wikipedia.org/wiki/ISO_8601
+     *
+     * @return Text
+     */
+    public function iso8601 () {
+        return Text::factory($this->db, $this->dateFormat([
+            'mysql' => '%Y-%m-%dT%H:%i:%SZ',
+            'sqlite' => '%Y-%m-%dT%H:%M:%SZ',
+        ]));
+    }
+
+    /**
      * `00` to `59`
      *
      * @return Num
