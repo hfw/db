@@ -20,7 +20,7 @@ trait DateTimeTrait {
      * @return Text
      */
     public function date () {
-        return Text::factory($this->db, $this->dateFormat('%Y-%m-%d'));
+        return $this->dateFormat('%Y-%m-%d');
     }
 
     /**
@@ -46,10 +46,10 @@ trait DateTimeTrait {
      * @return Text
      */
     public function datetime () {
-        return Text::factory($this->db, $this->dateFormat([
+        return $this->dateFormat([
             'mysql' => '%Y-%m-%d %H:%i:%S',
             'sqlite' => '%Y-%m-%d %H:%M:%S'
-        ]));
+        ]);
     }
 
     /**
@@ -96,10 +96,10 @@ trait DateTimeTrait {
      * @return Text
      */
     public function iso8601 () {
-        return Text::factory($this->db, $this->dateFormat([
+        return $this->dateFormat([
             'mysql' => '%Y-%m-%dT%H:%i:%SZ',
             'sqlite' => '%Y-%m-%dT%H:%M:%SZ',
-        ]));
+        ]);
     }
 
     /**
@@ -138,10 +138,10 @@ trait DateTimeTrait {
      * @return Text
      */
     public function time () {
-        return Text::factory($this->db, $this->dateFormat([
+        return $this->dateFormat([
             'mysql' => '%H:%i:%S',
             'sqlite' => '%H:%M:%S'
-        ]));
+        ]);
     }
 
     /**
