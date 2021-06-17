@@ -48,9 +48,9 @@ class Record extends Table {
      * @see Schema::T_CONST_NAMES
      */
     protected const DEHYDRATE_AS = [
-        'array' => 'string', // eav is better than this
-        'object' => 'string',
-        stdClass::class => 'string',
+        'array' => 'STRING', // blob. eav is better than this for 1D arrays.
+        'object' => 'STRING', // blob.
+        stdClass::class => 'STRING', // blob
         DateTime::class => 'DateTime',
         DateTimeImmutable::class => 'DateTime',
     ];
