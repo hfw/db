@@ -19,6 +19,8 @@ trait CastTrait {
     }
 
     /**
+     * Convert between arbitrary bases.
+     *
      * `CONV($this,$from,$to)`
      *
      * @param int $from
@@ -30,6 +32,8 @@ trait CastTrait {
     }
 
     /**
+     * Convert from an arbitrary base to base 10.
+     *
      * `CONV($this,$from,10)`
      *
      * @param int $from
@@ -40,9 +44,9 @@ trait CastTrait {
     }
 
     /**
-     * `CONV($this,$from,16)`
+     * Convert from an arbitrary base to base 16.
      *
-     * This is similar to {@link TextTrait::hex()} except you can specify the starting base.
+     * `CONV($this,$from,16)`
      *
      * @param int $from
      * @return Text
@@ -52,6 +56,8 @@ trait CastTrait {
     }
 
     /**
+     * Convert from an arbitrary base to base 2.
+     *
      * `CONV($this,$from,2)`
      *
      * @param int $from
@@ -62,6 +68,8 @@ trait CastTrait {
     }
 
     /**
+     * Convert from an arbitrary base to base 8.
+     *
      * `CONV($this,$from,8)`
      *
      * @param int $from
