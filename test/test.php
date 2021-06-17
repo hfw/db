@@ -68,7 +68,6 @@ $books = $AuthorsToBooks->findAll('book', ['author' => $alice->getId()]);
 assert(count($books) === 1);
 /** @var Book $book */
 $book = $books->getFirst();
-var_dump($book->getPublished());
 assert($book->getTitle() === $novel->getTitle());
 assert($book->getPublished()->getTimestamp() === $novel->getPublished()->getTimestamp());
 assert($book['note'] === $novel['note']);
