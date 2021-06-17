@@ -119,20 +119,20 @@ class Schema implements ArrayAccess {
     const T_BLOB_NULL = 0x02;
 
     /**
-     * Maps native/annotated types to `T_CONST` names.
-     * This is used when generating migrations on the command-line.
+     * Maps storage types to `T_CONST` names.
+     *
+     * Resolved storage types in {@link Record} are keys here.
+     *
+     * This is also used when generating migrations on the command-line.
      */
     const T_CONST_NAMES = [
         'bool' => 'T_BOOL',
-        'boolean' => 'T_BOOL',      // gettype()
-        'DateTime' => 'T_DATETIME', // dehydrated (see Record)
-        'double' => 'T_BLOB',       // gettype()
+        'DateTime' => 'T_DATETIME',
         'float' => 'T_FLOAT',
         'int' => 'T_INT',
-        'integer' => 'T_INT',       // gettype()
         'string' => 'T_STRING',
-        'String' => 'T_TEXT',       // @var String
-        'STRING' => 'T_BLOB',       // @var STRING
+        'String' => 'T_TEXT',
+        'STRING' => 'T_BLOB',
     ];
 
     /**
@@ -320,7 +320,7 @@ class Schema implements ArrayAccess {
      * - `nullable`: boolean
      *
      * The returned `type` can be used to get a `T_CONST` name from {@link Schema::T_CONST_NAMES}
-     * 
+     *
      * @param string $table
      * @param string $column
      * @return array[] Keyed by name.
