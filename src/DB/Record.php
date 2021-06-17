@@ -150,7 +150,9 @@ class Record extends Table {
             }
             elseif (preg_match(static::RX_EAV, $doc, $eav)) {
                 preg_match(static::RX_EAV_VAR, $doc, $var);
-                $EAV[$rProp->getName()] = EAV::factory($db, $eav['table'], $var['type'] ?? 'string');
+                $type = $var['type'] ?? 'string';
+                $type = static::SCALARS[$type] ?? 'string';
+                $EAV[$rProp->getName()] = EAV::factory($db, $eav['table'], $type);
             }
         }
         preg_match(static::RX_RECORD, $rClass->getDocComment(), $record);
