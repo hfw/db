@@ -12,7 +12,7 @@ use Helix\DB;
 class EAV extends Table {
 
     /**
-     * The PHP-native scalar type for the `value` column (implied nullable).
+     * The scalar storage type for the `value` column (implied `NOT NULL`).
      *
      * @var string
      */
@@ -80,7 +80,7 @@ class EAV extends Table {
      * Returns an entity's attributes.
      *
      * @param int $id
-     * @return array `[attribute => value]`
+     * @return scalar[] `[attribute => value]`
      */
     public function load (int $id): array {
         $statement = $this->cache(__FUNCTION__, function() {
@@ -96,7 +96,7 @@ class EAV extends Table {
      * Returns associative attribute-value arrays for the given IDs.
      *
      * @param int[] $ids
-     * @return array[] `[id => attribute => value]
+     * @return scalar[][] `[id => attribute => value]
      */
     public function loadAll (array $ids): array {
         if (empty($ids)) {
@@ -117,17 +117,32 @@ class EAV extends Table {
 
     /**
      * Upserts an entity's attributes with those given.
+     *
      * Stored attributes not given here are pruned.
+     *
+     * `NULL` attributes are also pruned.
      *
      * @param int $id
      * @param array $values `[attribute => value]`
      * @return $this
      */
     public function save (int $id, array $values) {
+        // delete stale
         $this->delete([
             $this['entity']->isEqual($id),
             $this['attribute']->isNotEqual(array_keys($values))
         ]);
+
+        // delete nulls
+        if ($nulls = array_filter($values, 'is_null')) {
+            $values = array_diff_key($values, $nulls);
+            $this->delete([
+                $this['entity']->isEqual($id),
+                $this['attribute']->isEqual(array_keys($nulls))
+            ]);
+        }
+
+        // upsert each
         $statement = $this->cache(__FUNCTION__, function() {
             if ($this->db->isSQLite()) {
                 return $this->db->prepare(
@@ -148,13 +163,11 @@ class EAV extends Table {
     }
 
     /**
-     * @param mixed $value
-     * @return null|scalar
+     * @param scalar $value
+     * @return scalar
      */
     protected function setType ($value) {
-        if (isset($value)) {
-            settype($value, $this->type);
-        }
+        settype($value, $this->type);
         return $value;
     }
 }

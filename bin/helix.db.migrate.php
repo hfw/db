@@ -234,7 +234,7 @@ $opt = getopt('h', [
             if (!$this->db[$eav->getName()]) {
                 /** @see Schema::createTable() */
                 /** @see Schema::dropTable() */
-                $T_CONST = Schema::T_CONST_NAMES[$eav->getType()] . '_NULL';
+                $T_CONST = Schema::T_CONST_NAMES[$eav->getType()];
                 $columns = [
                     "'entity' => Schema::T_INT",
                     "'attribute' => Schema::T_STRING",

@@ -32,7 +32,7 @@ trait AttributesTrait {
     protected ?array $attributes;
 
     /**
-     * @return array
+     * @return scalar[]
      */
     public function getAttributes (): array {
         return $this->attributes ?? [];
@@ -43,12 +43,12 @@ trait AttributesTrait {
      * @return bool
      */
     public function offsetExists ($attr): bool {
-        return isset($this->attributes) and array_key_exists($attr, $this->attributes);
+        return isset($this->attributes[$attr]);
     }
 
     /**
      * @param mixed $attr
-     * @return null|mixed
+     * @return null|scalar
      */
     public function offsetGet ($attr) {
         return $this->attributes[$attr] ?? null;
@@ -56,13 +56,23 @@ trait AttributesTrait {
 
     /**
      * @param mixed $attr
-     * @param mixed $value
+     * @param null|scalar $value
      */
     public function offsetSet ($attr, $value): void {
         if (isset($attr)) {
-            $this->attributes[$attr] = $value;
+            if (isset($value)) {
+                assert(is_scalar($value));
+                $this->attributes[$attr] = $value;
+            }
+            else {
+                $this->offsetUnset($attr);
+            }
         }
         else {
+            // appending must not be null.
+            // even though missing numeric offsets would yield null when fetched individually,
+            // getAttributes() would not have them.
+            assert(isset($value));
             $this->attributes[] = $value;
         }
     }
@@ -75,11 +85,11 @@ trait AttributesTrait {
     }
 
     /**
-     * @param array $attributes
+     * @param scalar[] $attributes
      * @return $this
      */
     public function setAttributes (array $attributes) {
-        $this->attributes = $attributes;
+        $this->attributes = array_filter($attributes, 'is_scalar');
         return $this;
     }
 }
