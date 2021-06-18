@@ -3,16 +3,18 @@
 namespace Helix\DB\Fluent;
 
 use Helix\DB\Fluent\DateTime\DateTimeCastTrait;
-use Helix\DB\Fluent\Num\NumCastTrait;
+use Helix\DB\Fluent\Num\NumCastFloatTrait;
+use Helix\DB\Fluent\Num\NumCastIntTrait;
 use Helix\DB\Fluent\Text\TextTrait;
 
 /**
- * Represents a text expression. Produces various transformations.
+ * A character string expression.
  */
 class Text extends Expression implements ValueInterface
 {
 
     use TextTrait;
     use DateTimeCastTrait;
-    use NumCastTrait;
+    use NumCastFloatTrait;
+    use NumCastIntTrait;
 }

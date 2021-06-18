@@ -7,7 +7,7 @@ use Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\Text;
 
 /**
- * Produces aggregate expressions for the instance.
+ * Aggregation functions.
  */
 trait AggregateTrait
 {

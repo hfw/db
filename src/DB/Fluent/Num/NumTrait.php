@@ -8,14 +8,17 @@ use Helix\DB\Fluent\Value\ValueTrait;
 use Helix\DB\Fluent\ValueInterface;
 
 /**
- * Produces numeric expressions for the instance.
+ * Numeric expression manipulation.
+ *
+ * This trait does not include {@link NumCastFloatTrait},
+ * because the expression is either already a float or an integer.
  */
 trait NumTrait
 {
 
     use ValueTrait;
     use BaseConversionTrait;
-    use NumCastTrait;
+    use NumCastIntTrait;
 
     /**
      * `ABS($this)`

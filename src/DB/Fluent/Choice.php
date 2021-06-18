@@ -5,7 +5,7 @@ namespace Helix\DB\Fluent;
 use Helix\DB;
 
 /**
- * Represents a `CASE` expression, with or without a *subject* expression.
+ * A `CASE` expression, with or without a *subject* expression.
  *
  * If a subject is used, `WHEN` relies on equating the subject's evaluation to a literal value.
  * This is also known as a "simple case", and is not null-safe.

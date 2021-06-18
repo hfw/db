@@ -8,12 +8,11 @@ use Helix\DB\Fluent\Predicate;
 use Helix\DB\Select;
 
 /**
- * Produces comparative expressions for the instance.
+ * Comparative functions.
  *
- * Because SQLite lacks the `ANY` and `ALL` comparison operators,
- * subqueries are instead nested and correlated using `EXISTS` or `NOT EXISTS`.
- *
- * This also requires that the subquery's first column is referable.
+ * Because SQLite doesn't have the `ANY`/`ALL` comparison operators,
+ * subqueries are instead nested and correlated using `EXISTS` or `NOT EXISTS`,
+ * which requires the first column of the subquery to have a name or alias so it's referable.
  */
 trait ComparisonTrait
 {

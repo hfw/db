@@ -6,10 +6,10 @@ use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\Text;
 
 /**
- * Convert a numeric expression to other bases.
+ * Further manipulate the expression in a different numeric base.
  *
- * Since converting to base 10 only applies to text expressions,
- * its method can be found at {@link Text\TextTrait::toBase10()}
+ * Since converting to base 10 only applies to character string expressions,
+ * its method can be found at {@link \Helix\DB\Fluent\Text\TextTrait::toBase10()}
  */
 trait BaseConversionTrait
 {

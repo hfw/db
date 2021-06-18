@@ -5,7 +5,7 @@ namespace Helix\DB\Fluent;
 use Helix\DB;
 
 /**
- * A trait for other traits in this namespace.
+ * A boilerplate trait for fluency traits in this namespace.
  *
  * @internal
  */

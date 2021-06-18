@@ -8,7 +8,7 @@ use Helix\DB\Fluent\Text;
 use Helix\DB\Fluent\Value\ValueTrait;
 
 /**
- * Produces datetime related expressions for the instance.
+ * Date-time expression manipulation.
  *
  * Each DBMS has its own quirks with dates, which is beyond the scope of this library.
  *

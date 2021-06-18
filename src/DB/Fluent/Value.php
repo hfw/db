@@ -3,18 +3,20 @@
 namespace Helix\DB\Fluent;
 
 use Helix\DB\Fluent\DateTime\DateTimeCastTrait;
-use Helix\DB\Fluent\Num\NumCastTrait;
+use Helix\DB\Fluent\Num\NumCastFloatTrait;
+use Helix\DB\Fluent\Num\NumCastIntTrait;
 use Helix\DB\Fluent\Text\TextCastTrait;
 use Helix\DB\Fluent\Value\ValueTrait;
 
 /**
- * Represents a typeless value expression.
+ * A typeless value expression, which can be cast to any type.
  */
 class Value extends Expression implements ValueInterface
 {
 
     use ValueTrait;
     use DateTimeCastTrait;
-    use NumCastTrait;
+    use NumCastFloatTrait;
+    use NumCastIntTrait;
     use TextCastTrait;
 }

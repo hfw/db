@@ -3,7 +3,7 @@
 namespace Helix\DB\Fluent;
 
 /**
- * Represents a logical expression that will evaluate as boolean.
+ * A logical expression that evaluates to a boolean.
  */
 class Predicate extends Expression implements ValueInterface
 {

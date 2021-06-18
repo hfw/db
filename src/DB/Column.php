@@ -11,7 +11,7 @@ use Helix\DB\Fluent\ValueInterface;
 use LogicException;
 
 /**
- * Immutable column expression. Can produce all available transformations.
+ * Immutable column expression. Can be treated as any data type.
  *
  * Read-only array access is provided for easily retrieving aggregate function results.
  *

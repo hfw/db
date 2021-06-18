@@ -8,7 +8,7 @@ use Helix\DB\Fluent\Text;
 use Helix\DB\Fluent\Value\ValueTrait;
 
 /**
- * Produces text related expressions for the instance.
+ * Character string expression manipulation.
  */
 trait TextTrait
 {

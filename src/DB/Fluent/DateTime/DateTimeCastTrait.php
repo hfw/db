@@ -5,6 +5,9 @@ namespace Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\DateTime;
 
+/**
+ * Further manipulate the expression as a date-time.
+ */
 trait DateTimeCastTrait
 {
 

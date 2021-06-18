@@ -6,7 +6,7 @@ use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\Value;
 
 /**
- * Produces type-independent expressions for the instance.
+ * Type-agnostic functions.
  */
 trait ValueTrait
 {

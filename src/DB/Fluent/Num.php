@@ -6,7 +6,7 @@ use Helix\DB\Fluent\Num\NumTrait;
 use Helix\DB\Fluent\Text\TextCastTrait;
 
 /**
- * Represents a numeric expression. Produces various transformations.
+ * A numeric expression.
  */
 class Num extends Expression implements ValueInterface
 {
