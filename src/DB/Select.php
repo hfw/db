@@ -6,8 +6,8 @@ use Closure;
 use Countable;
 use Generator;
 use Helix\DB;
-use Helix\DB\SQL\ExpressionInterface;
-use Helix\DB\SQL\Predicate;
+use Helix\DB\Fluent\ExpressionInterface;
+use Helix\DB\Fluent\Predicate;
 use IteratorAggregate;
 
 /**

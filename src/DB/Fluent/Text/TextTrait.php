@@ -1,13 +1,19 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent\Text;
+
+use Helix\DB\Fluent\Num;
+use Helix\DB\Fluent\Num\BaseConversionTrait;
+use Helix\DB\Fluent\Text;
+use Helix\DB\Fluent\Value\ValueTrait;
 
 /**
  * Produces text related expressions for the instance.
  */
 trait TextTrait {
 
-    use AbstractTrait;
+    use ValueTrait;
+    use BaseConversionTrait;
 
     /**
      * Hex representation.
@@ -102,6 +108,18 @@ trait TextTrait {
             return Text::factory($this->db, "SUBSTR({$this},{$start},{$length})");
         }
         return Text::factory($this->db, "SUBSTR({$this},{$start})");
+    }
+
+    /**
+     * Convert from an arbitrary base to base 10.
+     *
+     * `CONV($this,$from,10)`
+     *
+     * @param int $from
+     * @return Num
+     */
+    public function toBase10 (int $from) {
+        return Num::factory($this->db, "CONV({$this},{$from},10)");
     }
 
     /**

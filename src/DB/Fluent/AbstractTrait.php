@@ -1,6 +1,6 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent;
 
 use Helix\DB;
 

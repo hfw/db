@@ -1,6 +1,10 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent\Value;
+
+use Helix\DB\Fluent\AbstractTrait;
+use Helix\DB\Fluent\Num;
+use Helix\DB\Fluent\Text;
 
 /**
  * Produces aggregate expressions for the instance.

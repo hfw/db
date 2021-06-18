@@ -1,7 +1,10 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent\Value;
 
+use Helix\DB\Fluent\AbstractTrait;
+use Helix\DB\Fluent\Choice;
+use Helix\DB\Fluent\Predicate;
 use Helix\DB\Select;
 
 /**

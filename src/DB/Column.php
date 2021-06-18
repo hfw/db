@@ -4,13 +4,10 @@ namespace Helix\DB;
 
 use ArrayAccess;
 use Helix\DB;
-use Helix\DB\SQL\AggregateTrait;
-use Helix\DB\SQL\CastTrait;
-use Helix\DB\SQL\ComparisonTrait;
-use Helix\DB\SQL\DateTimeTrait;
-use Helix\DB\SQL\NumTrait;
-use Helix\DB\SQL\TextTrait;
-use Helix\DB\SQL\ValueInterface;
+use Helix\DB\Fluent\DateTime\DateTimeTrait;
+use Helix\DB\Fluent\Num\NumTrait;
+use Helix\DB\Fluent\Text\TextTrait;
+use Helix\DB\Fluent\ValueInterface;
 use LogicException;
 
 /**
@@ -24,11 +21,8 @@ use LogicException;
  */
 class Column implements ArrayAccess, ValueInterface {
 
-    use AggregateTrait;
-    use CastTrait;
-    use ComparisonTrait;
-    use DateTimeTrait;
     use FactoryTrait;
+    use DateTimeTrait;
     use NumTrait;
     use TextTrait;
 
@@ -94,7 +88,7 @@ class Column implements ArrayAccess, ValueInterface {
      *
      * Example: `min` returns the result of `SELECT MIN($this) FROM $this->qualifier`
      *
-     * @see AggregateTrait
+     * @see DB\Fluent\Value\AggregateTrait
      * @param string $aggregator
      * @return null|string
      */

@@ -1,6 +1,11 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent\DateTime;
+
+use Helix\DB\Fluent\DateTime;
+use Helix\DB\Fluent\Num;
+use Helix\DB\Fluent\Text;
+use Helix\DB\Fluent\Value\ValueTrait;
 
 /**
  * Produces datetime related expressions for the instance.
@@ -12,7 +17,7 @@ namespace Helix\DB\SQL;
  */
 trait DateTimeTrait {
 
-    use AbstractTrait;
+    use ValueTrait;
 
     /**
      * `YYYY-MM-DD`

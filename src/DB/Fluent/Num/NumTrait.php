@@ -1,13 +1,20 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent\Num;
+
+use Helix\DB\Fluent\Num;
+use Helix\DB\Fluent\Predicate;
+use Helix\DB\Fluent\Value\ValueTrait;
+use Helix\DB\Fluent\ValueInterface;
 
 /**
  * Produces numeric expressions for the instance.
  */
 trait NumTrait {
 
-    use AbstractTrait;
+    use ValueTrait;
+    use BaseConversionTrait;
+    use NumCastTrait;
 
     /**
      * `ABS($this)`

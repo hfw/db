@@ -1,13 +1,13 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent\DateTime;
 
-/**
- * Represents a text expression. Produces various transformations.
- */
-class Text extends Value {
+use Helix\DB\Fluent\AbstractTrait;
+use Helix\DB\Fluent\DateTime;
 
-    use TextTrait;
+trait DateTimeCastTrait {
+
+    use AbstractTrait;
 
     /**
      * Interpret the expression as a datetime.

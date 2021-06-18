@@ -1,6 +1,6 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent;
 
 /**
  * Represents a logical expression that will evaluate as boolean.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Helix\DB\SQL;
+namespace Helix\DB\Fluent;
 
 /**
  * Marks the instance as a literal SQL expression, exempt from being quoted.
