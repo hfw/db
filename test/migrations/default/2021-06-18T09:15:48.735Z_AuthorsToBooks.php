@@ -1,8 +1,9 @@
 <?php
+
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-06-17T03:29:35.799Z_AuthorsToBooks */
+/** 2021-06-18T09:15:48.735Z_AuthorsToBooks */
 return new class implements MigrationInterface {
 
     /**

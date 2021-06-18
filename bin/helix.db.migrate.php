@@ -49,7 +49,7 @@ $opt = getopt('h', [
 
     private function _usage_exit (): void {
         $this->_stderr(<<< USAGE
-        
+
         $ php {$this->argv[0]} [OPTIONS] ACTION
 
         OPTIONS:
@@ -319,8 +319,9 @@ $opt = getopt('h', [
         $fh = fopen($file, 'w');
         fputs($fh, <<<MIGRATION
         <?php
+
         {$use}
-        
+
         /** {$sequence} */
         return new class implements MigrationInterface {
 
