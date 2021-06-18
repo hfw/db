@@ -11,14 +11,16 @@ use Helix\DB;
  * @method static static factory(DB $db, ...$args)
  * @internal
  */
-trait FactoryTrait {
+trait FactoryTrait
+{
 
     /**
      * @param string $ignored
      * @param array $args The first argument must be a {@link DB} instance.
      * @return static
      */
-    public static function __callStatic (string $ignored, array $args) {
+    public static function __callStatic(string $ignored, array $args)
+    {
         /** @var DB $db */
         $db = $args[0];
         unset($args[0]);

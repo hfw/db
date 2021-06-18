@@ -28,7 +28,8 @@ $opt = getopt('h', [
 
     private Schema $schema;
 
-    public function __construct (array $argv, array $opt) {
+    public function __construct(array $argv, array $opt)
+    {
         $this->argv = $argv;
         $opt['connection'] ??= 'default';
         $opt['config'] ??= 'db.config.php';
@@ -39,15 +40,18 @@ $opt = getopt('h', [
         $this->schema = $this->db->getSchema();
     }
 
-    private function _stderr (string $text): void {
+    private function _stderr(string $text): void
+    {
         fputs(STDERR, "{$text}\n\n");
     }
 
-    private function _stdout (string $text): void {
+    private function _stdout(string $text): void
+    {
         echo "{$text}\n\n";
     }
 
-    private function _usage_exit (): void {
+    private function _usage_exit(): void
+    {
         $this->_stderr(<<< USAGE
 
         $ php {$this->argv[0]} [OPTIONS] ACTION
@@ -106,7 +110,8 @@ $opt = getopt('h', [
      * @uses record()
      * @uses junction()
      */
-    public function _exec (): void {
+    public function _exec(): void
+    {
         foreach (['h', 'help', 'status', 'up', 'down', 'record', 'junction'] as $action) {
             if (isset($this->opt[$action])) {
                 $this->{$action}($this->opt[$action] ?: null);
@@ -116,15 +121,18 @@ $opt = getopt('h', [
         $this->_usage_exit();
     }
 
-    private function h (): void {
+    private function h(): void
+    {
         $this->_usage_exit();
     }
 
-    private function help (): void {
+    private function help(): void
+    {
         $this->_usage_exit();
     }
 
-    private function status (): void {
+    private function status(): void
+    {
         $migrator = $this->db->getMigrator();
         $transaction = $this->db->newTransaction();
         $current = $migrator->getCurrent() ?? 'NONE';
@@ -132,51 +140,51 @@ $opt = getopt('h', [
         unset($transaction);
     }
 
-    private function up (?string $to): void {
+    private function up(?string $to): void
+    {
         $migrator = $this->db->getMigrator();
         $transaction = $this->db->newTransaction();
         $current = $migrator->getCurrent();
         $currentString = $current ?: 'NONE';
         if ($to) {
             $this->_stdout("-- Upgrading from \"{$currentString}\" to \"{$to}\" ...");
-        }
-        else {
+        } else {
             $this->_stdout("-- Upgrading ALL starting from \"{$currentString}\" ...");
         }
         sleep(3); // time to cancel
         if ($current === $migrator->up($to ?: null)) {
             $this->_stdout("-- Nothing to do.");
-        }
-        else {
+        } else {
             $transaction->commit();
         }
     }
 
-    private function down (?string $to): void {
+    private function down(?string $to): void
+    {
         $migrator = $this->db->getMigrator();
         $transaction = $this->db->newTransaction();
         $current = $migrator->getCurrent();
         $currentString = $current ?: 'NONE';
         if ($to) {
             $this->_stdout("-- Downgrading from \"{$currentString}\" to \"{$to}\" ...");
-        }
-        else {
+        } else {
             $this->_stdout("-- Downgrading once from \"{$currentString}\" ...");
         }
         sleep(3); // time to cancel
         if ($current === $migrator->down($to ?: null)) {
             $this->_stdout("-- Nothing to do.");
-        }
-        else {
+        } else {
             $transaction->commit();
         }
     }
 
-    private function _toClass (string $path): string {
+    private function _toClass(string $path): string
+    {
         return str_replace('/', '\\', $path);
     }
 
-    private function record (string $class): void {
+    private function record(string $class): void
+    {
         $class = $this->_toClass($class) or $this->_usage_exit();
         $record = $this->db->getRecord($class);
         $use = [];
@@ -199,8 +207,7 @@ $opt = getopt('h', [
             $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
             $up[] = "\$schema->createTable('{$record}', {$columns});";
             $down[] = "\$schema->dropTable('{$record}');";
-        }
-        else { // add or drop columns. we can't detect whether they've simply been renamed.
+        } else { // add or drop columns. we can't detect whether they've simply been renamed.
             $columns = $this->schema->getColumnInfo($table);
             /** @see Schema::addColumn() */
             /** @see Schema::dropColumn() */
@@ -254,7 +261,8 @@ $opt = getopt('h', [
         $this->write($class, $use, $up, $down);
     }
 
-    private function junction (string $class): void {
+    private function junction(string $class): void
+    {
         $class = $this->_toClass($class) or $this->_usage_exit();
         $junction = $this->db->getJunction($class);
         $use = [];
@@ -291,7 +299,8 @@ $opt = getopt('h', [
         $this->write($class, $use, $up, $down);
     }
 
-    private function write (string $class, array $use, array $up, array $down): void {
+    private function write(string $class, array $use, array $up, array $down): void
+    {
         if (!$up or !$down) {
             $this->_stdout("-- Nothing to do.");
             return;
@@ -328,7 +337,7 @@ $opt = getopt('h', [
             /**
              * @var Schema \$schema
              */
-            public function up (\$schema)
+            public function up(\$schema)
             {
         {$up}
             }
@@ -336,7 +345,7 @@ $opt = getopt('h', [
             /**
              * @var Schema \$schema
              */
-            public function down (\$schema)
+            public function down(\$schema)
             {
         {$down}
             }

@@ -9,7 +9,8 @@ use Helix\DB;
  *
  * @method static static factory(DB $db, string $name, string $type = 'string')
  */
-class EAV extends Table {
+class EAV extends Table
+{
 
     /**
      * The scalar storage type for the `value` column (implied `NOT NULL`).
@@ -23,7 +24,8 @@ class EAV extends Table {
      * @param string $name
      * @param string $type
      */
-    public function __construct (DB $db, string $name, string $type = 'string') {
+    public function __construct(DB $db, string $name, string $type = 'string')
+    {
         parent::__construct($db, $name, ['entity', 'attribute', 'value']);
         $this->type = $type;
     }
@@ -35,8 +37,9 @@ class EAV extends Table {
      * @param string $attribute
      * @return bool
      */
-    public function exists (int $id, string $attribute): bool {
-        $statement = $this->cache(__FUNCTION__, function() {
+    public function exists(int $id, string $attribute): bool
+    {
+        $statement = $this->cache(__FUNCTION__, function () {
             return $this->select(['COUNT(*) > 0'])->where('entity = ? AND attribute = ?')->prepare();
         });
         $exists = (bool)$statement([$id, $attribute])->fetchColumn();
@@ -53,7 +56,8 @@ class EAV extends Table {
      * @param array $match `[attribute => value]`. If empty, selects all IDs for entities having at least one attribute.
      * @return Select
      */
-    public function findAll (array $match) {
+    public function findAll(array $match)
+    {
         $select = $this->select([$this['entity']]);
         $prior = $this;
         foreach ($match as $attribute => $value) {
@@ -72,7 +76,8 @@ class EAV extends Table {
     /**
      * @return string
      */
-    final public function getType (): string {
+    final public function getType(): string
+    {
         return $this->type;
     }
 
@@ -82,8 +87,9 @@ class EAV extends Table {
      * @param int $id
      * @return scalar[] `[attribute => value]`
      */
-    public function load (int $id): array {
-        $statement = $this->cache(__FUNCTION__, function() {
+    public function load(int $id): array
+    {
+        $statement = $this->cache(__FUNCTION__, function () {
             $select = $this->select(['attribute', 'value']);
             $select->where('entity = ?');
             $select->order('attribute');
@@ -98,7 +104,8 @@ class EAV extends Table {
      * @param int[] $ids
      * @return scalar[][] `[id => attribute => value]
      */
-    public function loadAll (array $ids): array {
+    public function loadAll(array $ids): array
+    {
         if (empty($ids)) {
             return [];
         }
@@ -126,7 +133,8 @@ class EAV extends Table {
      * @param array $values `[attribute => value]`
      * @return $this
      */
-    public function save (int $id, array $values) {
+    public function save(int $id, array $values)
+    {
         // delete stale
         $this->delete([
             $this['entity']->isEqual($id),
@@ -143,7 +151,7 @@ class EAV extends Table {
         }
 
         // upsert each
-        $statement = $this->cache(__FUNCTION__, function() {
+        $statement = $this->cache(__FUNCTION__, function () {
             if ($this->db->isSQLite()) {
                 return $this->db->prepare(
                     "INSERT INTO {$this} (entity,attribute,value) VALUES (?,?,?)"
@@ -166,7 +174,8 @@ class EAV extends Table {
      * @param scalar $value
      * @return scalar
      */
-    protected function setType ($value) {
+    protected function setType($value)
+    {
         settype($value, $this->type);
         return $value;
     }

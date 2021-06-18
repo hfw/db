@@ -35,7 +35,8 @@ use Helix\DB;
  *
  * @method static static factory(DB $db, string $subject = null, array $values = [])
  */
-class Choice extends Value {
+class Choice extends Value
+{
 
     /**
      * @var string
@@ -59,7 +60,8 @@ class Choice extends Value {
      * @param null|string $subject
      * @param array $values `[when => then]` for the subject.
      */
-    public function __construct (DB $db, string $subject = null, array $values = []) {
+    public function __construct(DB $db, string $subject = null, array $values = [])
+    {
         parent::__construct($db, '');
         $this->subject = $subject;
         $this->whenValues($values);
@@ -68,7 +70,8 @@ class Choice extends Value {
     /**
      * @return string
      */
-    public function __toString (): string {
+    public function __toString(): string
+    {
         $sql = 'CASE';
         if (isset($this->subject)) {
             $sql .= " {$this->subject}";
@@ -87,7 +90,8 @@ class Choice extends Value {
      * @param string|ValueInterface $else
      * @return $this
      */
-    public function else ($else) {
+    public function else($else)
+    {
         $this->else = isset($else) ? $this->db->quote($else) : null;
         return $this;
     }
@@ -99,7 +103,8 @@ class Choice extends Value {
      * @param string|ValueInterface $then
      * @return $this
      */
-    public function when ($expression, $then) {
+    public function when($expression, $then)
+    {
         $this->values[$this->db->quote($expression)] = $this->db->quote($then);
         return $this;
     }
@@ -113,7 +118,8 @@ class Choice extends Value {
      * @param array $values `[when => then]`
      * @return $this
      */
-    public function whenValues (array $values) {
+    public function whenValues(array $values)
+    {
         foreach ($values as $when => $then) {
             $this->when($when, $then);
         }

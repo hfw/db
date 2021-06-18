@@ -10,7 +10,8 @@ use Helix\DB\Fluent\Value\ValueTrait;
 /**
  * Represents a typeless value expression.
  */
-class Value extends Expression implements ValueInterface {
+class Value extends Expression implements ValueInterface
+{
 
     use ValueTrait;
     use DateTimeCastTrait;

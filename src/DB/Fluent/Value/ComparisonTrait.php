@@ -15,7 +15,8 @@ use Helix\DB\Select;
  *
  * This also requires that the subquery's first column is referable.
  */
-trait ComparisonTrait {
+trait ComparisonTrait
+{
 
     use AbstractTrait;
 
@@ -28,7 +29,8 @@ trait ComparisonTrait {
      * @return Predicate
      * @internal
      */
-    protected function _isRelational ($arg, string $oper, string $multi) {
+    protected function _isRelational($arg, string $oper, string $multi)
+    {
         static $inverse = [
             '<' => '>=',
             '<=' => '>',
@@ -57,7 +59,8 @@ trait ComparisonTrait {
      * @param null|scalar|Select $arg
      * @return Predicate
      */
-    public function is ($arg): Predicate {
+    public function is($arg): Predicate
+    {
         if ($arg instanceof Select) {
             if ($this->db->isSQLite()) {
                 return Select::factory($this->db, $arg, [$arg[0]])
@@ -68,8 +71,7 @@ trait ComparisonTrait {
         }
         if ($arg === null or is_bool($arg)) {
             $arg = ['' => 'NULL', 1 => 'TRUE', 0 => 'FALSE'][$arg];
-        }
-        else {
+        } else {
             $arg = $this->db->quote($arg);
         }
         if ($this->db->isMySQL()) {
@@ -85,7 +87,8 @@ trait ComparisonTrait {
      * @param number $max
      * @return Predicate
      */
-    public function isBetween ($min, $max) {
+    public function isBetween($min, $max)
+    {
         $min = $this->db->quote($min);
         $max = $this->db->quote($max);
         return Predicate::factory($this->db, "{$this} BETWEEN {$min} AND {$max}");
@@ -97,7 +100,8 @@ trait ComparisonTrait {
      * @param scalar|array|Select $arg
      * @return Predicate
      */
-    public function isEqual ($arg) {
+    public function isEqual($arg)
+    {
         return $this->db->match($this, $arg);
     }
 
@@ -106,7 +110,8 @@ trait ComparisonTrait {
      *
      * @return Predicate
      */
-    public function isFalse () {
+    public function isFalse()
+    {
         return Predicate::factory($this->db, "{$this} IS FALSE");
     }
 
@@ -116,7 +121,8 @@ trait ComparisonTrait {
      * @param number|string|Select $arg
      * @return Predicate
      */
-    public function isGt ($arg) {
+    public function isGt($arg)
+    {
         return $this->_isRelational($arg, '>', 'ALL');
     }
 
@@ -126,7 +132,8 @@ trait ComparisonTrait {
      * @param Select $select
      * @return Predicate
      */
-    public function isGtAny (Select $select) {
+    public function isGtAny(Select $select)
+    {
         return $this->_isRelational($select, '>', 'ANY');
     }
 
@@ -136,7 +143,8 @@ trait ComparisonTrait {
      * @param number|string|Select $arg
      * @return Predicate
      */
-    public function isGte ($arg) {
+    public function isGte($arg)
+    {
         return $this->_isRelational($arg, '>=', 'ALL');
     }
 
@@ -146,7 +154,8 @@ trait ComparisonTrait {
      * @param Select $select
      * @return Predicate
      */
-    public function isGteAny (Select $select) {
+    public function isGteAny(Select $select)
+    {
         return $this->_isRelational($select, '>=', 'ANY');
     }
 
@@ -156,7 +165,8 @@ trait ComparisonTrait {
      * @param string $pattern
      * @return Predicate
      */
-    public function isLike (string $pattern) {
+    public function isLike(string $pattern)
+    {
         $pattern = $this->db->quote($pattern);
         return Predicate::factory($this->db, "{$this} LIKE {$pattern}");
     }
@@ -167,7 +177,8 @@ trait ComparisonTrait {
      * @param number|string|Select $arg
      * @return Predicate
      */
-    public function isLt ($arg) {
+    public function isLt($arg)
+    {
         return $this->_isRelational($arg, '<', 'ALL');
     }
 
@@ -177,7 +188,8 @@ trait ComparisonTrait {
      * @param Select $select
      * @return Predicate
      */
-    public function isLtAny (Select $select) {
+    public function isLtAny(Select $select)
+    {
         return $this->_isRelational($select, '<', 'ANY');
     }
 
@@ -187,7 +199,8 @@ trait ComparisonTrait {
      * @param number|string|Select $arg
      * @return Predicate
      */
-    public function isLte ($arg) {
+    public function isLte($arg)
+    {
         return $this->_isRelational($arg, '<=', 'ALL');
     }
 
@@ -197,7 +210,8 @@ trait ComparisonTrait {
      * @param Select $select
      * @return Predicate
      */
-    public function isLteAny (Select $select) {
+    public function isLteAny(Select $select)
+    {
         return $this->_isRelational($select, '<=', 'ANY');
     }
 
@@ -207,7 +221,8 @@ trait ComparisonTrait {
      * @param null|scalar|Select $arg
      * @return Predicate
      */
-    public function isNot ($arg) {
+    public function isNot($arg)
+    {
         return $this->is($arg)->not();
     }
 
@@ -218,7 +233,8 @@ trait ComparisonTrait {
      * @param number $max
      * @return Predicate
      */
-    public function isNotBetween ($min, $max) {
+    public function isNotBetween($min, $max)
+    {
         $min = $this->db->quote($min);
         $max = $this->db->quote($max);
         return Predicate::factory($this->db, "{$this} NOT BETWEEN {$min} AND {$max}");
@@ -230,7 +246,8 @@ trait ComparisonTrait {
      * @param scalar|array|Select $arg
      * @return Predicate
      */
-    public function isNotEqual ($arg) {
+    public function isNotEqual($arg)
+    {
         if ($arg instanceof Select) {
             return Predicate::factory($this->db, "{$this} NOT IN ({$arg->toSql()})");
         }
@@ -246,7 +263,8 @@ trait ComparisonTrait {
      * @param string $pattern
      * @return Predicate
      */
-    public function isNotLike (string $pattern) {
+    public function isNotLike(string $pattern)
+    {
         $pattern = $this->db->quote($pattern);
         return Predicate::factory($this->db, "{$this} NOT LIKE {$pattern}");
     }
@@ -256,7 +274,8 @@ trait ComparisonTrait {
      *
      * @return Predicate
      */
-    public function isNotNull () {
+    public function isNotNull()
+    {
         return Predicate::factory($this->db, "{$this} IS NOT NULL");
     }
 
@@ -266,7 +285,8 @@ trait ComparisonTrait {
      * @param string $pattern
      * @return Predicate
      */
-    public function isNotRegExp (string $pattern) {
+    public function isNotRegExp(string $pattern)
+    {
         $pattern = $this->db->quote($pattern);
         return Predicate::factory($this->db, "{$this} NOT REGEXP {$pattern}");
     }
@@ -276,7 +296,8 @@ trait ComparisonTrait {
      *
      * @return Predicate
      */
-    public function isNull () {
+    public function isNull()
+    {
         return Predicate::factory($this->db, "{$this} IS NULL");
     }
 
@@ -286,7 +307,8 @@ trait ComparisonTrait {
      * @param string $pattern
      * @return Predicate
      */
-    public function isRegExp (string $pattern) {
+    public function isRegExp(string $pattern)
+    {
         $pattern = $this->db->quote($pattern);
         return Predicate::factory($this->db, "{$this} REGEXP {$pattern}");
     }
@@ -300,7 +322,8 @@ trait ComparisonTrait {
      * @param array $values `[when => then]`
      * @return Choice
      */
-    public function switch (array $values = []) {
+    public function switch(array $values = [])
+    {
         return Choice::factory($this->db, "{$this}", $values);
     }
 }

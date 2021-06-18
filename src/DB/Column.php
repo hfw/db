@@ -19,7 +19,8 @@ use LogicException;
  *
  * @method static static factory(DB $db, string $name, string $qualifier = '')
  */
-class Column implements ArrayAccess, ValueInterface {
+class Column implements ArrayAccess, ValueInterface
+{
 
     use FactoryTrait;
     use DateTimeTrait;
@@ -41,7 +42,8 @@ class Column implements ArrayAccess, ValueInterface {
      * @param string $name
      * @param string $qualifier
      */
-    public function __construct (DB $db, string $name, string $qualifier = '') {
+    public function __construct(DB $db, string $name, string $qualifier = '')
+    {
         $this->db = $db;
         $this->name = $name;
         $this->qualifier = $qualifier;
@@ -52,7 +54,8 @@ class Column implements ArrayAccess, ValueInterface {
      *
      * @return string
      */
-    public function __toString () {
+    public function __toString()
+    {
         if (strlen($this->qualifier)) {
             return "{$this->qualifier}.{$this->name}";
         }
@@ -62,14 +65,16 @@ class Column implements ArrayAccess, ValueInterface {
     /**
      * @return string
      */
-    final public function getName (): string {
+    final public function getName(): string
+    {
         return $this->name;
     }
 
     /**
      * @return string
      */
-    final public function getQualifier (): string {
+    final public function getQualifier(): string
+    {
         return $this->qualifier;
     }
 
@@ -79,7 +84,8 @@ class Column implements ArrayAccess, ValueInterface {
      * @param mixed $value
      * @return true
      */
-    final public function offsetExists ($value) {
+    final public function offsetExists($value)
+    {
         return true;
     }
 
@@ -92,7 +98,8 @@ class Column implements ArrayAccess, ValueInterface {
      * @param string $aggregator
      * @return null|string
      */
-    public function offsetGet ($aggregator) {
+    public function offsetGet($aggregator)
+    {
         $aggregator = preg_replace('/[ _()]/', '', $aggregator); // accept a variety of forms
         $aggregator = $this->{$aggregator}(); // methods are not case sensitive
         return Select::factory($this->db, $this->qualifier, [$aggregator])->getResult();
@@ -105,7 +112,8 @@ class Column implements ArrayAccess, ValueInterface {
      * @param mixed $value
      * @throws LogicException
      */
-    final public function offsetSet ($offset, $value) {
+    final public function offsetSet($offset, $value)
+    {
         throw new LogicException("Column aggregation is read-only");
     }
 
@@ -115,7 +123,8 @@ class Column implements ArrayAccess, ValueInterface {
      * @param mixed $offset
      * @throws LogicException
      */
-    final public function offsetUnset ($offset) {
+    final public function offsetUnset($offset)
+    {
         throw new LogicException("Column aggregation is read-only");
     }
 
@@ -124,9 +133,10 @@ class Column implements ArrayAccess, ValueInterface {
      *
      * @return Select|scalar[]
      */
-    public function select () {
+    public function select()
+    {
         return Select::factory($this->db, $this->qualifier, [$this->name])
-            ->setFetcher(function(Statement $statement) {
+            ->setFetcher(function (Statement $statement) {
                 while (false !== $value = $statement->fetchColumn()) {
                     yield $value;
                 }
@@ -141,7 +151,8 @@ class Column implements ArrayAccess, ValueInterface {
      * @param string $name
      * @return $this
      */
-    public function setName (string $name) {
+    public function setName(string $name)
+    {
         $clone = clone $this;
         $clone->name = $name;
         return $clone;
@@ -151,7 +162,8 @@ class Column implements ArrayAccess, ValueInterface {
      * @param string $qualifier
      * @return $this
      */
-    public function setQualifier (string $qualifier) {
+    public function setQualifier(string $qualifier)
+    {
         $clone = clone $this;
         $clone->qualifier = $qualifier;
         return $clone;

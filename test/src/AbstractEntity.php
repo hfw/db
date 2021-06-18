@@ -8,7 +8,8 @@ use Helix\DB\EntityInterface;
  *
  * Verifies the `@column` annotation.
  */
-abstract class AbstractEntity implements EntityInterface, ArrayAccess {
+abstract class AbstractEntity implements EntityInterface, ArrayAccess
+{
 
     use AttributesTrait;
 
@@ -21,7 +22,8 @@ abstract class AbstractEntity implements EntityInterface, ArrayAccess {
     /**
      * @return int
      */
-    final public function getId () {
+    final public function getId()
+    {
         return $this->id;
     }
 }

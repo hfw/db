@@ -9,7 +9,8 @@ use Helix\DB\Fluent\Text;
 /**
  * Produces aggregate expressions for the instance.
  */
-trait AggregateTrait {
+trait AggregateTrait
+{
 
     use AbstractTrait;
 
@@ -18,7 +19,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function avg () {
+    public function avg()
+    {
         return Num::factory($this->db, "AVG({$this})");
     }
 
@@ -27,7 +29,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function avgDistinct () {
+    public function avgDistinct()
+    {
         return Num::factory($this->db, "AVG(DISTINCT {$this})");
     }
 
@@ -36,7 +39,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function count () {
+    public function count()
+    {
         return Num::factory($this->db, "COUNT({$this})");
     }
 
@@ -45,7 +49,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function countDistinct () {
+    public function countDistinct()
+    {
         return Num::factory($this->db, "COUNT(DISTINCT {$this})");
     }
 
@@ -55,7 +60,8 @@ trait AggregateTrait {
      * @param string $delimiter
      * @return Text
      */
-    public function groupConcat (string $delimiter = ',') {
+    public function groupConcat(string $delimiter = ',')
+    {
         $delimiter = $this->db->quote($delimiter);
         if ($this->db->isSQLite()) {
             return Text::factory($this->db, "GROUP_CONCAT({$this},{$delimiter})");
@@ -68,7 +74,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function max () {
+    public function max()
+    {
         return Num::factory($this->db, "MAX({$this})");
     }
 
@@ -77,7 +84,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function min () {
+    public function min()
+    {
         return Num::factory($this->db, "MIN({$this})");
     }
 
@@ -86,7 +94,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function sum () {
+    public function sum()
+    {
         return Num::factory($this->db, "SUM({$this})");
     }
 
@@ -95,7 +104,8 @@ trait AggregateTrait {
      *
      * @return Num
      */
-    public function sumDistinct () {
+    public function sumDistinct()
+    {
         return Num::factory($this->db, "SUM(DISTINCT {$this})");
     }
 }

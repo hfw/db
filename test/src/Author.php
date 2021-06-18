@@ -5,7 +5,8 @@
  *
  * @record authors
  */
-class Author extends AbstractEntity {
+class Author extends AbstractEntity
+{
 
     /**
      * @eav authors_eav
@@ -22,7 +23,8 @@ class Author extends AbstractEntity {
     /**
      * @return string
      */
-    public function getName () {
+    public function getName()
+    {
         return $this->name;
     }
 
@@ -30,7 +32,8 @@ class Author extends AbstractEntity {
      * @param string $name
      * @return $this
      */
-    public function setName ($name) {
+    public function setName($name)
+    {
         $this->name = $name;
         return $this;
     }

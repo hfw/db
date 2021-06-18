@@ -15,7 +15,8 @@ use Helix\DB\Fluent\Value\ValueTrait;
  * @see https://sqlite.org/lang_datefunc.html
  * @see https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
  */
-trait DateTimeTrait {
+trait DateTimeTrait
+{
 
     use ValueTrait;
 
@@ -24,7 +25,8 @@ trait DateTimeTrait {
      *
      * @return Text
      */
-    public function date () {
+    public function date()
+    {
         return $this->dateFormat('%Y-%m-%d');
     }
 
@@ -34,7 +36,8 @@ trait DateTimeTrait {
      * @param string|string[] $format Format, or formats keyed by driver name.
      * @return Text
      */
-    public function dateFormat ($format) {
+    public function dateFormat($format)
+    {
         if (is_array($format)) {
             $format = $format[$this->db->getDriver()];
         }
@@ -50,7 +53,8 @@ trait DateTimeTrait {
      *
      * @return Text
      */
-    public function datetime () {
+    public function datetime()
+    {
         return $this->dateFormat([
             'mysql' => '%Y-%m-%d %H:%i:%S',
             'sqlite' => '%Y-%m-%d %H:%M:%S'
@@ -62,7 +66,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function day () {
+    public function day()
+    {
         return Num::factory($this->db, $this->dateFormat('%d'));
     }
 
@@ -71,7 +76,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function dayOfWeek () {
+    public function dayOfWeek()
+    {
         return Num::factory($this->db, $this->dateFormat('%w'));
     }
 
@@ -80,7 +86,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function dayOfYear () {
+    public function dayOfYear()
+    {
         return Num::factory($this->db, $this->dateFormat('%j'));
     }
 
@@ -89,7 +96,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function hours () {
+    public function hours()
+    {
         return Num::factory($this->db, $this->dateFormat('%H'));
     }
 
@@ -100,7 +108,8 @@ trait DateTimeTrait {
      *
      * @return Text
      */
-    public function iso8601 () {
+    public function iso8601()
+    {
         return $this->dateFormat([
             'mysql' => '%Y-%m-%dT%H:%i:%SZ',
             'sqlite' => '%Y-%m-%dT%H:%M:%SZ',
@@ -112,7 +121,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function minutes () {
+    public function minutes()
+    {
         return Num::factory($this->db, $this->dateFormat([
             'mysql' => '%i',
             'sqlite' => '%M'
@@ -124,7 +134,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function month () {
+    public function month()
+    {
         return Num::factory($this->db, $this->dateFormat('%m'));
     }
 
@@ -133,7 +144,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function seconds () {
+    public function seconds()
+    {
         return Num::factory($this->db, $this->dateFormat('%S'));
     }
 
@@ -142,7 +154,8 @@ trait DateTimeTrait {
      *
      * @return Text
      */
-    public function time () {
+    public function time()
+    {
         return $this->dateFormat([
             'mysql' => '%H:%i:%S',
             'sqlite' => '%H:%M:%S'
@@ -154,7 +167,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function timestamp () {
+    public function timestamp()
+    {
         if ($this->db->isSQLite()) {
             return Num::factory($this->db, "STRFTIME('%s',{$this})");
         }
@@ -171,7 +185,8 @@ trait DateTimeTrait {
      *
      * @return DateTime
      */
-    public function toLocalTz () {
+    public function toLocalTz()
+    {
         if ($this->db->isSQLite()) {
             // docs:
             // > The "localtime" modifier (12) assumes the time value to its left is in
@@ -193,7 +208,8 @@ trait DateTimeTrait {
      *
      * @return DateTime
      */
-    public function toUtc () {
+    public function toUtc()
+    {
         if ($this->db->isSQLite()) {
             // docs:
             // > "utc" assumes that the time value to its left is in the local timezone
@@ -210,7 +226,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function weekOfYear () {
+    public function weekOfYear()
+    {
         return Num::factory($this->db, $this->dateFormat([
             'mysql' => '%U',
             'sqlite' => '%W'
@@ -222,7 +239,8 @@ trait DateTimeTrait {
      *
      * @return Num
      */
-    public function year () {
+    public function year()
+    {
         return Num::factory($this->db, $this->dateFormat('%Y'));
     }
 }

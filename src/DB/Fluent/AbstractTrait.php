@@ -9,12 +9,13 @@ use Helix\DB;
  *
  * @internal
  */
-trait AbstractTrait {
+trait AbstractTrait
+{
 
     /**
      * @return string
      */
-    abstract public function __toString ();
+    abstract public function __toString();
 
     /**
      * @var DB

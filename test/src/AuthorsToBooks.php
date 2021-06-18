@@ -9,6 +9,7 @@
  * @foreign author Author
  * @for book Book
  */
-interface AuthorsToBooks {
+interface AuthorsToBooks
+{
 
 }

@@ -5,7 +5,8 @@ namespace Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\DateTime;
 
-trait DateTimeCastTrait {
+trait DateTimeCastTrait
+{
 
     use AbstractTrait;
 
@@ -24,7 +25,8 @@ trait DateTimeCastTrait {
      *
      * @return DateTime
      */
-    public function toDateTime () {
+    public function toDateTime()
+    {
         return DateTime::factory($this->db, $this);
     }
 }

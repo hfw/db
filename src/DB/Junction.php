@@ -17,7 +17,8 @@ use ReflectionClass;
  *
  * @TODO Remove the `for` tag, it's vague.
  */
-class Junction extends Table {
+class Junction extends Table
+{
 
     protected const RX_JUNCTION = '/\*\h*@junction\h+(?<table>\w+)/i';
     protected const RX_FOREIGN = '/\*\h*@for(eign)?\h+(?<column>\w+)\h+(?<class>\S+)/i';
@@ -34,7 +35,8 @@ class Junction extends Table {
      * @param string $interface
      * @return Junction
      */
-    public static function fromInterface (DB $db, string $interface) {
+    public static function fromInterface(DB $db, string $interface)
+    {
         $ref = new ReflectionClass($interface);
         assert($ref->isInterface());
         $doc = $ref->getDocComment();
@@ -49,7 +51,8 @@ class Junction extends Table {
      * @param string $table
      * @param string[] $classes
      */
-    public function __construct (DB $db, string $table, array $classes) {
+    public function __construct(DB $db, string $table, array $classes)
+    {
         parent::__construct($db, $table, array_keys($classes));
         $this->classes = $classes;
     }
@@ -63,7 +66,8 @@ class Junction extends Table {
      * @param array $match Keyed by junction column.
      * @return Select|EntityInterface[]
      */
-    public function findAll (string $key, array $match = []) {
+    public function findAll(string $key, array $match = [])
+    {
         $record = $this->getRecord($key);
         $select = $record->loadAll();
         $select->join($this, $this[$key]->isEqual($record['id']));
@@ -77,14 +81,16 @@ class Junction extends Table {
      * @param string $column
      * @return string
      */
-    final public function getClass (string $column): string {
+    final public function getClass(string $column): string
+    {
         return $this->classes[$column];
     }
 
     /**
      * @return string[]
      */
-    final public function getClasses () {
+    final public function getClasses()
+    {
         return $this->classes;
     }
 
@@ -92,14 +98,16 @@ class Junction extends Table {
      * @param string $column
      * @return Record
      */
-    public function getRecord (string $column) {
+    public function getRecord(string $column)
+    {
         return $this->db->getRecord($this->classes[$column]);
     }
 
     /**
      * @return Record[]
      */
-    public function getRecords () {
+    public function getRecords()
+    {
         return array_map(fn($class) => $this->db->getRecord($class), $this->classes);
     }
 
@@ -109,14 +117,14 @@ class Junction extends Table {
      * @param int[] $ids Keyed by column.
      * @return int Rows affected.
      */
-    public function link (array $ids): int {
-        $statement = $this->cache(__FUNCTION__, function() {
+    public function link(array $ids): int
+    {
+        $statement = $this->cache(__FUNCTION__, function () {
             $columns = implode(',', array_keys($this->columns));
             $slots = implode(',', $this->db->slots(array_keys($this->columns)));
             if ($this->db->isSQLite()) {
                 $sql = "INSERT OR IGNORE INTO {$this} ({$columns}) VALUES ({$slots})";
-            }
-            else {
+            } else {
                 $sql = "INSERT IGNORE INTO {$this} ({$columns}) VALUES ({$slots})";
             }
             return $this->db->prepare($sql);
@@ -132,7 +140,8 @@ class Junction extends Table {
      * @param array $ids Keyed by Column
      * @return int Rows affected
      */
-    public function unlink (array $ids): int {
+    public function unlink(array $ids): int
+    {
         return $this->delete($ids);
     }
 }

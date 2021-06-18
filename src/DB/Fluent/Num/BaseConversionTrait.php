@@ -11,7 +11,8 @@ use Helix\DB\Fluent\Text;
  * Since converting to base 10 only applies to text expressions,
  * its method can be found at {@link Text\TextTrait::toBase10()}
  */
-trait BaseConversionTrait {
+trait BaseConversionTrait
+{
 
     use AbstractTrait;
 
@@ -24,7 +25,8 @@ trait BaseConversionTrait {
      * @param int $to
      * @return Text
      */
-    public function toBase (int $from, int $to) {
+    public function toBase(int $from, int $to)
+    {
         return Text::factory($this->db, "CONV({$this},{$from},{$to})");
     }
 
@@ -36,7 +38,8 @@ trait BaseConversionTrait {
      * @param int $from
      * @return Text
      */
-    public function toBase16 (int $from = 10) {
+    public function toBase16(int $from = 10)
+    {
         return $this->toBase($from, 16);
     }
 
@@ -48,7 +51,8 @@ trait BaseConversionTrait {
      * @param int $from
      * @return Text
      */
-    public function toBase2 (int $from = 10) {
+    public function toBase2(int $from = 10)
+    {
         return $this->toBase($from, 2);
     }
 
@@ -60,7 +64,8 @@ trait BaseConversionTrait {
      * @param int $from
      * @return Text
      */
-    public function toBase8 (int $from = 10) {
+    public function toBase8(int $from = 10)
+    {
         return $this->toBase($from, 8);
     }
 }

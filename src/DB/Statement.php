@@ -9,7 +9,8 @@ use PDOStatement;
 /**
  * Extends `PDOStatement` for fluency and logging.
  */
-class Statement extends PDOStatement {
+class Statement extends PDOStatement
+{
 
     /**
      * @var DB
@@ -21,7 +22,8 @@ class Statement extends PDOStatement {
      *
      * @param DB $db
      */
-    protected function __construct (DB $db) {
+    protected function __construct(DB $db)
+    {
         $this->db = $db;
     }
 
@@ -31,7 +33,8 @@ class Statement extends PDOStatement {
      * @param array $args
      * @return $this
      */
-    public function __invoke (array $args = null) {
+    public function __invoke(array $args = null)
+    {
         $this->execute($args);
         return $this;
     }
@@ -41,7 +44,8 @@ class Statement extends PDOStatement {
      *
      * @return string
      */
-    public function __toString () {
+    public function __toString()
+    {
         return $this->queryString;
     }
 
@@ -54,7 +58,8 @@ class Statement extends PDOStatement {
      * @return bool
      * @throws ArgumentCountError
      */
-    public function execute ($args = null) {
+    public function execute($args = null)
+    {
         $this->db->getLogger()->__invoke($this->queryString);
         if ($result = !parent::execute($args)) {
             $info = $this->errorInfo();
@@ -71,7 +76,8 @@ class Statement extends PDOStatement {
      *
      * @return int
      */
-    public function getId (): int {
+    public function getId(): int
+    {
         return (int)$this->db->lastInsertId();
     }
 }

@@ -10,7 +10,8 @@ use Helix\DB\Fluent\Value\ValueTrait;
 /**
  * Produces text related expressions for the instance.
  */
-trait TextTrait {
+trait TextTrait
+{
 
     use ValueTrait;
     use BaseConversionTrait;
@@ -22,7 +23,8 @@ trait TextTrait {
      *
      * @return Text
      */
-    public function hex () {
+    public function hex()
+    {
         return Text::factory($this->db, "HEX({$this})");
     }
 
@@ -33,7 +35,8 @@ trait TextTrait {
      *
      * @return Num
      */
-    public function length () {
+    public function length()
+    {
         if ($this->db->isSQLite()) {
             return Num::factory($this->db, "LENGTH(CAST({$this} AS TEXT))");
         }
@@ -47,7 +50,8 @@ trait TextTrait {
      *
      * @return Text
      */
-    public function lower () {
+    public function lower()
+    {
         return Text::factory($this->db, "LOWER({$this})");
     }
 
@@ -59,7 +63,8 @@ trait TextTrait {
      * @param string $substring
      * @return Num
      */
-    public function position (string $substring) {
+    public function position(string $substring)
+    {
         $substring = $this->db->quote($substring);
         if ($this->db->isSQLite()) {
             return Num::factory($this->db, "INSTR({$this},{$substring})");
@@ -76,7 +81,8 @@ trait TextTrait {
      * @param string $replace
      * @return Text
      */
-    public function replace (string $search, string $replace) {
+    public function replace(string $search, string $replace)
+    {
         $search = $this->db->quote($search);
         $replace = $this->db->quote($replace);
         return Text::factory($this->db, "REPLACE({$this},{$search},{$replace})");
@@ -87,7 +93,8 @@ trait TextTrait {
      *
      * @return Num
      */
-    public function size () {
+    public function size()
+    {
         if ($this->db->isSQLite()) {
             return Num::factory($this->db, "LENGTH(CAST({$this} AS BLOB))");
         }
@@ -103,7 +110,8 @@ trait TextTrait {
      * @param null|int $length
      * @return Text
      */
-    public function substr (int $start, int $length = null) {
+    public function substr(int $start, int $length = null)
+    {
         if (isset($length)) {
             return Text::factory($this->db, "SUBSTR({$this},{$start},{$length})");
         }
@@ -118,7 +126,8 @@ trait TextTrait {
      * @param int $from
      * @return Num
      */
-    public function toBase10 (int $from) {
+    public function toBase10(int $from)
+    {
         return Num::factory($this->db, "CONV({$this},{$from},10)");
     }
 
@@ -129,7 +138,8 @@ trait TextTrait {
      *
      * @return Text
      */
-    public function upper () {
+    public function upper()
+    {
         return Text::factory($this->db, "UPPER({$this})");
     }
 }

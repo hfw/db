@@ -21,7 +21,8 @@ use LogicException;
  *
  * @method static static factory(DB $db)
  */
-class Schema implements ArrayAccess {
+class Schema implements ArrayAccess
+{
 
     use FactoryTrait;
 
@@ -220,7 +221,8 @@ class Schema implements ArrayAccess {
     /**
      * @param DB $db
      */
-    public function __construct (DB $db) {
+    public function __construct(DB $db)
+    {
         $this->db = $db;
         $this->colDefs ??= self::COLUMN_DEFINITIONS[$db->getDriver()];
     }
@@ -233,7 +235,8 @@ class Schema implements ArrayAccess {
      * @param int $type
      * @return $this
      */
-    public function addColumn (string $table, string $column, int $type = self::T_STRING_NULL) {
+    public function addColumn(string $table, string $column, int $type = self::T_STRING_NULL)
+    {
         $type = $this->colDefs[$type & self::T_MASK];
         $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
         unset($this->tables[$table]);
@@ -259,7 +262,8 @@ class Schema implements ArrayAccess {
      * @param array[] $constraints `[ <TABLE_CONST> => spec ]`
      * @return $this
      */
-    public function createTable (string $table, array $columns, array $constraints = []) {
+    public function createTable(string $table, array $columns, array $constraints = [])
+    {
         $defs = $this->toColumnDefinitions($columns);
 
         /** @var string[] $pk */
@@ -295,7 +299,8 @@ class Schema implements ArrayAccess {
      * @param string $column
      * @return $this
      */
-    public function dropColumn (string $table, string $column) {
+    public function dropColumn(string $table, string $column)
+    {
         $this->db->exec("ALTER TABLE {$table} DROP COLUMN {$column}");
         unset($this->tables[$table]);
         return $this;
@@ -306,7 +311,8 @@ class Schema implements ArrayAccess {
      *
      * @param string $table
      */
-    public function dropTable (string $table): void {
+    public function dropTable(string $table): void
+    {
         $this->db->exec("DROP TABLE IF EXISTS {$table}");
         unset($this->tables[$table]);
     }
@@ -325,7 +331,8 @@ class Schema implements ArrayAccess {
      * @param string $column
      * @return array[] Keyed by name.
      */
-    public function getColumnInfo (string $table): array {
+    public function getColumnInfo(string $table): array
+    {
         if ($this->db->isSQLite()) {
             $info = $this->db->query("PRAGMA table_info({$table})")->fetchAll();
             return array_combine(array_column($info, 'name'), array_map(fn(array $each) => [
@@ -345,7 +352,8 @@ class Schema implements ArrayAccess {
     /**
      * @return DB
      */
-    public function getDb () {
+    public function getDb()
+    {
         return $this->db;
     }
 
@@ -353,13 +361,13 @@ class Schema implements ArrayAccess {
      * @param string $name
      * @return null|Table
      */
-    public function getTable (string $name) {
+    public function getTable(string $name)
+    {
         if (!isset($this->tables[$name])) {
             if ($this->db->isSQLite()) {
                 $info = $this->db->query("PRAGMA table_info({$name})")->fetchAll();
                 $cols = array_column($info, 'name');
-            }
-            else {
+            } else {
                 $cols = $this->db->query("SELECT column_name FROM information_schema.tables WHERE table_name = \"{$name}\"")->fetchAll(DB::FETCH_COLUMN);
             }
             if (!$cols) {
@@ -376,7 +384,8 @@ class Schema implements ArrayAccess {
      * @param string $table
      * @return bool
      */
-    final public function offsetExists ($table): bool {
+    final public function offsetExists($table): bool
+    {
         return (bool)$this->offsetGet($table);
     }
 
@@ -386,7 +395,8 @@ class Schema implements ArrayAccess {
      * @param string $table
      * @return null|Table
      */
-    public function offsetGet ($table) {
+    public function offsetGet($table)
+    {
         return $this->getTable($table);
     }
 
@@ -395,7 +405,8 @@ class Schema implements ArrayAccess {
      * @param $value
      * @throws LogicException
      */
-    final public function offsetSet ($offset, $value) {
+    final public function offsetSet($offset, $value)
+    {
         throw new LogicException('The schema cannot be altered this way.');
     }
 
@@ -403,7 +414,8 @@ class Schema implements ArrayAccess {
      * @param $offset
      * @throws LogicException
      */
-    final public function offsetUnset ($offset) {
+    final public function offsetUnset($offset)
+    {
         throw new LogicException('The schema cannot be altered this way.');
     }
 
@@ -415,7 +427,8 @@ class Schema implements ArrayAccess {
      * @param string $newName
      * @return $this
      */
-    public function renameColumn (string $table, string $oldName, string $newName) {
+    public function renameColumn(string $table, string $oldName, string $newName)
+    {
         $this->db->exec("ALTER TABLE {$table} RENAME COLUMN {$oldName} TO {$newName}");
         unset($this->tables[$table]);
         return $this;
@@ -428,7 +441,8 @@ class Schema implements ArrayAccess {
      * @param string $newName
      * @return $this
      */
-    public function renameTable (string $oldName, string $newName) {
+    public function renameTable(string $oldName, string $newName)
+    {
         $this->db->exec("ALTER TABLE {$oldName} RENAME TO {$newName}");
         unset($this->tables[$oldName]);
         return $this;
@@ -440,8 +454,9 @@ class Schema implements ArrayAccess {
      * @param int[] $types
      * @return int[]
      */
-    protected function sortColumns (array $types): array {
-        uksort($types, function(string $a, string $b) use ($types) {
+    protected function sortColumns(array $types): array
+    {
+        uksort($types, function (string $a, string $b) use ($types) {
             // descending type constant, ascending name
             return $types[$b] <=> $types[$a] ?: $a <=> $b;
         });
@@ -452,7 +467,8 @@ class Schema implements ArrayAccess {
      * @param int[] $columns `[ name => <I_CONST> | <T_CONST> ]`
      * @return string[]
      */
-    protected function toColumnDefinitions (array $columns): array {
+    protected function toColumnDefinitions(array $columns): array
+    {
         assert(count($columns) > 0);
         $columns = $this->sortColumns($columns);
         $defs = [];
@@ -478,7 +494,8 @@ class Schema implements ArrayAccess {
      * @param Column $foreign
      * @return string
      */
-    protected function toForeignKeyConstraint (string $table, string $local, int $type, Column $foreign): string {
+    protected function toForeignKeyConstraint(string $table, string $local, int $type, Column $foreign): string
+    {
         return sprintf(
             'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE CASCADE ON DELETE %s',
             $this->toForeignKeyConstraint_name($table, $local),
@@ -496,7 +513,8 @@ class Schema implements ArrayAccess {
      * @param string $column
      * @return string
      */
-    protected function toForeignKeyConstraint_name (string $table, string $column): string {
+    protected function toForeignKeyConstraint_name(string $table, string $column): string
+    {
         return 'FK_' . $table . '__' . $column;
     }
 
@@ -505,7 +523,8 @@ class Schema implements ArrayAccess {
      * @param string[] $columns
      * @return string
      */
-    protected function toPrimaryKeyConstraint (string $table, array $columns): string {
+    protected function toPrimaryKeyConstraint(string $table, array $columns): string
+    {
         return sprintf(
             'CONSTRAINT %s PRIMARY KEY (%s)',
             $this->toPrimaryKeyConstraint_name($table, $columns),
@@ -520,7 +539,8 @@ class Schema implements ArrayAccess {
      * @param string[] $columns
      * @return string
      */
-    protected function toPrimaryKeyConstraint_name (string $table, array $columns): string {
+    protected function toPrimaryKeyConstraint_name(string $table, array $columns): string
+    {
         sort($columns, SORT_STRING);
         return 'PK_' . $table . '__' . implode('__', $columns);
     }
@@ -530,7 +550,8 @@ class Schema implements ArrayAccess {
      * @param string[] $columns
      * @return string
      */
-    protected function toUniqueKeyConstraint (string $table, array $columns): string {
+    protected function toUniqueKeyConstraint(string $table, array $columns): string
+    {
         return sprintf(
             'CONSTRAINT %s UNIQUE (%s)',
             $this->toUniqueKeyConstraint_name($table, $columns),
@@ -545,7 +566,8 @@ class Schema implements ArrayAccess {
      * @param string[] $columns
      * @return string
      */
-    protected function toUniqueKeyConstraint_name (string $table, array $columns): string {
+    protected function toUniqueKeyConstraint_name(string $table, array $columns): string
+    {
         sort($columns, SORT_STRING);
         return 'UQ_' . $table . '__' . implode('__', $columns);
     }

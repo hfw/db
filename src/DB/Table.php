@@ -14,7 +14,8 @@ use Helix\DB;
  *
  * @method static static factory(DB $db, string $name, array $columns)
  */
-class Table extends AbstractTable {
+class Table extends AbstractTable
+{
 
     use FactoryTrait;
 
@@ -42,7 +43,8 @@ class Table extends AbstractTable {
      * @param string $name
      * @param string[] $columns
      */
-    public function __construct (DB $db, string $name, array $columns) {
+    public function __construct(DB $db, string $name, array $columns)
+    {
         parent::__construct($db);
         $this->name = $name;
         foreach ($columns as $column) {
@@ -55,7 +57,8 @@ class Table extends AbstractTable {
      *
      * @return string
      */
-    final public function __toString () {
+    final public function __toString()
+    {
         return $this->name;
     }
 
@@ -65,7 +68,8 @@ class Table extends AbstractTable {
      * @param array $values
      * @return int Rows affected.
      */
-    public function apply (array $values): int {
+    public function apply(array $values): int
+    {
         $columns = implode(',', array_keys($values));
         $values = $this->db->quoteList($values);
         if ($this->db->isSQLite()) {
@@ -85,7 +89,8 @@ class Table extends AbstractTable {
      * @param Closure $prepare `():Statement`
      * @return Statement
      */
-    protected function cache (string $key, Closure $prepare) {
+    protected function cache(string $key, Closure $prepare)
+    {
         return $this->_cache[$key] ??= $prepare->__invoke();
     }
 
@@ -93,7 +98,8 @@ class Table extends AbstractTable {
      * @param array $match `[a => b]`
      * @return int
      */
-    public function count (array $match = []) {
+    public function count(array $match = [])
+    {
         $select = $this->select(['COUNT(*)']);
         foreach ($match as $a => $b) {
             $select->where($this->db->match($this[$a] ?? $a, $b));
@@ -109,7 +115,8 @@ class Table extends AbstractTable {
      * @param array $match
      * @return int Rows affected.
      */
-    public function delete (array $match): int {
+    public function delete(array $match): int
+    {
         foreach ($match as $a => $b) {
             $match[$a] = $this->db->match($this[$a] ?? $a, $b);
         }
@@ -120,14 +127,16 @@ class Table extends AbstractTable {
     /**
      * @return Column[]
      */
-    public function getColumns () {
+    public function getColumns()
+    {
         return $this->columns;
     }
 
     /**
      * @return string
      */
-    final public function getName (): string {
+    final public function getName(): string
+    {
         return $this->name;
     }
 
@@ -137,7 +146,8 @@ class Table extends AbstractTable {
      * @param array $values
      * @return Statement
      */
-    public function insert (array $values) {
+    public function insert(array $values)
+    {
         $columns = implode(',', array_keys($values));
         $values = $this->db->quoteList($values);
         return $this->db->query("INSERT INTO {$this} ($columns) VALUES ($values)");
@@ -147,7 +157,8 @@ class Table extends AbstractTable {
      * @param int|string $column
      * @return Column
      */
-    public function offsetGet ($column) {
+    public function offsetGet($column)
+    {
         if (is_int($column)) {
             return current(array_slice($this->columns, $column, 1)) ?: null;
         }
@@ -160,7 +171,8 @@ class Table extends AbstractTable {
      * @param string[] $columns
      * @return Select|array[]
      */
-    public function select (array $columns = ['*']) {
+    public function select(array $columns = ['*'])
+    {
         return Select::factory($this->db, $this, $columns);
     }
 
@@ -172,7 +184,8 @@ class Table extends AbstractTable {
      * @param string $name
      * @return Table
      */
-    public function setName (string $name) {
+    public function setName(string $name)
+    {
         $clone = clone $this;
         $clone->name = $name;
         foreach ($this->columns as $name => $column) {
@@ -190,7 +203,8 @@ class Table extends AbstractTable {
      * @param array $match
      * @return int Rows affected.
      */
-    public function update (array $values, array $match): int {
+    public function update(array $values, array $match): int
+    {
         foreach ($this->db->quoteArray($values) as $key => $value) {
             $values[$key] = "{$key} = {$value}";
         }

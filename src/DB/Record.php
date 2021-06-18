@@ -34,7 +34,8 @@ use stdClass;
  *
  * @TODO Allow constraints in the `column` tag, supporting single and multi-column.
  */
-class Record extends Table {
+class Record extends Table
+{
 
     protected const RX_RECORD = '/\*\h*@record\h+(?<table>\w+)/i';
     protected const RX_IS_COLUMN = '/\*\h*@col(umn)?\b/i';
@@ -138,7 +139,8 @@ class Record extends Table {
      * @param string|EntityInterface $class Class or prototype instance.
      * @return Record
      */
-    public static function fromClass (DB $db, $class) {
+    public static function fromClass(DB $db, $class)
+    {
         $rClass = new ReflectionClass($class);
         assert($rClass->implementsInterface(EntityInterface::class));
         $columns = [];
@@ -147,8 +149,7 @@ class Record extends Table {
             $doc = $rProp->getDocComment();
             if (preg_match(static::RX_IS_COLUMN, $doc)) {
                 $columns[] = $rProp->getName();
-            }
-            elseif (preg_match(static::RX_EAV, $doc, $eav)) {
+            } elseif (preg_match(static::RX_EAV, $doc, $eav)) {
                 preg_match(static::RX_EAV_VAR, $doc, $var);
                 $type = $var['type'] ?? 'string';
                 $type = static::SCALARS[$type] ?? 'string';
@@ -170,7 +171,8 @@ class Record extends Table {
      * @param string[] $properties Property names.
      * @param EAV[] $eav Keyed by property name.
      */
-    public function __construct (DB $db, EntityInterface $proto, string $table, array $properties, array $eav = []) {
+    public function __construct(DB $db, EntityInterface $proto, string $table, array $properties, array $eav = [])
+    {
         parent::__construct($db, $table, $properties);
         $this->proto = $proto;
         $this->utc = new DateTimeZone('UTC');
@@ -209,7 +211,8 @@ class Record extends Table {
      * @param ReflectionProperty $rProp
      * @return null|string Storage type, or `null` for unknown.
      */
-    protected function __construct_getType (string $prop, ReflectionProperty $rProp): ?string {
+    protected function __construct_getType(string $prop, ReflectionProperty $rProp): ?string
+    {
         return $this->__construct_getType_fromReflection($prop, $rProp)
             ?? $this->__construct_getType_fromVar($prop, $rProp);
     }
@@ -221,7 +224,8 @@ class Record extends Table {
      * @param ReflectionProperty $rProp
      * @return null|string
      */
-    protected function __construct_getType_fromReflection (string $prop, ReflectionProperty $rProp): ?string {
+    protected function __construct_getType_fromReflection(string $prop, ReflectionProperty $rProp): ?string
+    {
         if ($rType = $rProp->getType() and $rType instanceof ReflectionNamedType) {
             $type = $rType->getName();
             if (isset(static::SCALARS[$type])) {
@@ -241,7 +245,8 @@ class Record extends Table {
      * @param ReflectionProperty $rProp
      * @return null|string
      */
-    protected function __construct_getType_fromVar (string $prop, ReflectionProperty $rProp): ?string {
+    protected function __construct_getType_fromVar(string $prop, ReflectionProperty $rProp): ?string
+    {
         if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
             $type = preg_replace(static::RX_NULL, '', $var['type']); // remove null
             if (isset(static::SCALARS[$type])) {
@@ -267,7 +272,8 @@ class Record extends Table {
      * @param ReflectionProperty $rProp
      * @return null|bool
      */
-    protected function __construct_isNullable (string $prop, ReflectionProperty $rProp): ?bool {
+    protected function __construct_isNullable(string $prop, ReflectionProperty $rProp): ?bool
+    {
         return $this->__construct_isNullable_fromReflection($prop, $rProp)
             ?? $this->__construct_isNullable_fromVar($prop, $rProp);
     }
@@ -277,7 +283,8 @@ class Record extends Table {
      * @param ReflectionProperty $rProp
      * @return null|bool
      */
-    protected function __construct_isNullable_fromReflection (string $prop, ReflectionProperty $rProp): ?bool {
+    protected function __construct_isNullable_fromReflection(string $prop, ReflectionProperty $rProp): ?bool
+    {
         if ($rType = $rProp->getType()) {
             return $rType->allowsNull();
         }
@@ -289,7 +296,8 @@ class Record extends Table {
      * @param ReflectionProperty $rProp
      * @return null|bool
      */
-    protected function __construct_isNullable_fromVar (string $prop, ReflectionProperty $rProp): ?bool {
+    protected function __construct_isNullable_fromVar(string $prop, ReflectionProperty $rProp): ?bool
+    {
         if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
             preg_replace(static::RX_NULL, '', $var['type'], -1, $nullable);
             return (bool)$nullable;
@@ -303,7 +311,8 @@ class Record extends Table {
      * @param Statement $statement
      * @return EntityInterface[] Keyed by ID
      */
-    public function fetchAll (Statement $statement): array {
+    public function fetchAll(Statement $statement): array
+    {
         return iterator_to_array($this->fetchEach($statement));
     }
 
@@ -314,7 +323,8 @@ class Record extends Table {
      * @param Statement $statement
      * @return Generator|EntityInterface[] Keyed by ID
      */
-    public function fetchEach (Statement $statement) {
+    public function fetchEach(Statement $statement)
+    {
         do {
             $entities = [];
             for ($i = 0; $i < 256 and false !== $row = $statement->fetch(); $i++) {
@@ -336,7 +346,8 @@ class Record extends Table {
      * @param array[] $eavMatch `[eav property => attribute => value]`
      * @return Select|EntityInterface[]
      */
-    public function findAll (array $match, array $eavMatch = []) {
+    public function findAll(array $match, array $eavMatch = [])
+    {
         $select = $this->loadAll();
         foreach ($match as $a => $b) {
             $select->where($this->db->match($this[$a] ?? $a, $b));
@@ -355,21 +366,24 @@ class Record extends Table {
      * @param array $eavMatch `[eav property => attribute => value]`
      * @return null|EntityInterface
      */
-    public function findFirst (array $match, array $eavMatch = []) {
+    public function findFirst(array $match, array $eavMatch = [])
+    {
         return $this->findAll($match, $eavMatch)->limit(1)->getFirst();
     }
 
     /**
      * @return string
      */
-    final public function getClass (): string {
+    final public function getClass(): string
+    {
         return get_class($this->proto);
     }
 
     /**
      * @return EAV[]
      */
-    public function getEav () {
+    public function getEav()
+    {
         return $this->eav;
     }
 
@@ -378,14 +392,16 @@ class Record extends Table {
      *
      * @return string[]
      */
-    final public function getProperties (): array {
+    final public function getProperties(): array
+    {
         return array_keys($this->properties);
     }
 
     /**
      * @return EntityInterface
      */
-    public function getProto () {
+    public function getProto()
+    {
         return $this->proto;
     }
 
@@ -397,7 +413,8 @@ class Record extends Table {
      * @param string $property
      * @return string
      */
-    final public function getType (string $property): string {
+    final public function getType(string $property): string
+    {
         return $this->types[$property];
     }
 
@@ -408,7 +425,8 @@ class Record extends Table {
      *
      * @return string[]
      */
-    final public function getTypes (): array {
+    final public function getTypes(): array
+    {
         return $this->types;
     }
 
@@ -416,7 +434,8 @@ class Record extends Table {
      * @param EntityInterface $entity
      * @return array
      */
-    protected function getValues (EntityInterface $entity): array {
+    protected function getValues(EntityInterface $entity): array
+    {
         $values = [];
         foreach (array_keys($this->columns) as $name) {
             $value = $this->properties[$name]->getValue($entity);
@@ -440,7 +459,8 @@ class Record extends Table {
      * @param array|object $hydrated
      * @return scalar
      */
-    protected function getValues_dehydrate (string $to, string $from, $hydrated) {
+    protected function getValues_dehydrate(string $to, string $from, $hydrated)
+    {
         unset($from); // we don't need it here but it's given for posterity
         switch ($to) {
             case 'DateTime':
@@ -455,7 +475,8 @@ class Record extends Table {
      * @param string $property
      * @return bool
      */
-    final public function isNullable (string $property): bool {
+    final public function isNullable(string $property): bool
+    {
         return $this->nullable[$property];
     }
 
@@ -465,8 +486,9 @@ class Record extends Table {
      * @param int $id
      * @return null|EntityInterface
      */
-    public function load (int $id) {
-        $statement = $this->cache(__FUNCTION__, function() {
+    public function load(int $id)
+    {
+        $statement = $this->cache(__FUNCTION__, function () {
             return $this->select()->where('id = ?')->prepare();
         });
         $values = $statement([$id])->fetch();
@@ -485,8 +507,9 @@ class Record extends Table {
      *
      * @return Select|EntityInterface[]
      */
-    public function loadAll () {
-        return $this->select()->setFetcher(function(Statement $statement) {
+    public function loadAll()
+    {
+        return $this->select()->setFetcher(function (Statement $statement) {
             yield from $this->fetchEach($statement);
         });
     }
@@ -496,7 +519,8 @@ class Record extends Table {
      *
      * @param EntityInterface[] $entities
      */
-    protected function loadEav (array $entities): void {
+    protected function loadEav(array $entities): void
+    {
         $ids = array_keys($entities);
         foreach ($this->eav as $name => $eav) {
             foreach ($eav->loadAll($ids) as $id => $values) {
@@ -511,11 +535,11 @@ class Record extends Table {
      * @param EntityInterface $entity
      * @return int ID
      */
-    public function save (EntityInterface $entity): int {
+    public function save(EntityInterface $entity): int
+    {
         if (!$entity->getId()) {
             $this->saveInsert($entity);
-        }
-        else {
+        } else {
             $this->saveUpdate($entity);
         }
         $this->saveEav($entity);
@@ -525,7 +549,8 @@ class Record extends Table {
     /**
      * @param EntityInterface $entity
      */
-    protected function saveEav (EntityInterface $entity): void {
+    protected function saveEav(EntityInterface $entity): void
+    {
         $id = $entity->getId();
         foreach ($this->eav as $name => $eav) {
             // may be null to skip
@@ -541,8 +566,9 @@ class Record extends Table {
      *
      * @param EntityInterface $entity
      */
-    protected function saveInsert (EntityInterface $entity): void {
-        $statement = $this->cache(__FUNCTION__, function() {
+    protected function saveInsert(EntityInterface $entity): void
+    {
+        $statement = $this->cache(__FUNCTION__, function () {
             $slots = $this->db->slots(array_keys($this->columns));
             unset($slots['id']);
             $columns = implode(',', array_keys($slots));
@@ -560,8 +586,9 @@ class Record extends Table {
      *
      * @param EntityInterface $entity
      */
-    protected function saveUpdate (EntityInterface $entity): void {
-        $statement = $this->cache(__FUNCTION__, function() {
+    protected function saveUpdate(EntityInterface $entity): void
+    {
+        $statement = $this->cache(__FUNCTION__, function () {
             $slots = $this->db->slotsEqual(array_keys($this->columns));
             unset($slots['id']);
             $slots = implode(', ', $slots);
@@ -575,7 +602,8 @@ class Record extends Table {
      * @param EntityInterface $proto
      * @return $this
      */
-    public function setProto (EntityInterface $proto) {
+    public function setProto(EntityInterface $proto)
+    {
         $this->proto = $proto;
         return $this;
     }
@@ -587,7 +615,8 @@ class Record extends Table {
      * @param mixed $value
      * @return mixed
      */
-    protected function setType (string $property, $value) {
+    protected function setType(string $property, $value)
+    {
         if (isset($value)) {
             // complex?
             if (isset($this->hydration[$property])) {
@@ -611,7 +640,8 @@ class Record extends Table {
      * @param scalar $dehydrated
      * @return array|object
      */
-    protected function setType_hydrate (string $to, string $from, $dehydrated) {
+    protected function setType_hydrate(string $to, string $from, $dehydrated)
+    {
         switch ($from) {
             case 'DateTime':
                 /**
@@ -634,12 +664,12 @@ class Record extends Table {
      * @param EntityInterface $entity
      * @param array $values
      */
-    protected function setValues (EntityInterface $entity, array $values): void {
+    protected function setValues(EntityInterface $entity, array $values): void
+    {
         foreach ($values as $name => $value) {
             if (isset($this->properties[$name])) {
                 $this->properties[$name]->setValue($entity, $this->setType($name, $value));
-            }
-            else {
+            } else {
                 // attempt to set unknown fields directly on the instance.
                 $entity->{$name} = $value;
             }

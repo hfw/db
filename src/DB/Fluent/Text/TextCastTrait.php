@@ -5,7 +5,8 @@ namespace Helix\DB\Fluent\Text;
 use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\Text;
 
-trait TextCastTrait {
+trait TextCastTrait
+{
 
     use AbstractTrait;
 
@@ -14,7 +15,8 @@ trait TextCastTrait {
      *
      * @return Text
      */
-    public function toText () {
+    public function toText()
+    {
         if ($this->db->isSQLite()) {
             return Text::factory($this->db, "CAST({$this} AS TEXT)");
         }

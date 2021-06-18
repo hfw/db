@@ -8,7 +8,8 @@ use Helix\DB\Fluent\Value;
 /**
  * Produces type-independent expressions for the instance.
  */
-trait ValueTrait {
+trait ValueTrait
+{
 
     use AbstractTrait;
     use AggregateTrait;
@@ -20,7 +21,8 @@ trait ValueTrait {
      * @param scalar[] $values
      * @return Value
      */
-    public function coalesce (array $values) {
+    public function coalesce(array $values)
+    {
         array_unshift($values, $this);
         $values = $this->db->quoteList($values);
         return Value::factory($this->db, "COALESCE({$values})");

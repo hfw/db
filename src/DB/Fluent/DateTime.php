@@ -8,7 +8,8 @@ use Helix\DB\Fluent\Text\TextCastTrait;
 /**
  * Represents a date-time expression.
  */
-class DateTime extends Expression implements ValueInterface {
+class DateTime extends Expression implements ValueInterface
+{
 
     use DateTimeTrait;
     use TextCastTrait;

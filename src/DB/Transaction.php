@@ -14,7 +14,8 @@ use Helix\DB;
  *
  * @method static static factory(DB $db)
  */
-class Transaction {
+class Transaction
+{
 
     use FactoryTrait;
 
@@ -33,7 +34,8 @@ class Transaction {
      *
      * @param DB $db
      */
-    public function __construct (DB $db) {
+    public function __construct(DB $db)
+    {
         $this->db = $db;
         $db->beginTransaction();
     }
@@ -41,7 +43,8 @@ class Transaction {
     /**
      * Rolls back if the instance wasn't committed.
      */
-    public function __destruct () {
+    public function __destruct()
+    {
         if (!$this->committed) {
             $this->db->rollBack();
         }
@@ -54,14 +57,16 @@ class Transaction {
      *
      * @return true
      */
-    public function commit (): bool {
+    public function commit(): bool
+    {
         return $this->committed or $this->committed = $this->db->commit();
     }
 
     /**
      * @return bool
      */
-    final public function wasCommitted (): bool {
+    final public function wasCommitted(): bool
+    {
         return $this->committed;
     }
 }

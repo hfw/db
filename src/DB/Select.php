@@ -15,7 +15,8 @@ use IteratorAggregate;
  *
  * @method static static factory(DB $db, $table, array $columns)
  */
-class Select extends AbstractTable implements Countable, IteratorAggregate, ExpressionInterface {
+class Select extends AbstractTable implements Countable, IteratorAggregate, ExpressionInterface
+{
 
     use FactoryTrait;
 
@@ -125,15 +126,15 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string|AbstractTable $table
      * @param string[] $columns
      */
-    public function __construct (DB $db, $table, array $columns = ['*']) {
+    public function __construct(DB $db, $table, array $columns = ['*'])
+    {
         static $autoAlias = 0;
         $autoAlias++;
         parent::__construct($db);
         if ($table instanceof Select) {
             $this->_table = $table->toSubquery();
             $this->alias = "_anon{$autoAlias}_{$table->alias}";
-        }
-        else {
+        } else {
             if (is_string($table)) {
                 $table = $db[$table];
                 assert(isset($table));
@@ -143,7 +144,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
         }
         $this->table = $table;
         $this->setColumns($columns);
-        $this->fetcher = function(Statement $statement) {
+        $this->fetcher = function (Statement $statement) {
             yield from $statement;
         };
     }
@@ -152,7 +153,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param array $args
      * @return Statement
      */
-    public function __invoke (array $args = []) {
+    public function __invoke(array $args = [])
+    {
         return $this->execute($args);
     }
 
@@ -161,7 +163,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      *
      * @return string
      */
-    final public function __toString () {
+    final public function __toString()
+    {
         return $this->alias;
     }
 
@@ -171,7 +174,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param array $args Execution arguments.
      * @return int
      */
-    public function count (array $args = []): int {
+    public function count(array $args = []): int
+    {
         $clone = clone $this;
         $clone->_columns = 'COUNT(*)';
         $clone->_order = '';
@@ -184,7 +188,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param array $args
      * @return Statement
      */
-    public function execute (array $args = []) {
+    public function execute(array $args = [])
+    {
         if (empty($args)) {
             return $this->db->query($this->toSql());
         }
@@ -199,14 +204,16 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param array $args Execution arguments.
      * @return array
      */
-    public function getAll (array $args = []): array {
+    public function getAll(array $args = []): array
+    {
         return iterator_to_array($this->fetcher->__invoke($this->execute($args)));
     }
 
     /**
      * @return Column[]
      */
-    public function getColumns () {
+    public function getColumns()
+    {
         return $this->refs;
     }
 
@@ -219,7 +226,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param array $args Execution arguments.
      * @return Generator
      */
-    public function getEach (array $args = []) {
+    public function getEach(array $args = [])
+    {
         yield from $this->fetcher->__invoke($this->execute($args));
     }
 
@@ -231,7 +239,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param array $args
      * @return mixed
      */
-    public function getFirst (array $args = []) {
+    public function getFirst(array $args = [])
+    {
         return $this->getEach($args)->current();
     }
 
@@ -242,7 +251,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      *
      * @return Generator
      */
-    public function getIterator () {
+    public function getIterator()
+    {
         yield from $this->getEach();
     }
 
@@ -252,7 +262,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      *
      * @return null|mixed
      */
-    public function getResult (array $args = []) {
+    public function getResult(array $args = [])
+    {
         return $this->execute($args)->fetchColumn();
     }
 
@@ -262,11 +273,11 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string $column
      * @return $this
      */
-    public function group (string $column) {
+    public function group(string $column)
+    {
         if (!strlen($this->_group)) {
             $this->_group = " GROUP BY {$column}";
-        }
-        else {
+        } else {
             $this->_group .= ", {$column}";
         }
         return $this;
@@ -278,13 +289,13 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string ...$conditions
      * @return $this
      */
-    public function having (string ...$conditions) {
+    public function having(string ...$conditions)
+    {
         assert(count($conditions) > 0);
         $conditions = implode(' AND ', $conditions);
         if (!strlen($this->_having)) {
             $this->_having = " HAVING {$conditions}";
-        }
-        else {
+        } else {
             $this->_having .= " AND {$conditions}";
         }
         return $this;
@@ -298,11 +309,12 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param Select $select
      * @return $this
      */
-    public function intersect (Select $select) {
+    public function intersect(Select $select)
+    {
         if ($this->db->isMySQL()) {
             // to be standards compliant, this hack must fail if they don't have the same cols.
             assert(count($this->refs) === count($select->refs) and !array_diff_key($this->refs, $select->refs));
-            $this->join($select, ...array_map(function(string $alias, Column $ref) {
+            $this->join($select, ...array_map(function (string $alias, Column $ref) {
                 return $ref->is($this->refs[$alias]);
             }, array_keys($select->refs), $select->refs));
             return $this;
@@ -319,7 +331,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      *
      * @return Predicate
      */
-    public function isEmpty () {
+    public function isEmpty()
+    {
         return Predicate::factory($this->db, "NOT EXISTS ({$this->toSql()})");
     }
 
@@ -328,7 +341,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      *
      * @return Predicate
      */
-    public function isNotEmpty () {
+    public function isNotEmpty()
+    {
         return Predicate::factory($this->db, "EXISTS ({$this->toSql()})");
     }
 
@@ -339,7 +353,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string ...$conditions
      * @return $this
      */
-    public function join ($table, string ...$conditions) {
+    public function join($table, string ...$conditions)
+    {
         assert(count($conditions) > 0);
         if ($table instanceof Select) {
             $table = $table->toSubquery();
@@ -356,7 +371,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string ...$conditions
      * @return $this
      */
-    public function joinLeft ($table, string ...$conditions) {
+    public function joinLeft($table, string ...$conditions)
+    {
         assert(count($conditions) > 0);
         if ($table instanceof Select) {
             $table = $table->toSubquery();
@@ -373,11 +389,11 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param int $offset
      * @return $this
      */
-    public function limit (int $limit, int $offset = 0) {
+    public function limit(int $limit, int $offset = 0)
+    {
         if ($limit == 0) {
             $this->_limit = '';
-        }
-        else {
+        } else {
             $this->_limit = " LIMIT {$limit}";
             if ($offset > 1) {
                 $this->_limit .= " OFFSET {$offset}";
@@ -392,7 +408,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param int|string $ref Ordinal or reference name.
      * @return null|Column
      */
-    public function offsetGet ($ref) {
+    public function offsetGet($ref)
+    {
         if (is_int($ref)) {
             return current(array_slice($this->refs, $ref, 1)) ?: null;
         }
@@ -405,7 +422,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string $order
      * @return $this
      */
-    public function order (string $order) {
+    public function order(string $order)
+    {
         if (strlen($order)) {
             $order = " ORDER BY {$order}";
         }
@@ -416,7 +434,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     /**
      * @return Statement
      */
-    public function prepare () {
+    public function prepare()
+    {
         return $this->db->prepare($this->toSql());
     }
 
@@ -424,7 +443,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string $alias
      * @return $this
      */
-    public function setAlias (string $alias) {
+    public function setAlias(string $alias)
+    {
         $this->alias = $alias;
         foreach ($this->refs as $k => $column) {
             $this->refs[$k] = $column->setQualifier($alias);
@@ -441,7 +461,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string[] $expressions Keyed by alias if applicable.
      * @return $this
      */
-    public function setColumns (array $expressions = ['*']) {
+    public function setColumns(array $expressions = ['*'])
+    {
         if ($expressions === ['*']) {
             $expressions = array_keys($this->table->getColumns());
         }
@@ -452,8 +473,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
             $name = $match['name'] ?? null;
             if (is_int($alias)) {
                 $alias = $name;
-            }
-            elseif ($alias !== $name) {
+            } elseif ($alias !== $name) {
                 $expr .= " AS {$alias}";
             }
             if (isset($alias)) {
@@ -469,7 +489,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param Closure $fetcher
      * @return $this
      */
-    public function setFetcher (Closure $fetcher) {
+    public function setFetcher(Closure $fetcher)
+    {
         $this->fetcher = $fetcher;
         return $this;
     }
@@ -479,7 +500,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      *
      * @return string
      */
-    public function toSql (): string {
+    public function toSql(): string
+    {
         $sql = "SELECT {$this->_columns} FROM {$this->_table}";
         $sql .= $this->_join;
         $sql .= $this->_where;
@@ -496,7 +518,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      *
      * @return string
      */
-    public function toSubquery (): string {
+    public function toSubquery(): string
+    {
         return "({$this->toSql()}) AS {$this->alias}";
     }
 
@@ -506,7 +529,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param Select $select
      * @return $this
      */
-    public function union (Select $select) {
+    public function union(Select $select)
+    {
         $select = clone $select;
         $select->_order = '';
         $select->_limit = '';
@@ -520,7 +544,8 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param Select $select
      * @return $this
      */
-    public function unionAll (Select $select) {
+    public function unionAll(Select $select)
+    {
         $select = clone $select;
         $select->_order = '';
         $select->_limit = '';
@@ -534,13 +559,13 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * @param string ...$conditions
      * @return $this
      */
-    public function where (string ...$conditions) {
+    public function where(string ...$conditions)
+    {
         assert(count($conditions) > 0);
         $conditions = implode(' AND ', $conditions);
         if (!strlen($this->_where)) {
             $this->_where = " WHERE {$conditions}";
-        }
-        else {
+        } else {
             $this->_where .= " AND {$conditions}";
         }
         return $this;

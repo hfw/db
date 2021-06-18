@@ -3,7 +3,8 @@
 /**
  * @record books
  */
-class Book extends AbstractEntity {
+class Book extends AbstractEntity
+{
 
     /**
      * @eav books_eav
@@ -28,14 +29,16 @@ class Book extends AbstractEntity {
     /**
      * @return DateTimeImmutable
      */
-    public function getPublished (): DateTimeImmutable {
+    public function getPublished(): DateTimeImmutable
+    {
         return $this->published;
     }
 
     /**
      * @return string
      */
-    public function getTitle () {
+    public function getTitle()
+    {
         return $this->title;
     }
 
@@ -43,7 +46,8 @@ class Book extends AbstractEntity {
      * @param DateTimeImmutable $published
      * @return $this
      */
-    public function setPublished (DateTimeImmutable $published) {
+    public function setPublished(DateTimeImmutable $published)
+    {
         $this->published = $published;
         return $this;
     }
@@ -52,7 +56,8 @@ class Book extends AbstractEntity {
      * @param string $title
      * @return $this
      */
-    public function setTitle ($title) {
+    public function setTitle($title)
+    {
         $this->title = $title;
         return $this;
     }

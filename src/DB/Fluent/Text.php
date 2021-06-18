@@ -9,7 +9,8 @@ use Helix\DB\Fluent\Text\TextTrait;
 /**
  * Represents a text expression. Produces various transformations.
  */
-class Text extends Expression implements ValueInterface {
+class Text extends Expression implements ValueInterface
+{
 
     use TextTrait;
     use DateTimeCastTrait;

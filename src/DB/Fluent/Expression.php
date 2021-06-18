@@ -10,7 +10,8 @@ use Helix\DB\FactoryTrait;
  *
  * @method static static factory(DB $db, string $expression)
  */
-class Expression implements ExpressionInterface {
+class Expression implements ExpressionInterface
+{
 
     use FactoryTrait;
 
@@ -28,7 +29,8 @@ class Expression implements ExpressionInterface {
      * @param DB $db
      * @param string $expression
      */
-    public function __construct (DB $db, string $expression) {
+    public function __construct(DB $db, string $expression)
+    {
         $this->db = $db;
         $this->expression = $expression;
     }
@@ -36,7 +38,8 @@ class Expression implements ExpressionInterface {
     /**
      * @return string
      */
-    public function __toString () {
+    public function __toString()
+    {
         return $this->expression;
     }
 }

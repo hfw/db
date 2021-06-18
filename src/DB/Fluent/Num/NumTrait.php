@@ -10,7 +10,8 @@ use Helix\DB\Fluent\ValueInterface;
 /**
  * Produces numeric expressions for the instance.
  */
-trait NumTrait {
+trait NumTrait
+{
 
     use ValueTrait;
     use BaseConversionTrait;
@@ -21,7 +22,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function abs () {
+    public function abs()
+    {
         return Num::factory($this->db, "ABS({$this})");
     }
 
@@ -30,7 +32,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function acos () {
+    public function acos()
+    {
         return Num::factory($this->db, "ACOS({$this})");
     }
 
@@ -40,7 +43,8 @@ trait NumTrait {
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function add ($arg) {
+    public function add($arg)
+    {
         $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} + {$arg})");
     }
@@ -50,7 +54,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function asin () {
+    public function asin()
+    {
         return Num::factory($this->db, "ASIN({$this})");
     }
 
@@ -59,7 +64,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function atan () {
+    public function atan()
+    {
         return Num::factory($this->db, "ATAN({$this})");
     }
 
@@ -68,7 +74,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function ceil () {
+    public function ceil()
+    {
         return Num::factory($this->db, "CEIL({$this})");
     }
 
@@ -77,7 +84,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function cos () {
+    public function cos()
+    {
         return Num::factory($this->db, "COS({$this})");
     }
 
@@ -88,7 +96,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function degrees () {
+    public function degrees()
+    {
         return Num::factory($this->db, "DEGREES({$this})");
     }
 
@@ -98,7 +107,8 @@ trait NumTrait {
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function div ($arg) {
+    public function div($arg)
+    {
         $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} / {$arg})");
     }
@@ -110,7 +120,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function exp () {
+    public function exp()
+    {
         return Num::factory($this->db, "EXP({$this})");
     }
 
@@ -119,7 +130,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function floor () {
+    public function floor()
+    {
         return Num::factory($this->db, "FLOOR({$this})");
     }
 
@@ -128,7 +140,8 @@ trait NumTrait {
      *
      * @return Predicate
      */
-    public function isEven () {
+    public function isEven()
+    {
         return Predicate::factory($this->db, "({$this} % 2) = 0");
     }
 
@@ -137,7 +150,8 @@ trait NumTrait {
      *
      * @return Predicate
      */
-    public function isNegative () {
+    public function isNegative()
+    {
         return Predicate::factory($this->db, "{$this} < 0");
     }
 
@@ -146,7 +160,8 @@ trait NumTrait {
      *
      * @return Predicate
      */
-    public function isOdd () {
+    public function isOdd()
+    {
         return Predicate::factory($this->db, "({$this} % 2) <> 0");
     }
 
@@ -155,7 +170,8 @@ trait NumTrait {
      *
      * @return Predicate
      */
-    public function isPositive () {
+    public function isPositive()
+    {
         return Predicate::factory($this->db, "{$this} > 0");
     }
 
@@ -164,7 +180,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function ln () {
+    public function ln()
+    {
         return Num::factory($this->db, "LN({$this})");
     }
 
@@ -176,7 +193,8 @@ trait NumTrait {
      * @param float $base
      * @return Num
      */
-    public function log (float $base) {
+    public function log(float $base)
+    {
         return Num::factory($this->db, "LOG({$base},{$this})");
     }
 
@@ -185,7 +203,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function log10 () {
+    public function log10()
+    {
         return Num::factory($this->db, "LOG10({$this})");
     }
 
@@ -194,7 +213,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function log2 () {
+    public function log2()
+    {
         return Num::factory($this->db, "LOG2({$this})");
     }
 
@@ -204,7 +224,8 @@ trait NumTrait {
      * @param float $divisor
      * @return Num
      */
-    public function mod (float $divisor) {
+    public function mod(float $divisor)
+    {
         return Num::factory($this->db, "({$this} % {$divisor})");
     }
 
@@ -214,7 +235,8 @@ trait NumTrait {
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function mul ($arg) {
+    public function mul($arg)
+    {
         $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} * {$arg})");
     }
@@ -225,7 +247,8 @@ trait NumTrait {
      * @param float $exponent
      * @return Num
      */
-    public function pow (float $exponent) {
+    public function pow(float $exponent)
+    {
         return Num::factory($this->db, "POW({$this},{$exponent})");
     }
 
@@ -236,7 +259,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function radians () {
+    public function radians()
+    {
         return Num::factory($this->db, "RADIANS({$this})");
     }
 
@@ -246,7 +270,8 @@ trait NumTrait {
      * @param int $decimals
      * @return Num
      */
-    public function round (int $decimals = 0) {
+    public function round(int $decimals = 0)
+    {
         return Num::factory($this->db, "ROUND({$this},{$decimals})");
     }
 
@@ -255,7 +280,8 @@ trait NumTrait {
      *
      * @return Num `-1`, `0`, `1`
      */
-    public function sign () {
+    public function sign()
+    {
         return Num::factory($this->db, "SIGN({$this})");
     }
 
@@ -264,7 +290,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function sin () {
+    public function sin()
+    {
         return Num::factory($this->db, "SIN({$this})");
     }
 
@@ -273,7 +300,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function sqrt () {
+    public function sqrt()
+    {
         return Num::factory($this->db, "SQRT({$this})");
     }
 
@@ -283,7 +311,8 @@ trait NumTrait {
      * @param number|ValueInterface $arg
      * @return Num
      */
-    public function sub ($arg) {
+    public function sub($arg)
+    {
         $arg = $this->db->quote($arg);
         return Num::factory($this->db, "({$this} - {$arg})");
     }
@@ -293,7 +322,8 @@ trait NumTrait {
      *
      * @return Num
      */
-    public function tan () {
+    public function tan()
+    {
         return Num::factory($this->db, "TAN({$this})");
     }
 }

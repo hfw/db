@@ -26,17 +26,18 @@ use Helix\DB;
  * @see Migrator::glob()
  * @see Schema::getDb()
  */
-interface MigrationInterface {
+interface MigrationInterface
+{
 
     /**
      * @param Schema $schema
      * @return void
      */
-    public function down ($schema);
+    public function down($schema);
 
     /**
      * @param Schema $schema
      * @return void
      */
-    public function up ($schema);
+    public function up($schema);
 }

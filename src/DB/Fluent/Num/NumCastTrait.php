@@ -5,7 +5,8 @@ namespace Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\Num;
 
-trait NumCastTrait {
+trait NumCastTrait
+{
 
     use AbstractTrait;
 
@@ -14,7 +15,8 @@ trait NumCastTrait {
      *
      * @return Num
      */
-    public function toFloat () {
+    public function toFloat()
+    {
         if ($this->db->isSQLite()) {
             return Num::factory($this->db, "CAST({$this} AS REAL)");
         }
@@ -26,7 +28,8 @@ trait NumCastTrait {
      *
      * @return Num
      */
-    public function toInt () {
+    public function toInt()
+    {
         if ($this->db->isSQLite()) {
             return Num::factory($this->db, "CAST({$this} AS INTEGER)");
         }

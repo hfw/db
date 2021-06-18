@@ -3,13 +3,13 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-06-18T09:15:48.735Z_AuthorsToBooks */
+/** 2021-06-18T09:24:16.940Z_AuthorsToBooks */
 return new class implements MigrationInterface {
 
     /**
      * @var Schema $schema
      */
-    public function up ($schema)
+    public function up($schema)
     {
         $schema->createTable('authors_to_books', [
             'author' => Schema::T_INT,
@@ -26,7 +26,7 @@ return new class implements MigrationInterface {
     /**
      * @var Schema $schema
      */
-    public function down ($schema)
+    public function down($schema)
     {
         $schema->dropTable('authors_to_books');
     }

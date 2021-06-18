@@ -11,7 +11,8 @@ use Helix\DB;
  *
  * @see MigrationInterface
  */
-class Migrator {
+class Migrator
+{
 
     use FactoryTrait;
 
@@ -34,7 +35,8 @@ class Migrator {
      * @param DB $db
      * @param string $dir
      */
-    public function __construct (DB $db, string $dir) {
+    public function __construct(DB $db, string $dir)
+    {
         $this->db = $db;
         $this->dir = $dir;
     }
@@ -45,8 +47,9 @@ class Migrator {
      * @param string $to Migration sequence identifier, or `null` to step down once.
      * @return null|string The resulting current sequence identifier.
      */
-    public function down (string $to = null): ?string {
-        return $this->db->transact(function() use ($to) {
+    public function down(string $to = null): ?string
+    {
+        return $this->db->transact(function () use ($to) {
             $current = $this->getCurrent();
             // walk newest to oldest
             foreach (array_reverse($this->glob(), true) as $sequence => $file) {
@@ -72,14 +75,16 @@ class Migrator {
      *
      * @return null|string
      */
-    public function getCurrent (): ?string {
+    public function getCurrent(): ?string
+    {
         return $this->getTable()['sequence']['max'];
     }
 
     /**
      * @return string
      */
-    final public function getDir (): string {
+    final public function getDir(): string
+    {
         return $this->dir;
     }
 
@@ -87,7 +92,8 @@ class Migrator {
      * @param array $spec
      * @return MigrationInterface
      */
-    protected function getMigration (string $file) {
+    protected function getMigration(string $file)
+    {
         $migration = include "{$file}";
         assert($migration instanceof MigrationInterface);
         return $migration;
@@ -98,7 +104,8 @@ class Migrator {
      *
      * @return Table
      */
-    public function getTable () {
+    public function getTable()
+    {
         return $this->table ??= ($this->db['__migrations__'] ??
             $this->db->getSchema()->createTable('__migrations__', [
                 'sequence' => Schema::T_STRING | Schema::I_PRIMARY
@@ -111,7 +118,8 @@ class Migrator {
      *
      * @return string[] [ sequence => file ]
      */
-    protected function glob () {
+    protected function glob()
+    {
         $files = [];
         foreach (glob("{$this->dir}/*.php") as $file) {
             $files[basename($file, '.php')] = $file;
@@ -125,8 +133,9 @@ class Migrator {
      * @param null|string $to Migration sequence identifier, or `null` for all upgrades.
      * @return null|string The resulting current sequence identifier.
      */
-    public function up (string $to = null): ?string {
-        return $this->db->transact(function() use ($to) {
+    public function up(string $to = null): ?string
+    {
+        return $this->db->transact(function () use ($to) {
             $current = $this->getCurrent();
             // walk oldest to newest
             foreach ($this->glob() as $sequence => $file) {

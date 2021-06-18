@@ -9,7 +9,7 @@ $now = new DateTimeImmutable();
 $utc = new DateTimeZone('UTC');
 
 $db = DB::fromConfig();
-$db->setLogger(function($sql) {
+$db->setLogger(function ($sql) {
     $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[2];
     echo "{$trace['function']} ==> {$sql}\n\n";
 });

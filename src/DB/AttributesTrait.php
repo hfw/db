@@ -15,7 +15,8 @@ namespace Helix\DB;
  *
  * @see Record::load()
  */
-trait AttributesTrait {
+trait AttributesTrait
+{
 
     /**
      * Override this property with your own annotation.
@@ -34,7 +35,8 @@ trait AttributesTrait {
     /**
      * @return scalar[]
      */
-    public function getAttributes (): array {
+    public function getAttributes(): array
+    {
         return $this->attributes ?? [];
     }
 
@@ -42,7 +44,8 @@ trait AttributesTrait {
      * @param mixed $attr
      * @return bool
      */
-    public function offsetExists ($attr): bool {
+    public function offsetExists($attr): bool
+    {
         return isset($this->attributes[$attr]);
     }
 
@@ -50,7 +53,8 @@ trait AttributesTrait {
      * @param mixed $attr
      * @return null|scalar
      */
-    public function offsetGet ($attr) {
+    public function offsetGet($attr)
+    {
         return $this->attributes[$attr] ?? null;
     }
 
@@ -58,17 +62,16 @@ trait AttributesTrait {
      * @param mixed $attr
      * @param null|scalar $value
      */
-    public function offsetSet ($attr, $value): void {
+    public function offsetSet($attr, $value): void
+    {
         if (isset($attr)) {
             if (isset($value)) {
                 assert(is_scalar($value));
                 $this->attributes[$attr] = $value;
-            }
-            else {
+            } else {
                 $this->offsetUnset($attr);
             }
-        }
-        else {
+        } else {
             // appending must not be null.
             // even though missing numeric offsets would yield null when fetched individually,
             // getAttributes() would not have them.
@@ -80,7 +83,8 @@ trait AttributesTrait {
     /**
      * @param mixed $attr
      */
-    public function offsetUnset ($attr): void {
+    public function offsetUnset($attr): void
+    {
         unset($this->attributes[$attr]);
     }
 
@@ -88,7 +92,8 @@ trait AttributesTrait {
      * @param scalar[] $attributes
      * @return $this
      */
-    public function setAttributes (array $attributes) {
+    public function setAttributes(array $attributes)
+    {
         $this->attributes = array_filter($attributes, 'is_scalar');
         return $this;
     }

@@ -9,27 +9,28 @@ use Helix\DB;
 /**
  * Uses `ArrayAccess` to produce {@link Column} instances.
  */
-abstract class AbstractTable implements ArrayAccess {
+abstract class AbstractTable implements ArrayAccess
+{
 
     /**
      * Returns the SQL reference qualifier (i.e. the table name)
      *
      * @return string
      */
-    abstract public function __toString ();
+    abstract public function __toString();
 
     /**
      * Columns keyed by name/alias.
      *
      * @return Column[]
      */
-    abstract public function getColumns ();
+    abstract public function getColumns();
 
     /**
      * @param int|string $column
      * @return null|Column
      */
-    abstract public function offsetGet ($column);
+    abstract public function offsetGet($column);
 
     /**
      * @var DB
@@ -39,7 +40,8 @@ abstract class AbstractTable implements ArrayAccess {
     /**
      * @param DB $db
      */
-    public function __construct (DB $db) {
+    public function __construct(DB $db)
+    {
         $this->db = $db;
     }
 
@@ -47,7 +49,8 @@ abstract class AbstractTable implements ArrayAccess {
      * @param int|string $column
      * @return bool
      */
-    public function offsetExists ($column): bool {
+    public function offsetExists($column): bool
+    {
         return $this->offsetGet($column) !== null;
     }
 
@@ -58,7 +61,8 @@ abstract class AbstractTable implements ArrayAccess {
      * @param void $value
      * @throws Exception
      */
-    final public function offsetSet ($offset, $value): void {
+    final public function offsetSet($offset, $value): void
+    {
         throw new Exception('Tables are immutable.');
     }
 
@@ -68,7 +72,8 @@ abstract class AbstractTable implements ArrayAccess {
      * @param void $name
      * @throws Exception
      */
-    final public function offsetUnset ($name): void {
+    final public function offsetUnset($name): void
+    {
         $this->offsetSet($name, null);
     }
 }

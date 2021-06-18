@@ -5,10 +5,11 @@ namespace Helix\DB;
 /**
  * Exposes the object's ID for storage.
  */
-interface EntityInterface {
+interface EntityInterface
+{
 
     /**
      * @return int
      */
-    public function getId ();
+    public function getId();
 }
