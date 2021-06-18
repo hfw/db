@@ -140,7 +140,7 @@ class Record extends Table {
      */
     public static function fromClass (DB $db, $class) {
         $rClass = new ReflectionClass($class);
-        assert($rClass->isInstantiable());
+        assert($rClass->implementsInterface(EntityInterface::class));
         $columns = [];
         $EAV = [];
         foreach ($rClass->getProperties() as $rProp) {
@@ -157,6 +157,7 @@ class Record extends Table {
         }
         preg_match(static::RX_RECORD, $rClass->getDocComment(), $record);
         if (!is_object($class)) {
+            assert($rClass->isInstantiable());
             $class = $rClass->newInstanceWithoutConstructor();
         }
         return static::factory($db, $class, $record['table'], $columns, $EAV);
