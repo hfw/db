@@ -310,11 +310,13 @@ class Schema implements ArrayAccess
      * `DROP TABLE IF EXISTS $table`
      *
      * @param string $table
+     * @return $this
      */
-    public function dropTable(string $table): void
+    public function dropTable(string $table)
     {
         $this->db->exec("DROP TABLE IF EXISTS {$table}");
         unset($this->tables[$table]);
+        return $this;
     }
 
     /**
