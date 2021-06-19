@@ -198,7 +198,7 @@ class DB extends PDO implements ArrayAccess
 
                 // these are not in sqlite at all but are in other dbms
                 'CONV' => 'base_convert',
-                'SIGN' => fn($x) => ($x > 0) - ($x < 0),
+                'SIGN' => fn($x) => $x <=> 0
             ]);
 
             $this->sqliteCreateFunctions([ // non-deterministic
