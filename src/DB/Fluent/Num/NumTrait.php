@@ -73,6 +73,71 @@ trait NumTrait
     }
 
     /**
+     * Bitwise `AND`
+     *
+     * `($this & $value)`
+     *
+     * @param int|ValueInterface $value
+     * @return Num
+     */
+    public function bAnd($value)
+    {
+        return Num::factory($this->db, "({$this} & {$value})");
+    }
+
+    /**
+     * Bitwise `NOT`
+     *
+     * `($this ~ $value)`
+     *
+     * @param int|ValueInterface $value
+     * @return Num
+     */
+    public function bNot($value)
+    {
+        return Num::factory($this->db, "({$this} ~ {$value})");
+    }
+
+    /**
+     * Bitwise `OR`
+     *
+     * `($this | $value)`
+     *
+     * @param int|ValueInterface $value
+     * @return Num
+     */
+    public function bOr($value)
+    {
+        return Num::factory($this->db, "({$this} | {$value})");
+    }
+
+    /**
+     * Bitwise shift left.
+     *
+     * `($this << $bits)`
+     *
+     * @param int $bits
+     * @return Num
+     */
+    public function bSL(int $bits = 1)
+    {
+        return Num::factory($this->db, "({$this} << {$bits})");
+    }
+
+    /**
+     * Bitwise shift right.
+     *
+     * `($this >> $bits)`
+     *
+     * @param int $bits
+     * @return Num
+     */
+    public function bSR(int $bits = 1)
+    {
+        return Num::factory($this->db, "({$this} >> {$bits})");
+    }
+
+    /**
      * `CEIL($this)`
      *
      * @return Num
@@ -265,6 +330,17 @@ trait NumTrait
     public function radians()
     {
         return Num::factory($this->db, "RADIANS({$this})");
+    }
+
+    /**
+     * `POW($this,1/$radix)`
+     *
+     * @param int $radix Non-zero.
+     * @return Num
+     */
+    public function root(int $radix)
+    {
+        return Num::factory($this->db, "POW({$this},1/{$radix})");
     }
 
     /**
