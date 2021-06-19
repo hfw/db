@@ -6,6 +6,7 @@ use Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\Num\BaseConversionTrait;
 use Helix\DB\Fluent\Text;
 use Helix\DB\Fluent\Value\ValueTrait;
+use Helix\DB\Fluent\ValueInterface;
 
 /**
  * Character string expression manipulation.
@@ -15,6 +16,25 @@ trait TextTrait
 
     use ValueTrait;
     use BaseConversionTrait;
+
+    /**
+     * Concatenate other strings.
+     *
+     * - SQLite: `($this || ...)`
+     * - MySQL: `CONCAT($this, ...)`
+     *
+     * @param string|ValueInterface ...$strings
+     * @return Text
+     */
+    public function concat(...$strings)
+    {
+        array_unshift($strings, $this);
+        $strings = $this->db->quoteArray($strings);
+        if ($this->db->isSQLite()) {
+            return Text::factory($this->db, sprintf('(%s)', implode(' || ', $strings)));
+        }
+        return Text::factory($this->db, sprintf('CONCAT(%s)', implode(',', $strings)));
+    }
 
     /**
      * Hex representation.
