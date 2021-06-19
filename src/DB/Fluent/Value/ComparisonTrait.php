@@ -222,7 +222,7 @@ trait ComparisonTrait
      */
     public function isNot($arg)
     {
-        return $this->is($arg)->not();
+        return $this->is($arg)->lNot();
     }
 
     /**
