@@ -58,11 +58,17 @@ class Record extends Table
     ];
 
     /**
+     * The number of entities to load EAV entries for at a time,
+     * during {@link Record::fetchEach()} iteration.
+     */
+    protected const EAV_BATCH_LOAD = 256;
+
+    /**
      * Maps annotated/native scalar types to storage types acceptable for `settype()`
      *
      * @see Schema::T_CONST_NAMES keys
      */
-    const SCALARS = [
+    protected const SCALARS = [
         'bool' => 'bool',
         'boolean' => 'bool',    // gettype()
         'double' => 'float',    // gettype()
@@ -326,7 +332,7 @@ class Record extends Table
     {
         do {
             $entities = [];
-            for ($i = 0; $i < 256 and false !== $row = $statement->fetch(); $i++) {
+            for ($i = 0; $i < static::EAV_BATCH_LOAD and false !== $row = $statement->fetch(); $i++) {
                 $clone = clone $this->proto;
                 $this->setValues($clone, $row);
                 $entities[$row['id']] = $clone;
@@ -516,7 +522,7 @@ class Record extends Table
     /**
      * Loads and sets all EAV properties for an array of entities keyed by ID.
      *
-     * @param EntityInterface[] $entities
+     * @param EntityInterface[] $entities Keyed by ID
      */
     protected function loadEav(array $entities): void
     {

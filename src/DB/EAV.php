@@ -102,7 +102,7 @@ class EAV extends Table
      * Returns associative attribute-value arrays for the given IDs.
      *
      * @param int[] $ids
-     * @return scalar[][] `[id => attribute => value]
+     * @return scalar[][] `[id => attribute => value]`
      */
     public function loadAll(array $ids): array
     {
