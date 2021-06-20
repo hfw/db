@@ -64,18 +64,19 @@ class Record extends Table
      */
     const SCALARS = [
         'bool' => 'bool',
-        'boolean' => 'bool',
-        'double' => 'float',
-        'false' => 'bool',
+        'boolean' => 'bool',    // gettype()
+        'double' => 'float',    // gettype()
+        'false' => 'bool',      // @var
         'float' => 'float',
         'int' => 'int',
-        'integer' => 'int',
-        'number' => 'string',
-        'scalar' => 'string',
+        'integer' => 'int',     // gettype()
+        'NULL' => 'string',     // gettype()
+        'number' => 'string',   // @var
+        'scalar' => 'string',   // @var
         'string' => 'string',
-        'String' => 'String',
-        'STRING' => 'STRING',
-        'true' => 'bool',
+        'String' => 'String',   // @var
+        'STRING' => 'STRING',   // @var
+        'true' => 'bool',       // @var
     ];
 
     /**
@@ -180,12 +181,10 @@ class Record extends Table
         $defaults = $rClass->getDefaultProperties();
         foreach ($properties as $prop) {
             $rProp = $rClass->getProperty($prop);
-            if (null === $type = $this->__construct_getType($prop, $rProp)) {
-                $type = isset($defaults[$prop]) ? static::SCALARS[gettype($defaults[$prop])] : 'string';
-            }
-            if (null === $nullable = $this->__construct_isNullable($prop, $rProp)) {
-                $nullable = !isset($defaults[$prop]);
-            }
+            $type = $this->__construct_getType($prop, $rProp)
+                ?? static::SCALARS[gettype($defaults[$prop])];
+            $nullable = $this->__construct_isNullable($prop, $rProp)
+                ?? !isset($defaults[$prop]);
             assert(isset($type, $nullable));
             $rProp->setAccessible(true);
             $this->properties[$prop] = $rProp;
