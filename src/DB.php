@@ -6,6 +6,7 @@ use ArrayAccess;
 use Closure;
 use Countable;
 use Helix\DB\EntityInterface;
+use Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\ExpressionInterface;
 use Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\Predicate;
@@ -415,6 +416,19 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
+     * An expression for the current date and time.
+     *
+     * @return DateTime
+     */
+    public function now()
+    {
+        if ($this->isSQLite()) {
+            return DateTime::factory($this, "DATETIME('now')");
+        }
+        return DateTime::factory($this, 'NOW()');
+    }
+
+    /**
      * Whether a table exists.
      *
      * @param string $table
@@ -630,6 +644,19 @@ class DB extends PDO implements ArrayAccess
             $argc = (new ReflectionFunction($callback))->getNumberOfRequiredParameters();
             $this->sqliteCreateFunction($name, $callback, $argc, $deterministic);
         }
+    }
+
+    /**
+     * An expression for the current date at midnight.
+     *
+     * @return DateTime
+     */
+    public function today()
+    {
+        if ($this->isSQLite()) {
+            return DateTime::factory($this, "DATE('now')");
+        }
+        return DateTime::factory($this, 'CURRENT_DATE()');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Helix\DB\Fluent\DateTime;
 
+use DateInterval;
 use Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\Text;
@@ -21,13 +22,101 @@ trait DateTimeTrait
     use ValueTrait;
 
     /**
+     * @return DateTime
+     */
+    public function addDay()
+    {
+        return $this->addDays(1);
+    }
+
+    /**
+     * @param int $days
+     * @return DateTime
+     */
+    public function addDays(int $days)
+    {
+        return $this->modify(0, 0, 0, $days);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function addHour()
+    {
+        return $this->addHours(1);
+    }
+
+    /**
+     * @param int $hours
+     * @return DateTime
+     */
+    public function addHours(int $hours)
+    {
+        return $this->modify(0, 0, $hours);
+    }
+
+    /**
+     * @param int $minutes
+     * @return DateTime
+     */
+    public function addMinutes(int $minutes)
+    {
+        return $this->modify(0, $minutes);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function addMonth()
+    {
+        return $this->addMonths(1);
+    }
+
+    /**
+     * @param int $months
+     * @return DateTime
+     */
+    public function addMonths(int $months)
+    {
+        return $this->modify(0, 0, 0, 0, $months);
+    }
+
+    /**
+     * @param int $seconds
+     * @return DateTime
+     */
+    public function addSeconds(int $seconds)
+    {
+        return $this->modify($seconds);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function addYear()
+    {
+        return $this->addYears(1);
+    }
+
+    /**
+     * @param int $years
+     * @return DateTime
+     */
+    public function addYears(int $years)
+    {
+        return $this->modify(0, 0, 0, 0, 0, $years);
+    }
+
+    /**
      * `YYYY-MM-DD`
      *
-     * @return Text
+     * Because this format is reentrant, a {@link DateTime} is returned.
+     *
+     * @return DateTime
      */
     public function date()
     {
-        return $this->dateFormat('%Y-%m-%d');
+        return DateTime::factory($this->db, "DATE({$this})");
     }
 
     /**
@@ -51,14 +140,16 @@ trait DateTimeTrait
     /**
      * `YYYY-MM-DD hh:mm:ss`
      *
-     * @return Text
+     * Because this format is reentrant, a {@link DateTime} is returned.
+     *
+     * @return DateTime
      */
     public function datetime()
     {
-        return $this->dateFormat([
-            'mysql' => '%Y-%m-%d %H:%i:%S',
-            'sqlite' => '%Y-%m-%d %H:%M:%S'
-        ]);
+        if ($this->db->isSQLite()) {
+            return DateTime::factory($this->db, "DATETIME({$this})");
+        }
+        return DateTime::factory($this->db, "DATE_FORMAT({$this},'%Y-%m-%d %H:%i:%S')");
     }
 
     /**
@@ -92,6 +183,73 @@ trait DateTimeTrait
     }
 
     /**
+     * Date-time difference (`$x - $this`) in fractional days elapsed.
+     *
+     * @param null|DateTime $x Defaults to the current time.
+     * @return Num
+     */
+    public function diffDays(DateTime $x = null)
+    {
+        $x ??= $this->db->now();
+        return $x->julian()->sub($this->julian());
+    }
+
+    /**
+     * Date-time difference (`$x - $this`) in fractional hours elapsed.
+     *
+     * @param null|DateTime $x Defaults to the current time.
+     * @return Num
+     */
+    public function diffHours(DateTime $x = null)
+    {
+        return $this->diffDays($x)->mul(24);
+    }
+
+    /**
+     * Date-time difference (`$x - $this`) in fractional minutes elapsed.
+     *
+     * @param null|DateTime $x Defaults to the current time.
+     * @return Num
+     */
+    public function diffMinutes(DateTime $x = null)
+    {
+        return $this->diffDays($x)->mul(24 * 60);
+    }
+
+    /**
+     * Date-time difference (`$x - $this`) in fractional months elapsed.
+     *
+     * @param null|DateTime $x Defaults to the current time.
+     * @return Num
+     */
+    public function diffMonths(DateTime $x = null)
+    {
+        return $this->diffDays($x)->div(365.2425 / 12);
+    }
+
+    /**
+     * Date-time difference (`$x - $this`) in whole seconds elapsed (rounded).
+     *
+     * @param null|DateTime $x Defaults to the current time.
+     * @return Num
+     */
+    public function diffSeconds(DateTime $x = null)
+    {
+        return $this->diffDays($x)->mul(24 * 60 * 60)->round();
+    }
+
+    /**
+     * Date-time difference (`$x - $this`) in fractional years elapsed.
+     *
+     * @param null|DateTime $x Defaults to the current time.
+     * @return Num
+     */
+    public function diffYears(DateTime $x = null)
+    {
+        return $this->diffDays($x)->div(365.2425);
+    }
+
+    /**
      * `00` to `23`
      *
      * @return Num
@@ -117,6 +275,20 @@ trait DateTimeTrait
     }
 
     /**
+     * Julian day number (fractional).
+     *
+     * @return Num
+     */
+    public function julian()
+    {
+        if ($this->db->isSQLite()) {
+            return Num::factory($this->db, "JULIANDAY({$this})");
+        }
+        // julian "year zero" offset, plus number of fractional days since "year zero".
+        return Num::factory($this->db, "(1721059.5 + (TO_SECONDS({$this}) / 86400))");
+    }
+
+    /**
      * `00` to `59`
      *
      * @return Num
@@ -127,6 +299,46 @@ trait DateTimeTrait
             'mysql' => '%i',
             'sqlite' => '%M'
         ]));
+    }
+
+    /**
+     * Applies date-time modifiers.
+     *
+     * @param int|DateInterval $arg Seconds, or a `DateInterval`
+     * @param int ...$args Minutes, Hours, Days, Months, Years. Ignored if `$arg` is a `DateInterval`
+     */
+    public function modify($arg, int ...$args)
+    {
+        static $intervals = ['SECOND', 'MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR'];
+        if ($arg instanceof DateInterval) {
+            $args = [$arg->s, $arg->i, $arg->h, $arg->d, $arg->m, $arg->y];
+        } else {
+            array_unshift($args, $arg); // re-keys
+        }
+
+        // remove zeroes and reverse so larger intervals happen first
+        $args = array_reverse(array_filter($args), true);
+
+        // sqlite allows us to do it all in one go
+        if ($this->db->isSQLite()) {
+            $spec = [$this];
+            foreach ($args as $i => $int) {
+                $spec[] = sprintf('%s %s', $int > 0 ? "+{$int}" : $int, $intervals[$i]);
+            }
+            return DateTime::factory($this->db, sprintf('DATETIME(%s)', implode(',', $spec)));
+        }
+
+        // mysql requires wrapping
+        $spec = $this;
+        foreach ($args as $i => $int) {
+            $spec = sprintf('DATE_%s(%s, INTERVAL %s %s)',
+                $spec,
+                $int > 0 ? 'ADD' : 'SUB',
+                abs($int),
+                $intervals[$i]
+            );
+        }
+        return DateTime::factory($this->db, $spec);
     }
 
     /**
@@ -147,6 +359,92 @@ trait DateTimeTrait
     public function seconds()
     {
         return Num::factory($this->db, $this->dateFormat('%S'));
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function subDay()
+    {
+        return $this->subDays(1);
+    }
+
+    /**
+     * @param int $days
+     * @return DateTime
+     */
+    public function subDays(int $days)
+    {
+        return $this->modify(0, 0, 0, $days * -1);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function subHour()
+    {
+        return $this->subHours(1);
+    }
+
+    /**
+     * @param int $hours
+     * @return DateTime
+     */
+    public function subHours(int $hours)
+    {
+        return $this->modify(0, 0, $hours * -1);
+    }
+
+    /**
+     * @param int $minutes
+     * @return DateTime
+     */
+    public function subMinutes(int $minutes)
+    {
+        return $this->modify(0, $minutes * -1);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function subMonth()
+    {
+        return $this->subMonths(1);
+    }
+
+    /**
+     * @param int $months
+     * @return DateTime
+     */
+    public function subMonths(int $months)
+    {
+        return $this->modify(0, 0, 0, 0, $months * -1);
+    }
+
+    /**
+     * @param int $seconds
+     * @return DateTime
+     */
+    public function subSeconds(int $seconds)
+    {
+        return $this->modify($seconds * -1);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function subYear()
+    {
+        return $this->subYears(1);
+    }
+
+    /**
+     * @param int $years
+     * @return DateTime
+     */
+    public function subYears(int $years)
+    {
+        return $this->modify(0, 0, 0, 0, 0, $years * -1);
     }
 
     /**

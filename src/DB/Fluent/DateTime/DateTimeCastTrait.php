@@ -16,7 +16,7 @@ trait DateTimeCastTrait
     /**
      * Interpret the expression as a datetime.
      *
-     * > Warning: If the expression is in the local timezone
+     * > Warning: If the expression's value is in the local timezone
      * > you should chain this with {@link DateTime::toUtc()}
      *
      * SQLite:
@@ -24,7 +24,7 @@ trait DateTimeCastTrait
      * - https://www.sqlite.org/lang_datefunc.html
      *
      * MySQL:
-     * - The expression's value must conform to `YYYY-MM-DD hh:mm:ss`
+     * - The expression's value must conform to `YYYY-MM-DD` or `YYYY-MM-DD hh:mm:ss`
      *
      * @return DateTime
      */
