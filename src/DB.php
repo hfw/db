@@ -40,11 +40,11 @@ class DB extends PDO implements ArrayAccess
 
     /**
      * Notified whenever a query is executed or a statement is prepared.
-     * This is a stub closure by default.
+     * This is a stub-closure by default.
      *
      * `fn($sql):void`
      *
-     * @var Closure
+     * @var callable
      */
     protected $logger;
 
@@ -96,6 +96,7 @@ class DB extends PDO implements ArrayAccess
         ];
         $class = $config['class'] ?? static::class;
         $db = new $class(...$args);
+        $db->logger = $config['logger'] ?? $db->getLogger();
         $db->migrations = $config['migrations'] ?? "migrations/{$connection}";
         return $db;
     }
@@ -229,7 +230,7 @@ class DB extends PDO implements ArrayAccess
     {
         assert($this->transactions >= 0);
         if ($this->transactions === 0) {
-            $this->logger->__invoke("BEGIN TRANSACTION");
+            $this->log("BEGIN TRANSACTION");
             parent::beginTransaction();
         } else {
             $this->exec("SAVEPOINT SAVEPOINT_{$this->transactions}");
@@ -249,7 +250,7 @@ class DB extends PDO implements ArrayAccess
     {
         assert($this->transactions > 0);
         if ($this->transactions === 1) {
-            $this->logger->__invoke("COMMIT TRANSACTION");
+            $this->log("COMMIT TRANSACTION");
             parent::commit();
         } else {
             $savepoint = $this->transactions - 1;
@@ -267,7 +268,7 @@ class DB extends PDO implements ArrayAccess
      */
     public function exec($sql): int
     {
-        $this->logger->__invoke($sql);
+        $this->log($sql);
         return parent::exec($sql);
     }
 
@@ -307,7 +308,7 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * @return Closure
+     * @return callable
      */
     public function getLogger()
     {
@@ -367,6 +368,14 @@ class DB extends PDO implements ArrayAccess
     final public function isSQLite(): bool
     {
         return $this->driver === 'sqlite';
+    }
+
+    /**
+     * @param string $sql
+     */
+    public function log(string $sql): void
+    {
+        call_user_func($this->logger, $sql);
     }
 
     /**
@@ -488,7 +497,7 @@ class DB extends PDO implements ArrayAccess
      */
     public function prepare($sql, $options = [])
     {
-        $this->logger->__invoke($sql);
+        $this->log($sql);
         /** @var Statement $statement */
         $statement = parent::prepare($sql, $options);
         return $statement;
@@ -505,7 +514,7 @@ class DB extends PDO implements ArrayAccess
      */
     public function query($sql, $mode = PDO::ATTR_DEFAULT_FETCH_MODE, $arg3 = null, array $ctorargs = [])
     {
-        $this->logger->__invoke($sql);
+        $this->log($sql);
         /** @var Statement $statement */
         $statement = parent::query(...func_get_args());
         return $statement;
@@ -580,7 +589,7 @@ class DB extends PDO implements ArrayAccess
     {
         assert($this->transactions > 0);
         if ($this->transactions === 1) {
-            $this->logger->__invoke("ROLLBACK TRANSACTION");
+            $this->log("ROLLBACK TRANSACTION");
             parent::rollBack();
         } else {
             $savepoint = $this->transactions - 1;
@@ -613,10 +622,10 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * @param Closure $logger
+     * @param callable $logger
      * @return $this
      */
-    public function setLogger(Closure $logger)
+    public function setLogger(callable $logger)
     {
         $this->logger = $logger;
         return $this;

@@ -16,6 +16,7 @@ return [
 
         // optional wiring for DB::fromConfig()
         'class' => Helix\DB::class,
+        'logger' => fn() => null,
         'migrations' => 'migrations/default',
 
     ]

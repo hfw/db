@@ -10,7 +10,7 @@ $utc = new DateTimeZone('UTC');
 
 $db = DB::fromConfig();
 $db->setLogger(function ($sql) {
-    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[2];
+    $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 4)[3];
     echo "{$trace['function']} ==> {$sql}\n\n";
 });
 

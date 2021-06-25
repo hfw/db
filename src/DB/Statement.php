@@ -60,7 +60,7 @@ class Statement extends PDOStatement
      */
     public function execute($args = null)
     {
-        $this->db->getLogger()->__invoke($this->queryString);
+        $this->db->log($this->queryString);
         if ($result = !parent::execute($args)) {
             $info = $this->errorInfo();
             if ($info[0] == 0) {
