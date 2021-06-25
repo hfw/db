@@ -304,38 +304,52 @@ trait DateTimeTrait
     /**
      * Applies date-time modifiers.
      *
-     * @param int|DateInterval $arg Seconds, or a `DateInterval`
-     * @param int ...$args Minutes, Hours, Days, Months, Years. Ignored if `$arg` is a `DateInterval`
+     * Each argument can be zero, positive, or negative.
+     *
+     * `$s` can also be a `DateInterval` or `DateInterval` description (e.g. `"+1 day"`).
+     * If so, the rest of the arguments are ignored.
+     *
+     * @param int|string|DateInterval $s Seconds, or `DateInterval` related
+     * @param int $m Minutes
+     * @param int $h Hours
+     * @param int $D Days
+     * @param int $M Months
+     * @param int $Y Years
+     * @return DateTime
      */
-    public function modify($arg, int ...$args)
+    public function modify($s, int $m = 0, int $h = 0, int $D = 0, int $M = 0, int $Y = 0)
     {
-        static $intervals = ['SECOND', 'MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR'];
-        if ($arg instanceof DateInterval) {
-            $args = [$arg->s, $arg->i, $arg->h, $arg->d, $arg->m, $arg->y];
+        static $units = ['SECOND', 'MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR'];
+        if (is_string($s)) {
+            $s = DateInterval::createFromDateString($s);
+            assert($s instanceof DateInterval);
+        }
+        if ($s instanceof DateInterval) {
+            $ints = [$s->s, $s->i, $s->h, $s->d, $s->m, $s->y];
         } else {
-            array_unshift($args, $arg); // re-keys
+            $ints = func_get_args();
         }
 
         // remove zeroes and reverse so larger intervals happen first
-        $args = array_reverse(array_filter($args), true);
+        $ints = array_reverse(array_filter($ints), true);
 
         // sqlite allows us to do it all in one go
         if ($this->db->isSQLite()) {
             $spec = [$this];
-            foreach ($args as $i => $int) {
-                $spec[] = sprintf('%s %s', $int > 0 ? "+{$int}" : $int, $intervals[$i]);
+            foreach ($ints as $i => $int) {
+                $spec[] = sprintf("'%s %s'", $int > 0 ? "+{$int}" : $int, $units[$i]);
             }
             return DateTime::factory($this->db, sprintf('DATETIME(%s)', implode(',', $spec)));
         }
 
         // mysql requires wrapping
-        $spec = $this;
-        foreach ($args as $i => $int) {
+        $spec = "CAST({$this} AS DATETIME)";
+        foreach ($ints as $i => $int) {
             $spec = sprintf('DATE_%s(%s, INTERVAL %s %s)',
                 $spec,
                 $int > 0 ? 'ADD' : 'SUB',
                 abs($int),
-                $intervals[$i]
+                $units[$i]
             );
         }
         return DateTime::factory($this->db, $spec);
