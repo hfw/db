@@ -29,9 +29,14 @@ class DB extends PDO implements ArrayAccess
 {
 
     /**
+     * The driver's name.
+     *
+     * - mysql
+     * - sqlite
+     *
      * @var string
      */
-    private $driver;
+    protected $driver;
 
     /**
      * @var Junction[]
@@ -42,7 +47,7 @@ class DB extends PDO implements ArrayAccess
      * Notified whenever a query is executed or a statement is prepared.
      * This is a stub-closure by default.
      *
-     * `fn($sql):void`
+     * `fn($sql): void`
      *
      * @var callable
      */
@@ -77,7 +82,7 @@ class DB extends PDO implements ArrayAccess
     protected $transactions = 0;
 
     /**
-     * Returns an instance using a configuration file.
+     * Returns a new connection using a configuration file.
      *
      * See `db.config.php` in the `test` directory for an example.
      *
@@ -96,18 +101,18 @@ class DB extends PDO implements ArrayAccess
         ];
         $class = $config['class'] ?? static::class;
         $db = new $class(...$args);
-        $db->logger = $config['logger'] ?? $db->getLogger();
+        $db->logger = $config['logger'] ?? $db->logger;
         $db->migrations = $config['migrations'] ?? "migrations/{$connection}";
         return $db;
     }
 
     /**
-     * Returns an array of `?` placeholders.
+     * Returns an array of `?` placeholder expressions.
      *
      * @param int|array|Countable $count
      * @return ExpressionInterface[]
      */
-    public static function marks($count): array
+    public static function marks($count)
     {
         static $mark;
         $mark ??= new class implements ExpressionInterface {
@@ -117,10 +122,7 @@ class DB extends PDO implements ArrayAccess
                 return '?';
             }
         };
-        if (is_array($count) or $count instanceof Countable) {
-            $count = count($count);
-        }
-        return array_fill(0, $count, $mark);
+        return array_fill(0, is_int($count) ? $count : count($count), $mark);
     }
 
     /**
@@ -131,7 +133,7 @@ class DB extends PDO implements ArrayAccess
      * @param string[] $columns
      * @return string[] `["column" => ":column"]`
      */
-    public static function slots(array $columns): array
+    public static function slots(array $columns)
     {
         return array_combine($columns, array_map(function (string $column) {
             return ':' . str_replace('.', '__', $column);
@@ -142,7 +144,7 @@ class DB extends PDO implements ArrayAccess
      * @param string[] $columns
      * @return string[] `["column" => "column=:column"]`
      */
-    public static function slotsEqual(array $columns): array
+    public static function slotsEqual(array $columns)
     {
         $slots = static::slots($columns);
         foreach ($slots as $column => $slot) {
@@ -210,11 +212,11 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * Returns the driver.
+     * The driver's name.
      *
      * @return string
      */
-    final public function __toString()
+    final public function __toString(): string
     {
         return $this->driver;
     }
@@ -261,7 +263,7 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * Notifies the logger.
+     * Notifies the logger and executes.
      *
      * @param string $sql
      * @return int
@@ -302,7 +304,7 @@ class DB extends PDO implements ArrayAccess
      * @param string $interface
      * @return Junction
      */
-    public function getJunction($interface)
+    public function getJunction(string $interface)
     {
         return $this->junctions[$interface] ??= Junction::fromInterface($this, $interface);
     }
@@ -310,7 +312,7 @@ class DB extends PDO implements ArrayAccess
     /**
      * @return callable
      */
-    public function getLogger()
+    final public function getLogger()
     {
         return $this->logger;
     }
@@ -332,10 +334,8 @@ class DB extends PDO implements ArrayAccess
      */
     public function getRecord($class)
     {
-        if (is_object($class)) {
-            $class = get_class($class);
-        }
-        return $this->records[$class] ??= Record::fromClass($this, $class);
+        $name = is_object($class) ? get_class($class) : $class;
+        return $this->records[$name] ??= Record::fromClass($this, $class);
     }
 
     /**
@@ -460,6 +460,8 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
+     * Throws.
+     *
      * @param $offset
      * @param $value
      * @throws LogicException
@@ -470,6 +472,8 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
+     * Throws.
+     *
      * @param $offset
      * @throws LogicException
      */
@@ -489,7 +493,7 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * Notifies the logger.
+     * Notifies the logger and prepares a statement.
      *
      * @param string $sql
      * @param array $options
@@ -498,26 +502,22 @@ class DB extends PDO implements ArrayAccess
     public function prepare($sql, $options = [])
     {
         $this->log($sql);
-        /** @var Statement $statement */
-        $statement = parent::prepare($sql, $options);
-        return $statement;
+        return parent::{'prepare'}($sql, $options);
     }
 
     /**
-     * Notifies the logger and executes.
+     * Notifies the logger and queries.
      *
      * @param string $sql
      * @param int $mode
-     * @param mixed $arg3 Optional.
-     * @param array $ctorargs Optional.
+     * @param mixed $arg3
+     * @param array $ctorargs
      * @return Statement
      */
     public function query($sql, $mode = PDO::ATTR_DEFAULT_FETCH_MODE, $arg3 = null, array $ctorargs = [])
     {
         $this->log($sql);
-        /** @var Statement $statement */
-        $statement = parent::query(...func_get_args());
-        return $statement;
+        return parent::{'query'}(...func_get_args());
     }
 
     /**
@@ -611,17 +611,6 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * @param string $interface
-     * @param Junction $junction
-     * @return $this
-     */
-    public function setJunction(string $interface, Junction $junction)
-    {
-        $this->junctions[$interface] = $junction;
-        return $this;
-    }
-
-    /**
      * @param callable $logger
      * @return $this
      */
@@ -632,6 +621,8 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
+     * Installs a {@link Record} for a third-party class that cannot be annotated.
+     *
      * @param string $class
      * @param Record $record
      * @return $this
@@ -643,15 +634,17 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * @param callable[] $callbacks Keyed by function name.
-     * @param bool $deterministic Whether the callbacks aren't random / are without side-effects.
+     * Create multiple SQLite functions at a time.
+     *
+     * @param callable[] $callables Keyed by function name.
+     * @param bool $deterministic Whether the callables aren't random / are without side-effects.
      */
-    public function sqliteCreateFunctions(array $callbacks, bool $deterministic = true): void
+    public function sqliteCreateFunctions(array $callables, bool $deterministic = true): void
     {
         $deterministic = $deterministic ? self::SQLITE_DETERMINISTIC : 0;
-        foreach ($callbacks as $name => $callback) {
-            $argc = (new ReflectionFunction($callback))->getNumberOfRequiredParameters();
-            $this->sqliteCreateFunction($name, $callback, $argc, $deterministic);
+        foreach ($callables as $name => $callable) {
+            $argc = (new ReflectionFunction($callable))->getNumberOfRequiredParameters();
+            $this->sqliteCreateFunction($name, $callable, $argc, $deterministic);
         }
     }
 
@@ -673,7 +666,7 @@ class DB extends PDO implements ArrayAccess
      *
      * The work is rolled back if an exception is thrown.
      *
-     * @param callable $work
+     * @param callable $work `fn(): mixed`
      * @return mixed The return value of `$work`
      */
     public function transact(callable $work)
