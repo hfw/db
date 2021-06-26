@@ -17,7 +17,7 @@ trait DateTimeCastTrait
      * Interpret the expression as a datetime.
      *
      * > Warning: If the expression's value is in the local timezone
-     * > you should chain this with {@link DateTime::toUtc()}
+     * > you should chain this with {@link DateTime::toUTC()}
      *
      * SQLite:
      * - The expression's value must conform to one of any `time-value` formats.

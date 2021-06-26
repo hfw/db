@@ -497,7 +497,7 @@ trait DateTimeTrait
      *
      * @return DateTime
      */
-    public function toUtc()
+    public function toUTC()
     {
         if ($this->db->isSQLite()) {
             // docs:
