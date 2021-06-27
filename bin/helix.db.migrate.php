@@ -335,7 +335,7 @@ $opt = getopt('h', [
         return new class implements MigrationInterface {
 
             /**
-             * @var Schema \$schema
+             * @param Schema \$schema
              */
             public function up(\$schema)
             {
@@ -343,7 +343,7 @@ $opt = getopt('h', [
             }
 
             /**
-             * @var Schema \$schema
+             * @param Schema \$schema
              */
             public function down(\$schema)
             {

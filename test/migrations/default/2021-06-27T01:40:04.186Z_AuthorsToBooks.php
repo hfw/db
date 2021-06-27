@@ -3,11 +3,11 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-06-18T09:24:16.940Z_AuthorsToBooks */
+/** 2021-06-27T01:40:04.186Z_AuthorsToBooks */
 return new class implements MigrationInterface {
 
     /**
-     * @var Schema $schema
+     * @param Schema $schema
      */
     public function up($schema)
     {
@@ -24,7 +24,7 @@ return new class implements MigrationInterface {
     }
 
     /**
-     * @var Schema $schema
+     * @param Schema $schema
      */
     public function down($schema)
     {
