@@ -18,6 +18,26 @@ trait TextTrait
     use BaseConversionTrait;
 
     /**
+     * @param int $direction
+     * @param null|string $chars
+     * @return Text
+     * @internal
+     */
+    protected function _trim(int $direction, string $chars = null)
+    {
+        $function = [-1 => 'LTRIM', 0 => 'TRIM', 1 => 'RTRIM'][$direction];
+        if (isset($chars)) {
+            $chars = $this->db->quote($chars);
+            if ($this->db->isSQLite()) {
+                return Text::factory($this->db, "{$function}({$this},{$chars})");
+            }
+            $direction = [-1 => 'LEADING', 0 => 'BOTH', 1 => 'TRAILING'][$direction];
+            return Text::factory($this->db, "TRIM({$direction} {$chars} FROM {$this})");
+        }
+        return Text::factory($this->db, "{$function}({$this})");
+    }
+
+    /**
      * Concatenate other strings.
      *
      * - SQLite: `($this || ...)`
@@ -76,6 +96,16 @@ trait TextTrait
     }
 
     /**
+     * @see TextTrait::trim()
+     * @param null|string $chars
+     * @return Text
+     */
+    public function ltrim(string $chars = null)
+    {
+        return $this->_trim(-1, $chars);
+    }
+
+    /**
      * Substring's position (1-based).
      *
      * The position is `0` if the substring isn't found.
@@ -106,6 +136,16 @@ trait TextTrait
         $search = $this->db->quote($search);
         $replace = $this->db->quote($replace);
         return Text::factory($this->db, "REPLACE({$this},{$search},{$replace})");
+    }
+
+    /**
+     * @see TextTrait::trim()
+     * @param null|string $chars
+     * @return Text
+     */
+    public function rtrim(string $chars = null)
+    {
+        return $this->_trim(1, $chars);
     }
 
     /**
@@ -149,6 +189,23 @@ trait TextTrait
     public function toBase10(int $from)
     {
         return Num::factory($this->db, "CONV({$this},{$from},10)");
+    }
+
+    /**
+     * Trims whitespace (or other things) from both ends of the string.
+     *
+     * If `$chars` is given:
+     * - SQLite treats it as individual characters (same as PHP)
+     * - MySQL treats it as a leading/trailing string
+     *
+     * @see TextTrait::ltrim()
+     * @see TextTrait::rtrim()
+     * @param null|string $chars
+     * @return Text
+     */
+    public function trim(string $chars = null)
+    {
+        return $this->_trim(0, $chars);
     }
 
     /**
