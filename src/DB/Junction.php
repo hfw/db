@@ -11,17 +11,15 @@ use ReflectionClass;
  * Interface Annotations:
  *
  * - `@junction <TABLE>`
- * - `@foreign <COLUMN> <CLASS FQN>` or `@for <COLUMN> <CLASS FQN>`
+ * - `@foreign <COLUMN> <CLASS FQN>`
  *
  * @method static static factory(DB $db, string $table, array $classes)
- *
- * @TODO Remove the `for` tag, it's vague.
  */
 class Junction extends Table
 {
 
     protected const RX_JUNCTION = '/\*\h*@junction\h+(?<table>\w+)/i';
-    protected const RX_FOREIGN = '/\*\h*@for(eign)?\h+(?<column>\w+)\h+(?<class>\S+)/i';
+    protected const RX_FOREIGN = '/\*\h*@foreign\h+(?<column>\w+)\h+(?<class>\S+)/i';
 
     /**
      * `[column => class]`
