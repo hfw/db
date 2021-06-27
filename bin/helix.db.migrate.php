@@ -36,7 +36,7 @@ $opt = getopt('h', [
         $this->opt = $opt;
         $this->db = DB::fromConfig($opt['connection'], $opt['config']);
         $realLogger = $this->db->getLogger();
-        $this->db->setLogger(fn($sql) => $this->_stdout($sql) and $realLogger($sql));
+        $this->db->setLogger(fn($sql) => $this->_stdout($sql) or $realLogger($sql));
         $this->schema = $this->db->getSchema();
     }
 
