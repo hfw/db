@@ -3,7 +3,7 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-07-15T16:48:02.191Z_Book */
+/** 2021-07-15T17:18:00.044Z_Book */
 return new class implements MigrationInterface {
 
     /**
@@ -22,12 +22,11 @@ return new class implements MigrationInterface {
         $schema->addUniqueKeyConstraint('books', ['bar', 'baz']);
         $schema->addUniqueKeyConstraint('books', ['foo']);
         $schema->createTable('books_eav', [
-            'entity' => Schema::T_INT,
-            'attribute' => Schema::T_STRING,
+            'entity' => Schema::T_INT | Schema::I_PRIMARY,
+            'attribute' => Schema::T_STRING | Schema::I_PRIMARY,
             'value' => Schema::T_STRING
         ], [
-            Schema::TABLE_PRIMARY => ['entity', 'attribute'],
-            Schema::TABLE_FOREIGN => ['entity' => $schema['books']['id']]
+            'entity' => $schema['books']['id']
         ]);
     }
 

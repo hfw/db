@@ -205,17 +205,13 @@ $opt = getopt('h', [
             if (!$this->schema->getTable($eav)) {
                 $T_CONST = Schema::T_CONST_NAMES[$eav->getType()];
                 $columns = [
-                    "'entity' => Schema::T_INT",
-                    "'attribute' => Schema::T_STRING",
+                    "'entity' => Schema::T_INT | Schema::I_PRIMARY",
+                    "'attribute' => Schema::T_STRING | Schema::I_PRIMARY",
                     "'value' => Schema::{$T_CONST}"
                 ];
                 $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
-                $constraints = [
-                    "Schema::TABLE_PRIMARY => ['entity', 'attribute']",
-                    "Schema::TABLE_FOREIGN => ['entity' => \$schema['{$record}']['id']]"
-                ];
-                $constraints = "[\n\t\t\t" . implode(",\n\t\t\t", $constraints) . "\n\t\t]";
-                $up[] = "\$schema->createTable('{$eav}', {$columns}, {$constraints});";
+                $foreign = "[\n\t\t\t'entity' => \$schema['{$record}']['id']\n\t\t]";
+                $up[] = "\$schema->createTable('{$eav}', {$columns}, {$foreign});";
                 $down[] = "\$schema->dropTable('{$eav}');";
             }
         }
@@ -296,28 +292,19 @@ $opt = getopt('h', [
         $down = [];
 
         if (!$this->schema->getTable($junction)) {
-            /** @see Schema::createTable() */
-            /** @see Schema::dropTable() */
             $records = $junction->getRecords();
             $columns = array_map(
-                fn(string $column) => "'{$column}' => Schema::T_INT",
+                fn(string $column) => "'{$column}' => Schema::T_INT | Schema::I_PRIMARY",
                 array_keys($records)
             );
             $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
-            $primary = array_map(fn(string $column) => "'{$column}'", array_keys($records));
-            $primary = "[" . implode(', ', $primary) . "]";
             $foreign = array_map(
                 fn(string $column, Record $record) => "'{$column}' => \$schema['{$record}']['id']",
                 array_keys($records),
                 $records
             );
-            $foreign = "[\n\t\t\t\t" . implode(",\n\t\t\t\t", $foreign) . "\n\t\t\t]";
-            $constraints = [
-                "Schema::TABLE_PRIMARY => {$primary}",
-                "Schema::TABLE_FOREIGN => {$foreign}"
-            ];
-            $constraints = "[\n\t\t\t" . implode(",\n\t\t\t", $constraints) . "\n\t\t]";
-            $up[] = "\$schema->createTable('{$junction}', {$columns}, {$constraints});";
+            $foreign = "[\n\t\t\t" . implode(",\n\t\t\t", $foreign) . "\n\t\t]";
+            $up[] = "\$schema->createTable('{$junction}', {$columns}, {$foreign});";
             $down[] = "\$schema->dropTable('{$junction}');";
         }
 

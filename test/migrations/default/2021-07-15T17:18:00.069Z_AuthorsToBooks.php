@@ -3,7 +3,7 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-07-15T16:48:02.217Z_AuthorsToBooks */
+/** 2021-07-15T17:18:00.069Z_AuthorsToBooks */
 return new class implements MigrationInterface {
 
     /**
@@ -12,14 +12,11 @@ return new class implements MigrationInterface {
     public function up($schema)
     {
         $schema->createTable('authors_to_books', [
-            'author' => Schema::T_INT,
-            'book' => Schema::T_INT
+            'author' => Schema::T_INT | Schema::I_PRIMARY,
+            'book' => Schema::T_INT | Schema::I_PRIMARY
         ], [
-            Schema::TABLE_PRIMARY => ['author', 'book'],
-            Schema::TABLE_FOREIGN => [
-                'author' => $schema['authors']['id'],
-                'book' => $schema['books']['id']
-            ]
+            'author' => $schema['authors']['id'],
+            'book' => $schema['books']['id']
         ]);
     }
 

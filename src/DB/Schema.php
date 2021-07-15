@@ -26,27 +26,17 @@ class Schema implements ArrayAccess
     use FactoryTrait;
 
     /**
-     * `<TABLE_CONST>`: Multi-column primary key.
-     */
-    const TABLE_PRIMARY = 0;
-
-    /**
-     * `<TABLE_CONST>`: Associative foreign keys.
-     */
-    const TABLE_FOREIGN = 2;
-
-    /**
      * Higher byte mask (column index type).
      */
     protected const I_MASK = 0xff00;
 
     /**
-     * Partial definition for `T_AUTOINCREMENT`, use that in compositions instead of this.
+     * Partial definition for `T_AUTOINCREMENT`, use that instead.
      */
     protected const I_AUTOINCREMENT = self::I_PRIMARY | 0x0100; // 0xff00
 
     /**
-     * `<I_CONST>`: Column is the primary key.
+     * `<I_CONST>`: One or more columns compose the primary key.
      */
     const I_PRIMARY = 0xfe00;
 
@@ -254,37 +244,53 @@ class Schema implements ArrayAccess
      *
      * At least one column must be given.
      *
-     * `$constraints` is a multidimensional array of table-level constraints.
-     * - `TABLE_PRIMARY => [col, col, col]`
-     *      - String list of columns composing the primary key.
-     *      - Not needed for single-column primary keys. Use `I_PRIMARY` or `T_AUTOINCREMENT` for that.
-     * - `TABLE_FOREIGN => [ col => <External Column> ]`
-     *      - Associative columns that are each foreign keys to a {@link Column} instance.
-     *
      * @param string $table
      * @param int[] $columns `[ name => <I_CONST> | <T_CONST> ]`
-     * @param array[] $constraints `[ <TABLE_CONST> => spec ]`
+     * @param Column[] $foreign `[ column name => <External Column> ]`
      * @return $this
      */
-    public function createTable(string $table, array $columns, array $constraints = [])
+    public function createTable(string $table, array $columns, array $foreign = [])
     {
-        $defs = $this->toColumnDefinitions($columns);
+        assert(count($columns) > 0);
+        $columns = $this->sortColumns($columns);
+        $colDefs = [];
+        $primaryKey = [];
 
-        /** @var string[] $pk */
-        if ($pk = $constraints[self::TABLE_PRIMARY] ?? []) {
-            $defs[] = $this->toPrimaryKeyConstraint($table, $pk);
+        // column list
+        foreach ($columns as $name => $type) {
+            $colDefs[$name] = sprintf("%s %s", $name, $this->colDefs[$type & self::T_MASK]);
+            if (self::I_AUTOINCREMENT === $type & self::I_MASK) {
+                $colDefs[$name] .= " " . $this->colDefs[self::I_AUTOINCREMENT];
+            } elseif ($type & self::I_PRIMARY) {
+                $primaryKey[] = $name;
+            }
         }
 
-        /** @var string $local */
-        /** @var Column $foreign */
-        foreach ($constraints[self::TABLE_FOREIGN] ?? [] as $local => $foreign) {
-            $defs[] = $this->toForeignKeyConstraint($table, $local, $columns[$local], $foreign);
+        // non auto-increment primary key
+        if ($primaryKey) {
+            $colDefs[] = sprintf(
+                'CONSTRAINT %s PRIMARY KEY (%s)',
+                $this->getPrimaryKeyConstraintName($table, $primaryKey),
+                implode(',', $primaryKey)
+            );
+        }
+
+        // foreign keys
+        foreach ($foreign as $local => $external) {
+            $colDefs[] = sprintf(
+                'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE CASCADE ON DELETE %s',
+                $this->getForeignKeyConstraintName($table, $local),
+                $local,
+                $external->getQualifier(),
+                $external->getName(),
+                $columns[$local] | self::T_STRICT ? 'CASCADE' : 'SET NULL'
+            );
         }
 
         $this->db->exec(sprintf(
             "CREATE TABLE %s (%s)",
             $table,
-            implode(', ', $defs)
+            implode(', ', $colDefs)
         ));
 
         return $this;
@@ -524,60 +530,4 @@ class Schema implements ArrayAccess
         return $types;
     }
 
-    /**
-     * @param int[] $columns `[ name => <I_CONST> | <T_CONST> ]`
-     * @return string[]
-     */
-    protected function toColumnDefinitions(array $columns): array
-    {
-        assert(count($columns) > 0);
-        $columns = $this->sortColumns($columns);
-        $defs = [];
-
-        /**
-         * @var string $name
-         * @var int $type
-         */
-        foreach ($columns as $name => $type) {
-            $defs[$name] = sprintf("%s %s", $name, $this->colDefs[$type & self::T_MASK]);
-            if ($indexSql = $type & self::I_MASK) {
-                $defs[$name] .= " {$this->colDefs[$indexSql]}";
-            }
-        }
-
-        return $defs;
-    }
-
-    /**
-     * @param string $table
-     * @param string $local
-     * @param int $type
-     * @param Column $foreign
-     * @return string
-     */
-    protected function toForeignKeyConstraint(string $table, string $local, int $type, Column $foreign): string
-    {
-        return sprintf(
-            'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE CASCADE ON DELETE %s',
-            $this->getForeignKeyConstraintName($table, $local),
-            $local,
-            $foreign->getQualifier(),
-            $foreign->getName(),
-            $type | self::T_STRICT ? 'CASCADE' : 'SET NULL'
-        );
-    }
-
-    /**
-     * @param string $table
-     * @param string[] $columns
-     * @return string
-     */
-    protected function toPrimaryKeyConstraint(string $table, array $columns): string
-    {
-        return sprintf(
-            'CONSTRAINT %s PRIMARY KEY (%s)',
-            $this->getPrimaryKeyConstraintName($table, $columns),
-            implode(',', $columns)
-        );
-    }
 }
