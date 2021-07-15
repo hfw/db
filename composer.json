@@ -15,7 +15,7 @@
     "ext-pdo": "*"
   },
   "bin": [
-    "bin/helix.db.migrate.php"
+    "bin/migrate.php"
   ],
   "autoload": {
     "psr-4": {
