@@ -237,9 +237,32 @@ class Schema implements ArrayAccess
      */
     public function addColumn(string $table, string $column, int $type = self::T_STRING_NULL)
     {
-        $type = $this->colDefs[$type & self::T_MASK];
-        $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
+        $typeDef = $this->colDefs[$type & self::T_MASK];
+        $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$typeDef}");
+        $index = $type & self::I_MASK;
+        if ($index === self::I_UNIQUE) {
+            $this->addUniqueConstraint($table, [$column]);
+        }
         unset($this->tables[$table]);
+        return $this;
+    }
+
+    /**
+     * Driver-appropriate constraint creation.
+     *
+     * @param string $table
+     * @param string[] $columns
+     * @return $this
+     */
+    public function addUniqueConstraint(string $table, array $columns)
+    {
+        $name = $this->toUniqueKeyConstraint_name($table, $columns);
+        $columns = implode(',', $columns);
+        if ($this->db->isSQLite()) {
+            $this->db->exec("CREATE UNIQUE INDEX {$name} ON {$table} ({$columns})");
+        } else {
+            $this->db->exec("ALTER TABLE {$table} ADD CONSTRAINT {$name} UNIQUE ({$columns})");
+        }
         return $this;
     }
 
@@ -271,29 +294,33 @@ class Schema implements ArrayAccess
             $defs[] = $this->toPrimaryKeyConstraint($table, $pk);
         }
 
-        /** @var string[] $unique */
-        foreach ($constraints[self::TABLE_UNIQUE] ?? [] as $unique) {
-            $defs[] = $this->toUniqueKeyConstraint($table, $unique);
-        }
-
         /** @var string $local */
         /** @var Column $foreign */
         foreach ($constraints[self::TABLE_FOREIGN] ?? [] as $local => $foreign) {
             $defs[] = $this->toForeignKeyConstraint($table, $local, $columns[$local], $foreign);
         }
 
-        $sql = sprintf(
+        $this->db->exec(sprintf(
             "CREATE TABLE %s (%s)",
             $table,
             implode(', ', $defs)
-        );
+        ));
 
-        $this->db->exec($sql);
+        // create multi-column unique constraints afterwards,
+        // since sqlite can't drop them if they're part of the table definition.
+        /** @var string[] $unique */
+        foreach ($constraints[self::TABLE_UNIQUE] ?? [] as $unique) {
+            $this->addUniqueConstraint($table, $unique);
+        }
+
         return $this;
     }
 
     /**
      * `ALTER TABLE $table DROP COLUMN $column`
+     *
+     * SQLite does not support this, so it's skipped.
+     * It's beyond the scope of this method (for now) to do table recreation for SQLite.
      *
      * @param string $table
      * @param string $column
@@ -301,8 +328,27 @@ class Schema implements ArrayAccess
      */
     public function dropColumn(string $table, string $column)
     {
-        $this->db->exec("ALTER TABLE {$table} DROP COLUMN {$column}");
+        if (!$this->db->isSQLite()) {
+            $this->db->exec("ALTER TABLE {$table} DROP COLUMN {$column}");
+        }
         unset($this->tables[$table]);
+        return $this;
+    }
+
+    /**
+     * Driver-appropriate index deletion.
+     *
+     * @param string $table
+     * @param string $name
+     * @return $this
+     */
+    protected function dropIndex(string $table, string $name)
+    {
+        if ($this->db->isSQLite()) {
+            $this->db->exec("DROP INDEX {$name}");
+        } else {
+            $this->db->exec("DROP INDEX {$name} ON {$table}");
+        }
         return $this;
     }
 
@@ -317,6 +363,18 @@ class Schema implements ArrayAccess
         $this->db->exec("DROP TABLE IF EXISTS {$table}");
         unset($this->tables[$table]);
         return $this;
+    }
+
+    /**
+     * Driver-appropriate constraint deletion.
+     *
+     * @param string $table
+     * @param string[] $columns
+     * @return $this
+     */
+    public function dropUniqueConstraint(string $table, array $columns)
+    {
+        return $this->dropIndex($table, $this->toUniqueKeyConstraint_name($table, $columns));
     }
 
     /**
@@ -545,20 +603,6 @@ class Schema implements ArrayAccess
     {
         sort($columns, SORT_STRING);
         return 'PK_' . $table . '__' . implode('__', $columns);
-    }
-
-    /**
-     * @param string $table
-     * @param string[] $columns
-     * @return string
-     */
-    protected function toUniqueKeyConstraint(string $table, array $columns): string
-    {
-        return sprintf(
-            'CONSTRAINT %s UNIQUE (%s)',
-            $this->toUniqueKeyConstraint_name($table, $columns),
-            implode(',', $columns)
-        );
     }
 
     /**

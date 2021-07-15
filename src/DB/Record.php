@@ -22,6 +22,10 @@ use stdClass;
  * Property Annotations:
  *
  * - `@col` or `@column`
+ * - `@unique` or `@unique <SHARED_IDENTIFIER>` for a single or multi-column unique-key.
+ *  - The shared identifier must be alphabetical, allowing underscores.
+ *  - The identifier can be arbitrary, but it's necessary in order to associate component properties.
+ *  - The column/s may be nullable; MySQL and SQLite don't enforce uniqueness for NULL.
  * - `@eav <TABLE>`
  *
  * Property types are preserved.
@@ -30,15 +34,16 @@ use stdClass;
  *
  * > Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
  *
- * @method static static factory(DB $db, EntityInterface $proto, string $table, array $columns, array $eav = [])
+ * @method static static factory(DB $db, EntityInterface $proto, string $table, array $properties, array $unique, array $eav = [])
  *
- * @TODO Allow constraints in the `column` tag, supporting single and multi-column.
+ * @TODO Auto-map singular foreign entity columns.
  */
 class Record extends Table
 {
 
     protected const RX_RECORD = '/\*\h*@record\h+(?<table>\w+)/i';
     protected const RX_IS_COLUMN = '/\*\h*@col(umn)?\b/i';
+    protected const RX_UNIQUE = '/\*\h*@unique(\h+(?<ident>[a-z_]+))?/i';
     protected const RX_VAR = '/\*\h*@var\h+(?<type>\S+)/i'; // includes pipes and backslashes
     protected const RX_NULL = '/(\bnull\|)|(\|null\b)/i';
     protected const RX_EAV = '/\*\h*@eav\h+(?<table>\w+)/i';
@@ -134,6 +139,17 @@ class Record extends Table
     protected $types = [];
 
     /**
+     * Column groupings for unique constraints.
+     * - Column-level constraints are enumerated names.
+     * - Table-level (multi-column) constraints are names grouped under an arbitrary shared identifier.
+     *
+     * `[ 'foo', 'my_multi'=>['bar','baz'], ... ]`
+     *
+     * @var array
+     */
+    protected $unique;
+
+    /**
      * @var DateTimeZone
      */
     protected DateTimeZone $utc;
@@ -152,17 +168,25 @@ class Record extends Table
     {
         $rClass = new ReflectionClass($class);
         assert($rClass->implementsInterface(EntityInterface::class));
-        $columns = [];
-        $EAV = [];
+        $properties = [];
+        $unique = [];
+        $eav = [];
         foreach ($rClass->getProperties() as $rProp) {
             $doc = $rProp->getDocComment();
             if (preg_match(static::RX_IS_COLUMN, $doc)) {
-                $columns[] = $rProp->getName();
-            } elseif (preg_match(static::RX_EAV, $doc, $eav)) {
+                $properties[] = $rProp->getName();
+                if (preg_match(static::RX_UNIQUE, $doc, $rx)) {
+                    if (isset($rx['ident'])) {
+                        $unique[$rx['ident']][] = $rProp->getName();
+                    } else {
+                        $unique[] = $rProp->getName();
+                    }
+                }
+            } elseif (preg_match(static::RX_EAV, $doc, $rx)) {
                 preg_match(static::RX_EAV_VAR, $doc, $var);
                 $type = $var['type'] ?? 'string';
                 $type = static::SCALARS[$type] ?? 'string';
-                $EAV[$rProp->getName()] = EAV::factory($db, $eav['table'], $type);
+                $eav[$rProp->getName()] = EAV::factory($db, $rx['table'], $type);
             }
         }
         preg_match(static::RX_RECORD, $rClass->getDocComment(), $record);
@@ -170,7 +194,7 @@ class Record extends Table
             assert($rClass->isInstantiable());
             $class = $rClass->newInstanceWithoutConstructor();
         }
-        return static::factory($db, $class, $record['table'], $columns, $EAV);
+        return static::factory($db, $class, $record['table'], $properties, $unique, $eav);
     }
 
     /**
@@ -178,12 +202,20 @@ class Record extends Table
      * @param EntityInterface $proto
      * @param string $table
      * @param string[] $properties Property names.
+     * @param string[] $unique Enumerated property names, or groups of property names keyed by a shared identifier.
      * @param EAV[] $eav Keyed by property name.
      */
-    public function __construct(DB $db, EntityInterface $proto, string $table, array $properties, array $eav = [])
-    {
+    public function __construct(
+        DB $db,
+        EntityInterface $proto,
+        string $table,
+        array $properties,
+        array $unique = [],
+        array $eav = []
+    ) {
         parent::__construct($db, $table, $properties);
         $this->proto = $proto;
+        $this->unique = $unique;
         $this->utc = new DateTimeZone('UTC');
         $rClass = new ReflectionClass($proto);
         $defaults = $rClass->getDefaultProperties();
@@ -438,6 +470,30 @@ class Record extends Table
     }
 
     /**
+     * @return array
+     */
+    final public function getUnique(): array
+    {
+        return $this->unique;
+    }
+
+    /**
+     * The shared identifier if a property is part of a multi-column unique-key.
+     *
+     * @param string $property
+     * @return null|string The shared identifier, or nothing.
+     */
+    final public function getUniqueGroup(string $property): ?string
+    {
+        foreach ($this->unique as $key => $value) {
+            if (is_string($key) and in_array($property, $value)) {
+                return $key;
+            }
+        }
+        return null;
+    }
+
+    /**
      * @param EntityInterface $entity
      * @return array
      */
@@ -485,6 +541,17 @@ class Record extends Table
     final public function isNullable(string $property): bool
     {
         return $this->nullable[$property];
+    }
+
+    /**
+     * Whether a property has a unique-key constraint of its own.
+     *
+     * @param string $property
+     * @return bool
+     */
+    final public function isUnique(string $property): bool
+    {
+        return in_array($property, $this->unique);
     }
 
     /**

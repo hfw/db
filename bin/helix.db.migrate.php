@@ -203,24 +203,52 @@ $opt = getopt('h', [
                 }
                 $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
             }
+            $unique = [];
+            foreach ($record->getUnique() as $key => $value) {
+                if (is_int($key)) {
+                    $columns[$value] .= ' | Schema::I_UNIQUE';
+                } else {
+                    $unique[] = "['" . implode("','", $value) . "']";
+                }
+            }
+            $constraints = [];
+            if ($unique) {
+                $constraints[] = 'Schema::TABLE_UNIQUE => [' . implode(', ', $unique) . ']';
+            }
             $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
             $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
-            $up[] = "\$schema->createTable('{$record}', {$columns});";
+            if ($constraints) {
+                $constraints = "[\n\t\t\t" . implode(",\n\t\t\t", $constraints) . "\n\t\t]";
+                $up[] = "\$schema->createTable('{$record}', {$columns}, {$constraints});";
+            } else {
+                $up[] = "\$schema->createTable('{$record}', {$columns});";
+            }
             $down[] = "\$schema->dropTable('{$record}');";
         } else { // add or drop columns. we can't detect whether they've simply been renamed.
             $columns = $this->schema->getColumnInfo($table);
             /** @see Schema::addColumn() */
             /** @see Schema::dropColumn() */
             // add columns
+            $multiUnique = [];
             foreach ($record->getTypes() as $property => $type) {
                 if (!isset($columns[$property])) {
-                    $T_CONST = Schema::T_CONST_NAMES[$type];
+                    $T_CONST = 'Schema::' . Schema::T_CONST_NAMES[$type];
                     if ($record->isNullable($property)) {
                         $T_CONST .= '_NULL';
                     }
-                    $up[] = "\$schema->addColumn('{$table}', '{$property}', Schema::{$T_CONST});";
+                    if ($record->isUnique($property)) {
+                        $T_CONST .= ' | Schema::I_UNIQUE';
+                    } elseif ($uniqueGroup = $record->getUniqueGroup($property)) {
+                        $multiUnique[$uniqueGroup][] = $property;
+                    }
+                    $up[] = "\$schema->addColumn('{$table}', '{$property}', {$T_CONST});";
                     $down[] = "\$schema->dropColumn('{$table}', '{$property}');";
                 }
+            }
+            foreach ($multiUnique as $properties) {
+                $properties = "'" . implode("','", $properties) . "'";
+                $up[] = "\$schema->addUniqueConstraint('{$table}', [{$properties}]);";
+                $down[] = "\$schema->dropUniqueConstraint('{$table}', [{$properties}]);";
             }
             // drop columns
             foreach ($columns as $column => $info) {

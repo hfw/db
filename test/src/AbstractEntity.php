@@ -14,10 +14,35 @@ abstract class AbstractEntity implements EntityInterface, ArrayAccess
     use AttributesTrait;
 
     /**
+     * @col
+     * @unique my_multi
+     */
+    protected ?string $bar;
+
+    /**
+     * @col
+     * @unique my_multi
+     */
+    protected ?string $baz;
+
+    /**
+     * @col
+     * @unique
+     */
+    protected ?string $foo;
+
+    /**
      * @column
      * @var int
      */
     protected $id = 0;
+
+    public function __construct()
+    {
+        $this->bar = uniqid();
+        $this->baz = uniqid();
+        $this->foo = uniqid();
+    }
 
     /**
      * @return int
