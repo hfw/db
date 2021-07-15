@@ -154,14 +154,11 @@ class Table extends AbstractTable
     }
 
     /**
-     * @param int|string $column
+     * @param string $column
      * @return Column
      */
     public function offsetGet($column)
     {
-        if (is_int($column)) {
-            return current(array_slice($this->columns, $column, 1)) ?: null;
-        }
         return $this->columns[$column] ?? null;
     }
 

@@ -27,7 +27,7 @@ abstract class AbstractTable implements ArrayAccess
     abstract public function getColumns();
 
     /**
-     * @param int|string $column
+     * @param string $column
      * @return null|Column
      */
     abstract public function offsetGet($column);
