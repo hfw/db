@@ -41,15 +41,19 @@ trait NumTrait
     }
 
     /**
-     * `($this + $arg)`
+     * `($this + $arg + ... )`
      *
      * @param number|ValueInterface $arg
+     * @param number|ValueInterface ...$args
      * @return Num
      */
-    public function add($arg)
+    public function add($arg, ...$args)
     {
-        $arg = $this->db->quote($arg);
-        return Num::factory($this->db, "({$this} + {$arg})");
+        array_unshift($args, $arg);
+        return Num::factory($this->db, sprintf('(%s + %s)',
+            $this,
+            implode(' + ', $this->db->quoteArray($args))
+        ));
     }
 
     /**
@@ -170,15 +174,19 @@ trait NumTrait
     }
 
     /**
-     * `($this / $arg)`
+     * `($this / $arg / ...)`
      *
      * @param number|ValueInterface $arg
+     * @param number|ValueInterface ...$args
      * @return Num
      */
-    public function div($arg)
+    public function div($arg, ...$args)
     {
-        $arg = $this->db->quote($arg);
-        return Num::factory($this->db, "({$this} / {$arg})");
+        array_unshift($args, $arg);
+        return Num::factory($this->db, sprintf('(%s / %s)',
+            $this,
+            implode(' / ', $this->db->quoteArray($args))
+        ));
     }
 
     /**
@@ -298,15 +306,19 @@ trait NumTrait
     }
 
     /**
-     * `($this * $arg)`
+     * `($this * $arg * ...)`
      *
      * @param number|ValueInterface $arg
+     * @param number|ValueInterface ...$args
      * @return Num
      */
-    public function mul($arg)
+    public function mul($arg, ...$args)
     {
-        $arg = $this->db->quote($arg);
-        return Num::factory($this->db, "({$this} * {$arg})");
+        array_unshift($args, $arg);
+        return Num::factory($this->db, sprintf('(%s * %s)',
+            $this,
+            implode(' * ', $this->db->quoteArray($args))
+        ));
     }
 
     /**
@@ -385,15 +397,19 @@ trait NumTrait
     }
 
     /**
-     * `($this - $arg)`
+     * `($this - $arg - ...)`
      *
      * @param number|ValueInterface $arg
+     * @param number|ValueInterface ...$args
      * @return Num
      */
-    public function sub($arg)
+    public function sub($arg, ...$args)
     {
-        $arg = $this->db->quote($arg);
-        return Num::factory($this->db, "({$this} - {$arg})");
+        array_unshift($args, $arg);
+        return Num::factory($this->db, sprintf('(%s - %s)',
+            $this,
+            implode(' - ', $this->db->quoteArray($args))
+        ));
     }
 
     /**
