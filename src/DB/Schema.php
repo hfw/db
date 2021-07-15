@@ -143,8 +143,7 @@ class Schema implements ArrayAccess
      */
     protected const COLUMN_DEFINITIONS = [
         'mysql' => [
-            self::I_AUTOINCREMENT => 'PRIMARY KEY AUTO_INCREMENT',
-            self::I_PRIMARY => 'PRIMARY KEY',
+            self::T_AUTOINCREMENT => 'BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT',
             self::T_BLOB => 'LONGBLOB NOT NULL DEFAULT ""',
             self::T_BOOL => 'BOOLEAN NOT NULL DEFAULT 0',
             self::T_FLOAT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
@@ -161,8 +160,7 @@ class Schema implements ArrayAccess
             self::T_DATETIME_NULL => 'DATETIME NULL DEFAULT NULL',
         ],
         'sqlite' => [
-            self::I_AUTOINCREMENT => 'PRIMARY KEY AUTOINCREMENT',
-            self::I_PRIMARY => 'PRIMARY KEY',
+            self::T_AUTOINCREMENT => 'INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT',
             self::T_BLOB => 'BLOB NOT NULL DEFAULT ""',
             self::T_BOOL => 'BOOLEAN NOT NULL DEFAULT 0',
             self::T_FLOAT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
@@ -258,12 +256,15 @@ class Schema implements ArrayAccess
 
         // column list
         foreach ($columns as $name => $type) {
-            $colDefs[$name] = sprintf("%s %s", $name, $this->colDefs[$type & self::T_MASK]);
-            if (self::I_AUTOINCREMENT === $type & self::I_MASK) {
-                $colDefs[$name] .= " " . $this->colDefs[self::I_AUTOINCREMENT];
-            } elseif ($type & self::I_PRIMARY) {
-                $primaryKey[] = $name;
+            if ($type === self::T_AUTOINCREMENT) {
+                $typeDef = $this->colDefs[self::T_AUTOINCREMENT];
+            } else {
+                $typeDef = $this->colDefs[$type & self::T_MASK];
+                if ($type & self::I_PRIMARY) {
+                    $primaryKey[] = $name;
+                }
             }
+            $colDefs[$name] = "{$name} {$typeDef}";
         }
 
         // non auto-increment primary key
