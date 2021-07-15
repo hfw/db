@@ -187,88 +187,22 @@ $opt = getopt('h', [
     {
         $class = $this->_toClass($class) or $this->_usage_exit();
         $record = $this->db->getRecord($class);
-        $use = [];
         $up = [];
         $down = [];
-
-        // create table
-        if (!$table = $this->db[$record->getName()]) {
-            /** @see Schema::createTable() */
-            /** @see Schema::dropTable() */
-            $columns = [];
-            foreach ($record->getTypes() as $property => $type) {
-                $T_CONST = Schema::T_CONST_NAMES[$type];
-                if ($record->isNullable($property)) {
-                    $T_CONST .= '_NULL';
-                }
-                $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
-            }
-            $unique = [];
-            foreach ($record->getUnique() as $key => $value) {
-                if (is_int($key)) {
-                    $columns[$value] .= ' | Schema::I_UNIQUE';
-                } else {
-                    $unique[] = "['" . implode("','", $value) . "']";
-                }
-            }
-            $constraints = [];
-            if ($unique) {
-                $constraints[] = 'Schema::TABLE_UNIQUE => [' . implode(', ', $unique) . ']';
-            }
-            $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
-            $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
-            if ($constraints) {
-                $constraints = "[\n\t\t\t" . implode(",\n\t\t\t", $constraints) . "\n\t\t]";
-                $up[] = "\$schema->createTable('{$record}', {$columns}, {$constraints});";
-            } else {
-                $up[] = "\$schema->createTable('{$record}', {$columns});";
-            }
-            $down[] = "\$schema->dropTable('{$record}');";
-        } else { // add or drop columns. we can't detect whether they've simply been renamed.
-            $columns = $this->schema->getColumnInfo($table);
-            /** @see Schema::addColumn() */
-            /** @see Schema::dropColumn() */
-            // add columns
-            $multiUnique = [];
-            foreach ($record->getTypes() as $property => $type) {
-                if (!isset($columns[$property])) {
-                    $T_CONST = 'Schema::' . Schema::T_CONST_NAMES[$type];
-                    if ($record->isNullable($property)) {
-                        $T_CONST .= '_NULL';
-                    }
-                    if ($record->isUnique($property)) {
-                        $T_CONST .= ' | Schema::I_UNIQUE';
-                    } elseif ($uniqueGroup = $record->getUniqueGroup($property)) {
-                        $multiUnique[$uniqueGroup][] = $property;
-                    }
-                    $up[] = "\$schema->addColumn('{$table}', '{$property}', {$T_CONST});";
-                    $down[] = "\$schema->dropColumn('{$table}', '{$property}');";
-                }
-            }
-            foreach ($multiUnique as $properties) {
-                $properties = "'" . implode("','", $properties) . "'";
-                $up[] = "\$schema->addUniqueConstraint('{$table}', [{$properties}]);";
-                $down[] = "\$schema->dropUniqueConstraint('{$table}', [{$properties}]);";
-            }
-            // drop columns
-            foreach ($columns as $column => $info) {
-                if (!$record[$column]) {
-                    $T_CONST = Schema::T_CONST_NAMES[$info['type']];
-                    if ($info['nullable']) {
-                        $T_CONST .= '_NULL';
-                    }
-                    $up[] = "\$schema->dropColumn('{$table}', '{$column}');";
-                    $down[] = "\$schema->addColumn('{$table}', '{$column}', Schema::{$T_CONST});";
-                }
-            }
+        if (!$this->schema->getTable($record)) {
+            $this->record_create($record, $up, $down);
+        } else {
+            $this->record_add_columns($record, $up, $down);
+            $this->record_drop_columns($record, $up, $down);
         }
+        $this->record_create_eav($record, $up, $down);
+        $this->write($class, $up, $down);
+    }
 
-        // check each eav
+    private function record_create_eav(Record $record, &$up, &$down)
+    {
         foreach ($record->getEav() as $eav) {
-            // create table
-            if (!$this->db[$eav->getName()]) {
-                /** @see Schema::createTable() */
-                /** @see Schema::dropTable() */
+            if (!$this->schema->getTable($eav)) {
                 $T_CONST = Schema::T_CONST_NAMES[$eav->getType()];
                 $columns = [
                     "'entity' => Schema::T_INT",
@@ -285,20 +219,83 @@ $opt = getopt('h', [
                 $down[] = "\$schema->dropTable('{$eav}');";
             }
         }
+    }
 
-        $this->write($class, $use, $up, $down);
+    private function record_add_columns(Record $record, &$up, &$down)
+    {
+        $columns = $this->schema->getColumnInfo($record);
+        $multiUnique = [];
+        foreach ($record->getTypes() as $property => $type) {
+            if (!isset($columns[$property])) {
+                $T_CONST = Schema::T_CONST_NAMES[$type];
+                if ($record->isNullable($property)) {
+                    $T_CONST .= '_NULL';
+                }
+                $up[] = "\$schema->addColumn('{$record}', '{$property}', Schema::{$T_CONST});";
+                $down[] = "\$schema->dropColumn('{$record}', '{$property}');";
+            }
+            if ($record->isUnique($property)) {
+                $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$property}']);";
+                $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$property}']);";
+            } elseif ($uniqueGroup = $record->getUniqueGroup($property)) {
+                $multiUnique[$uniqueGroup][] = $property;
+            }
+        }
+        foreach ($multiUnique as $properties) {
+            $properties = "'" . implode("','", $properties) . "'";
+            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', [{$properties}]);";
+            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', [{$properties}]);";
+        }
+    }
+
+    private function record_drop_columns(Record $record, &$up, &$down)
+    {
+        $columns = $this->schema->getColumnInfo($record);
+        foreach ($columns as $column => $info) {
+            if (!$record[$column]) {
+                $T_CONST = Schema::T_CONST_NAMES[$info['type']];
+                if ($info['nullable']) {
+                    $T_CONST .= '_NULL';
+                }
+                $up[] = "\$schema->dropColumn('{$record}', '{$column}');";
+                $down[] = "\$schema->addColumn('{$record}', '{$column}', Schema::{$T_CONST});";
+            }
+        }
+    }
+
+    private function record_create(Record $record, &$up, &$down)
+    {
+        $columns = [];
+        foreach ($record->getTypes() as $property => $type) {
+            $T_CONST = Schema::T_CONST_NAMES[$type];
+            if ($record->isNullable($property)) {
+                $T_CONST .= '_NULL';
+            }
+            $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
+        }
+
+        $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
+        $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
+        $up[] = "\$schema->createTable('{$record}', {$columns});";
+        $down[] = "\$schema->dropTable('{$record}');";
+
+        foreach ($record->getUnique() as $unique) {
+            if (is_array($unique)) {
+                $unique = implode("', '", $unique);
+            }
+            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$unique}']);";
+            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$unique}']);";
+        }
     }
 
     private function junction(string $class): void
     {
         $class = $this->_toClass($class) or $this->_usage_exit();
         $junction = $this->db->getJunction($class);
-        $use = [];
         $up = [];
         $down = [];
 
-        // create table
-        if (!$this->db[$junction->getName()]) {
+        if (!$this->schema->getTable($junction)) {
             /** @see Schema::createTable() */
             /** @see Schema::dropTable() */
             $records = $junction->getRecords();
@@ -324,21 +321,21 @@ $opt = getopt('h', [
             $down[] = "\$schema->dropTable('{$junction}');";
         }
 
-        $this->write($class, $use, $up, $down);
+        $this->write($class, $up, $down);
     }
 
-    private function write(string $class, array $use, array $up, array $down): void
+    private function write(string $class, array $up, array $down): void
     {
         if (!$up or !$down) {
             $this->_stdout("-- Nothing to do.");
             return;
         }
 
-        // convert $use to imports
-        $use[] = Schema::class;
-        $use[] = MigrationInterface::class;
-        sort($use);
-        $use = array_map(fn(string $import) => "use {$import};", array_unique($use));
+        // import stuff
+        $use = array_map(fn($import) => "use {$import};", [
+            MigrationInterface::class,
+            Schema::class
+        ]);
 
         // reverse the $down operations
         $down = array_reverse($down);

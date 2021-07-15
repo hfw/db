@@ -3,7 +3,7 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-07-15T07:33:08.736Z_Book */
+/** 2021-07-15T16:48:02.162Z_Author */
 return new class implements MigrationInterface {
 
     /**
@@ -11,23 +11,22 @@ return new class implements MigrationInterface {
      */
     public function up($schema)
     {
-        $schema->createTable('books', [
-            'published' => Schema::T_DATETIME,
-            'title' => Schema::T_STRING,
+        $schema->createTable('authors', [
+            'name' => Schema::T_STRING,
             'bar' => Schema::T_STRING_NULL,
             'baz' => Schema::T_STRING_NULL,
-            'foo' => Schema::T_STRING_NULL | Schema::I_UNIQUE,
+            'foo' => Schema::T_STRING_NULL,
             'id' => Schema::T_AUTOINCREMENT
-        ], [
-            Schema::TABLE_UNIQUE => [['bar','baz']]
         ]);
-        $schema->createTable('books_eav', [
+        $schema->addUniqueKeyConstraint('authors', ['bar', 'baz']);
+        $schema->addUniqueKeyConstraint('authors', ['foo']);
+        $schema->createTable('authors_eav', [
             'entity' => Schema::T_INT,
             'attribute' => Schema::T_STRING,
             'value' => Schema::T_STRING
         ], [
             Schema::TABLE_PRIMARY => ['entity', 'attribute'],
-            Schema::TABLE_FOREIGN => ['entity' => $schema['books']['id']]
+            Schema::TABLE_FOREIGN => ['entity' => $schema['authors']['id']]
         ]);
     }
 
@@ -36,8 +35,10 @@ return new class implements MigrationInterface {
      */
     public function down($schema)
     {
-        $schema->dropTable('books_eav');
-        $schema->dropTable('books');
+        $schema->dropTable('authors_eav');
+        $schema->dropUniqueKeyConstraint('authors', ['foo']);
+        $schema->dropUniqueKeyConstraint('authors', ['bar', 'baz']);
+        $schema->dropTable('authors');
     }
 
 };

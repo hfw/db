@@ -10,8 +10,7 @@ use LogicException;
  * Schema control and metadata.
  *
  * The column definition constants are two bytes each, used in bitwise composition.
- * - The high-byte (`<I_CONST>`) is used for the specific index type.
- *      - Ascending index priority. For example, `I_AUTOINCREMENT` is `0xff00`
+ * - The high-byte (`<I_CONST>`) is used for the specific primary index type.
  * - The low-byte (`<T_CONST>`) is used for the specific storage type.
  *      - The final bit `0x01` flags `NOT NULL`
  * - The literal values may change in the future, do not hard code them.
@@ -32,11 +31,6 @@ class Schema implements ArrayAccess
     const TABLE_PRIMARY = 0;
 
     /**
-     * `<TABLE_CONST>`: Groups of columns are unique together.
-     */
-    const TABLE_UNIQUE = 1;
-
-    /**
      * `<TABLE_CONST>`: Associative foreign keys.
      */
     const TABLE_FOREIGN = 2;
@@ -49,17 +43,12 @@ class Schema implements ArrayAccess
     /**
      * Partial definition for `T_AUTOINCREMENT`, use that in compositions instead of this.
      */
-    protected const I_AUTOINCREMENT = 0xff00;
+    protected const I_AUTOINCREMENT = self::I_PRIMARY | 0x0100; // 0xff00
 
     /**
      * `<I_CONST>`: Column is the primary key.
      */
     const I_PRIMARY = 0xfe00;
-
-    /**
-     * `<I_CONST>`: Column is unique.
-     */
-    const I_UNIQUE = 0xfd00;
 
     /**
      * Lower-byte mask (column storage type).
@@ -166,7 +155,6 @@ class Schema implements ArrayAccess
         'mysql' => [
             self::I_AUTOINCREMENT => 'PRIMARY KEY AUTO_INCREMENT',
             self::I_PRIMARY => 'PRIMARY KEY',
-            self::I_UNIQUE => 'UNIQUE',
             self::T_BLOB => 'LONGBLOB NOT NULL DEFAULT ""',
             self::T_BOOL => 'BOOLEAN NOT NULL DEFAULT 0',
             self::T_FLOAT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
@@ -185,7 +173,6 @@ class Schema implements ArrayAccess
         'sqlite' => [
             self::I_AUTOINCREMENT => 'PRIMARY KEY AUTOINCREMENT',
             self::I_PRIMARY => 'PRIMARY KEY',
-            self::I_UNIQUE => 'UNIQUE',
             self::T_BLOB => 'BLOB NOT NULL DEFAULT ""',
             self::T_BOOL => 'BOOLEAN NOT NULL DEFAULT 0',
             self::T_FLOAT => 'DOUBLE PRECISION NOT NULL DEFAULT 0',
@@ -237,12 +224,8 @@ class Schema implements ArrayAccess
      */
     public function addColumn(string $table, string $column, int $type = self::T_STRING_NULL)
     {
-        $typeDef = $this->colDefs[$type & self::T_MASK];
-        $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$typeDef}");
-        $index = $type & self::I_MASK;
-        if ($index === self::I_UNIQUE) {
-            $this->addUniqueConstraint($table, [$column]);
-        }
+        $type = $this->colDefs[$type & self::T_MASK];
+        $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
         unset($this->tables[$table]);
         return $this;
     }
@@ -254,9 +237,9 @@ class Schema implements ArrayAccess
      * @param string[] $columns
      * @return $this
      */
-    public function addUniqueConstraint(string $table, array $columns)
+    public function addUniqueKeyConstraint(string $table, array $columns)
     {
-        $name = $this->toUniqueKeyConstraint_name($table, $columns);
+        $name = $this->getUniqueKeyConstraintName($table, $columns);
         $columns = implode(',', $columns);
         if ($this->db->isSQLite()) {
             $this->db->exec("CREATE UNIQUE INDEX {$name} ON {$table} ({$columns})");
@@ -275,8 +258,6 @@ class Schema implements ArrayAccess
      * - `TABLE_PRIMARY => [col, col, col]`
      *      - String list of columns composing the primary key.
      *      - Not needed for single-column primary keys. Use `I_PRIMARY` or `T_AUTOINCREMENT` for that.
-     * - `TABLE_UNIQUE => [ [col, col, col] , ... ]`
-     *      - One or more string lists of columns, each grouping composing a unique key together.
      * - `TABLE_FOREIGN => [ col => <External Column> ]`
      *      - Associative columns that are each foreign keys to a {@link Column} instance.
      *
@@ -306,13 +287,6 @@ class Schema implements ArrayAccess
             implode(', ', $defs)
         ));
 
-        // create multi-column unique constraints afterwards,
-        // since sqlite can't drop them if they're part of the table definition.
-        /** @var string[] $unique */
-        foreach ($constraints[self::TABLE_UNIQUE] ?? [] as $unique) {
-            $this->addUniqueConstraint($table, $unique);
-        }
-
         return $this;
     }
 
@@ -336,23 +310,6 @@ class Schema implements ArrayAccess
     }
 
     /**
-     * Driver-appropriate index deletion.
-     *
-     * @param string $table
-     * @param string $name
-     * @return $this
-     */
-    protected function dropIndex(string $table, string $name)
-    {
-        if ($this->db->isSQLite()) {
-            $this->db->exec("DROP INDEX {$name}");
-        } else {
-            $this->db->exec("DROP INDEX {$name} ON {$table}");
-        }
-        return $this;
-    }
-
-    /**
      * `DROP TABLE IF EXISTS $table`
      *
      * @param string $table
@@ -372,9 +329,15 @@ class Schema implements ArrayAccess
      * @param string[] $columns
      * @return $this
      */
-    public function dropUniqueConstraint(string $table, array $columns)
+    public function dropUniqueKeyConstraint(string $table, array $columns)
     {
-        return $this->dropIndex($table, $this->toUniqueKeyConstraint_name($table, $columns));
+        $name = $this->getUniqueKeyConstraintName($table, $columns);
+        if ($this->db->isSQLite()) {
+            $this->db->exec("DROP INDEX {$name}");
+        } else {
+            $this->db->exec("DROP INDEX {$name} ON {$table}");
+        }
+        return $this;
     }
 
     /**
@@ -418,6 +381,31 @@ class Schema implements ArrayAccess
     }
 
     /**
+     * `FK_TABLE__COLUMN`
+     *
+     * @param string $table
+     * @param string $column
+     * @return string
+     */
+    final public function getForeignKeyConstraintName(string $table, string $column): string
+    {
+        return 'FK_' . $table . '__' . $column;
+    }
+
+    /**
+     * `PK_TABLE__COLUMN__COLUMN__COLUMN`
+     *
+     * @param string $table
+     * @param string[] $columns
+     * @return string
+     */
+    final public function getPrimaryKeyConstraintName(string $table, array $columns): string
+    {
+        sort($columns, SORT_STRING);
+        return 'PK_' . $table . '__' . implode('__', $columns);
+    }
+
+    /**
      * @param string $name
      * @return null|Table
      */
@@ -436,6 +424,19 @@ class Schema implements ArrayAccess
             $this->tables[$name] = Table::factory($this->db, $name, $cols);
         }
         return $this->tables[$name];
+    }
+
+    /**
+     * `UQ_TABLE__COLUMN__COLUMN__COLUMN`
+     *
+     * @param string $table
+     * @param string[] $columns
+     * @return string
+     */
+    final public function getUniqueKeyConstraintName(string $table, array $columns): string
+    {
+        sort($columns, SORT_STRING);
+        return 'UQ_' . $table . '__' . implode('__', $columns);
     }
 
     /**
@@ -558,24 +559,12 @@ class Schema implements ArrayAccess
     {
         return sprintf(
             'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE CASCADE ON DELETE %s',
-            $this->toForeignKeyConstraint_name($table, $local),
+            $this->getForeignKeyConstraintName($table, $local),
             $local,
             $foreign->getQualifier(),
             $foreign->getName(),
             $type | self::T_STRICT ? 'CASCADE' : 'SET NULL'
         );
-    }
-
-    /**
-     * `FK_TABLE__COLUMN`
-     *
-     * @param string $table
-     * @param string $column
-     * @return string
-     */
-    protected function toForeignKeyConstraint_name(string $table, string $column): string
-    {
-        return 'FK_' . $table . '__' . $column;
     }
 
     /**
@@ -587,34 +576,8 @@ class Schema implements ArrayAccess
     {
         return sprintf(
             'CONSTRAINT %s PRIMARY KEY (%s)',
-            $this->toPrimaryKeyConstraint_name($table, $columns),
+            $this->getPrimaryKeyConstraintName($table, $columns),
             implode(',', $columns)
         );
-    }
-
-    /**
-     * `PK_TABLE__COLUMN__COLUMN__COLUMN`
-     *
-     * @param string $table
-     * @param string[] $columns
-     * @return string
-     */
-    protected function toPrimaryKeyConstraint_name(string $table, array $columns): string
-    {
-        sort($columns, SORT_STRING);
-        return 'PK_' . $table . '__' . implode('__', $columns);
-    }
-
-    /**
-     * `UQ_TABLE__COLUMN__COLUMN__COLUMN`
-     *
-     * @param string $table
-     * @param string[] $columns
-     * @return string
-     */
-    protected function toUniqueKeyConstraint_name(string $table, array $columns): string
-    {
-        sort($columns, SORT_STRING);
-        return 'UQ_' . $table . '__' . implode('__', $columns);
     }
 }
