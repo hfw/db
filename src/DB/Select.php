@@ -13,7 +13,7 @@ use IteratorAggregate;
 /**
  * Represents a `SELECT` query.
  *
- * @method static static factory(DB $db, $table, array $columns)
+ * @method static static factory(DB $db, string|AbstractTable $table, string|array $expressions = ['*'])
  */
 class Select extends AbstractTable implements Countable, IteratorAggregate, ExpressionInterface
 {
@@ -124,9 +124,9 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
     /**
      * @param DB $db
      * @param string|AbstractTable $table
-     * @param string[] $columns
+     * @param string|string[] $expressions
      */
-    public function __construct(DB $db, $table, array $columns = ['*'])
+    public function __construct(DB $db, $table, $expressions = ['*'])
     {
         static $autoAlias = 0;
         $autoAlias++;
@@ -143,7 +143,7 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
             $this->alias = "_anon{$autoAlias}_{$table}";
         }
         $this->table = $table;
-        $this->setColumns($columns);
+        $this->setColumns($expressions);
         $this->fetcher = function (Statement $statement) {
             yield from $statement;
         };
@@ -458,11 +458,14 @@ class Select extends AbstractTable implements Countable, IteratorAggregate, Expr
      * Columns may be expressions, like `COUNT(*)`
      * Unless an alias is given for such expressions, they can't be referenced externally.
      *
-     * @param string[] $expressions Keyed by alias if applicable.
+     * @param string|string[] $expressions Keyed by alias if applicable.
      * @return $this
      */
-    public function setColumns(array $expressions = ['*'])
+    public function setColumns($expressions = ['*'])
     {
+        if (is_string($expressions)) {
+            $expressions = array_map('trim', explode(',', $expressions));
+        }
         if ($expressions === ['*']) {
             $expressions = array_keys($this->table->getColumns());
         }

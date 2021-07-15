@@ -163,14 +163,14 @@ class Table extends AbstractTable
     }
 
     /**
-     * Returns a selection object for columns in the table.
+     * Returns a selection object for columns or expressions in the table.
      *
-     * @param string[] $columns
+     * @param string|string[] $expressions
      * @return Select|array[]
      */
-    public function select(array $columns = ['*'])
+    public function select($expressions = ['*'])
     {
-        return Select::factory($this->db, $this, $columns);
+        return Select::factory($this->db, $this, $expressions);
     }
 
     /**

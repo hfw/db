@@ -100,7 +100,7 @@ assert($author->getName() === 'Alice');
 
 // test isEqual(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isEqual($Author->select(['id'])->where(
+    $Author['id']->isEqual($Author->select('id')->where(
         $Author['name']->isEqual('Alice')
     ))
 );
@@ -110,7 +110,7 @@ assert($author->getName() === 'Alice');
 
 // test isLte(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isLte($Author->select(['id'])->where(
+    $Author['id']->isLte($Author->select('id')->where(
         $Author['id']->isEqual(1)
     ))
 );
@@ -120,7 +120,7 @@ assert($author->getName() === 'Alice');
 
 // test isLteAny(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isLteAny($Author->select(['id'])->where(
+    $Author['id']->isLteAny($Author->select('id')->where(
         $Author['id']->isEqual(1)
     ))
 );
