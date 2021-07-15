@@ -112,8 +112,8 @@ class Junction extends Table
     /**
      * `INSERT IGNORE` to link entities.
      *
-     * @param int[] $ids Keyed by column.
-     * @return int Rows affected.
+     * @param int[]|EntityInterface[] $ids Keyed by column
+     * @return int Rows affected
      */
     public function link(array $ids): int
     {
@@ -127,15 +127,16 @@ class Junction extends Table
             }
             return $this->db->prepare($sql);
         });
+        $ids = array_map(fn($id) => $id instanceof EntityInterface ? $id->getId() : $id, $ids);
         $affected = $statement($ids)->rowCount();
         $statement->closeCursor();
         return $affected;
     }
 
     /**
-     * Alias for {@link delete()}
+     * Typed alias for {@link delete()}
      *
-     * @param array $ids Keyed by Column
+     * @param int[]|EntityInterface[] $ids Keyed by column
      * @return int Rows affected
      */
     public function unlink(array $ids): int

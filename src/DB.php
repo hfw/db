@@ -10,6 +10,7 @@ use Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\ExpressionInterface;
 use Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\Predicate;
+use Helix\DB\Fluent\ValueInterface;
 use Helix\DB\Junction;
 use Helix\DB\Migrator;
 use Helix\DB\Record;
@@ -379,11 +380,13 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * Generates an equality {@link Predicate} from mixed arguments.
+     * Null-safe equality {@link Predicate} from mixed arguments.
+     *
+     * If `$a` is an integer (enumerated item), returns `$b` as a {@link Predicate}
      *
      * If `$b` is a closure, returns from `$b($a, DB $this)`
      *
-     * If `$a` is an integer (enumerated item), returns `$b` as a {@link Predicate}
+     * If `$b` is an {@link EntityInterface}, the ID is used.
      *
      * If `$b` is an array, returns `$a IN (...quoted $b)`
      *
@@ -391,13 +394,11 @@ class DB extends PDO implements ArrayAccess
      *
      * Otherwise predicates `$a = quoted $b`
      *
-     * TODO this is not null safe.
-     *
-     * @param mixed $a
-     * @param mixed $b
+     * @param scalar $a
+     * @param null|scalar|array|Closure|EntityInterface|Select|ValueInterface $b
      * @return Predicate
      */
-    public function match($a, $b)
+    public function match($a, $b): Predicate
     {
         if ($b instanceof Closure) {
             return $b->__invoke($a, $this);
@@ -410,6 +411,9 @@ class DB extends PDO implements ArrayAccess
         }
         if ($b instanceof Select) {
             return Predicate::factory($this, "{$a} IN ({$b->toSql()})");
+        }
+        if ($b === null) {
+            return Predicate::factory($this, "{$a} IS NULL");
         }
         return Predicate::factory($this, "{$a} = {$this->quote($b)}");
     }
@@ -535,6 +539,9 @@ class DB extends PDO implements ArrayAccess
     {
         if ($value instanceof ExpressionInterface) {
             return $value;
+        }
+        if ($value instanceof EntityInterface) {
+            return (string)$value->getId();
         }
         switch (gettype($value)) {
             case 'integer' :

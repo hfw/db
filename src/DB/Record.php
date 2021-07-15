@@ -111,6 +111,8 @@ class Record extends Table
     /**
      * `[property => ReflectionProperty]`
      *
+     * > Programmer's Note: Manipulating subclasses through a parent's reflection is allowed.
+     *
      * @var ReflectionProperty[]
      */
     protected $properties = [];
@@ -486,20 +488,26 @@ class Record extends Table
     }
 
     /**
-     * Loads all data for a given ID into a clone of the prototype.
+     * Loads all data for a given ID (clones the prototype), or an existing instance.
      *
-     * @param int $id
+     * @param int|EntityInterface $id The given instance may be a subclass of the prototype.
      * @return null|EntityInterface
      */
-    public function load(int $id)
+    public function load($id)
     {
         $statement = $this->cache(__FUNCTION__, function () {
             return $this->select()->where('id = ?')->prepare();
         });
+        if ($id instanceof EntityInterface) {
+            assert(is_a($id, get_class($this->proto)));
+            $entity = $id;
+            $id = $entity->getId();
+        } else {
+            $entity = clone $this->proto;
+        }
         $values = $statement([$id])->fetch();
         $statement->closeCursor();
         if ($values) {
-            $entity = clone $this->proto;
             $this->setValues($entity, $values);
             $this->loadEav([$id => $entity]);
             return $entity;

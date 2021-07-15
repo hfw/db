@@ -2,9 +2,12 @@
 
 namespace Helix\DB\Fluent\Value;
 
+use Closure;
+use Helix\DB\EntityInterface;
 use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\Choice;
 use Helix\DB\Fluent\Predicate;
+use Helix\DB\Fluent\ValueInterface;
 use Helix\DB\Select;
 
 /**
@@ -50,12 +53,12 @@ trait ComparisonTrait
     }
 
     /**
-     * Null-safe equality.
+     * Null-safe type-strict equality.
      *
      * - Mysql: `$this <=> $arg`, or `$this <=> ANY ($arg)`
      * - SQLite: `$this IS $arg`, or `EXISTS (... WHERE $this IS $arg[0])`
      *
-     * @param null|scalar|Select $arg
+     * @param null|scalar|EntityInterface|Select|ValueInterface $arg
      * @return Predicate
      */
     public function is($arg): Predicate
@@ -94,9 +97,9 @@ trait ComparisonTrait
     }
 
     /**
-     * `$this = $arg` or `$this IN ($arg)`
+     * See {@link DB::match()}
      *
-     * @param scalar|array|Select $arg
+     * @param null|scalar|array|Closure|EntityInterface|Select|ValueInterface $arg
      * @return Predicate
      */
     public function isEqual($arg)
@@ -215,9 +218,9 @@ trait ComparisonTrait
     }
 
     /**
-     * Null-safe inequality.
+     * Null-safe type-strict inequality.
      *
-     * @param null|scalar|Select $arg
+     * @param null|scalar|EntityInterface|Select|ValueInterface $arg
      * @return Predicate
      */
     public function isNot($arg)
@@ -242,7 +245,7 @@ trait ComparisonTrait
     /**
      * `$this <> $arg` or `$this NOT IN ($arg)`
      *
-     * @param scalar|array|Select $arg
+     * @param null|scalar|array|EntityInterface|Select|ValueInterface $arg
      * @return Predicate
      */
     public function isNotEqual($arg)

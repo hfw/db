@@ -41,7 +41,7 @@ $alice['dob'] = 'January 1st';
 $alice['favColor'] = 'blue';
 assert($db->save($alice)); // insert
 assert($db->save($alice)); // update
-assert($alice == $Author->load($alice->getId()));
+assert($alice->is($Author->load($alice->getId()))); // explicit id to avoid reloading alice
 
 // define bob.
 $bob = new Author;
@@ -58,13 +58,13 @@ $novel['note'] = 'Scribbles in the margins.';
 assert($db->save($novel));
 
 // link alice and bob to their novel.
-assert($AuthorsToBooks->delete(['author' => $alice->getId()]) === 0);
-assert($AuthorsToBooks->link(['author' => $alice->getId(), 'book' => $novel->getId()]) === 1);
-assert($AuthorsToBooks->delete(['author' => $bob->getId()]) === 0);
-assert($AuthorsToBooks->link(['author' => $bob->getId(), 'book' => $novel->getId()]) === 1);
+assert($AuthorsToBooks->delete(['author' => $alice]) === 0);
+assert($AuthorsToBooks->link(['author' => $alice, 'book' => $novel]) === 1);
+assert($AuthorsToBooks->delete(['author' => $bob]) === 0);
+assert($AuthorsToBooks->link(['author' => $bob, 'book' => $novel]) === 1);
 
 // alice should have one book, with a note attribute.
-$books = $AuthorsToBooks->findAll('book', ['author' => $alice->getId()]);
+$books = $AuthorsToBooks->findAll('book', ['author' => $alice]);
 assert(count($books) === 1);
 /** @var Book $book */
 $book = $books->getFirst();
@@ -73,18 +73,18 @@ assert($book->getPublished()->getTimestamp() === $novel->getPublished()->getTime
 assert($book['note'] === $novel['note']);
 
 // the novel should have two authors, alice and bob
-$authors = $AuthorsToBooks->findAll('author', ['book' => $novel->getId()]);
+$authors = $AuthorsToBooks->findAll('author', ['book' => $novel]);
 assert(count($authors) === 2);
 /** @var Author $author */
 foreach ($authors as $author) {
-    assert($author == $alice or $author == $bob); // loose
+    assert($author->is($alice) or $author->is($bob));
 }
 
 // remove and re-add bob from the list of authors
-$AuthorsToBooks->delete(['author' => $bob->getId()]);
+$AuthorsToBooks->unlink(['author' => $bob]);
 assert(count($authors) === 1);
-$AuthorsToBooks->link(['author' => $bob->getId(), 'book' => $novel->getId()]);
-assert($AuthorsToBooks->count(['author' => $bob->getId()]) === 1);
+$AuthorsToBooks->link(['author' => $bob, 'book' => $novel]);
+assert($AuthorsToBooks->count(['author' => $bob]) === 1);
 
 // eav search for alice
 $authors = $Author->findAll([], [
@@ -100,7 +100,7 @@ assert($author->getName() === 'Alice');
 
 // test isEqual(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isEqual($Author->select([$Author['id']])->where(
+    $Author['id']->isEqual($Author->select(['id'])->where(
         $Author['name']->isEqual('Alice')
     ))
 );
@@ -110,7 +110,7 @@ assert($author->getName() === 'Alice');
 
 // test isLte(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isLte($Author->select([$Author['id']])->where(
+    $Author['id']->isLte($Author->select(['id'])->where(
         $Author['id']->isEqual(1)
     ))
 );
@@ -120,7 +120,7 @@ assert($author->getName() === 'Alice');
 
 // test isLteAny(Select)
 $authors = $Author->loadAll()->where(
-    $Author['id']->isLteAny($Author->select([$Author['id']])->where(
+    $Author['id']->isLteAny($Author->select(['id'])->where(
         $Author['id']->isEqual(1)
     ))
 );
@@ -134,13 +134,13 @@ assert($count == 2);
 
 // test text functions
 $upperName = $Author->select([$Author['name']->upper()])
-    ->where($Author['id']->isEqual($alice->getId()))
+    ->where($Author['id']->is($alice))
     ->getResult();
 assert($upperName === 'ALICE');
 
 // test FLOOR (sqlite custom function)
 $floorId = (int)$Author->select([$Author['id']->floor()])
-    ->where($Author['id']->isEqual($alice->getId()))
+    ->where($Author['id']->is($alice))
     ->getResult();
 assert($floorId === 1);
 
