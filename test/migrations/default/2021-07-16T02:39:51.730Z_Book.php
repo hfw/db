@@ -3,7 +3,7 @@
 use Helix\DB\MigrationInterface;
 use Helix\DB\Schema;
 
-/** 2021-07-15T17:18:00.044Z_Book */
+/** 2021-07-16T02:39:51.730Z_Book */
 return new class implements MigrationInterface {
 
     /**

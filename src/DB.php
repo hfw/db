@@ -307,7 +307,7 @@ class DB extends PDO implements ArrayAccess
      */
     public function getJunction(string $interface)
     {
-        return $this->junctions[$interface] ??= Junction::fromInterface($this, $interface);
+        return $this->junctions[$interface] ??= Junction::factory($this, $interface);
     }
 
     /**
@@ -336,7 +336,7 @@ class DB extends PDO implements ArrayAccess
     public function getRecord($class)
     {
         $name = is_object($class) ? get_class($class) : $class;
-        return $this->records[$name] ??= Record::fromClass($this, $class);
+        return $this->records[$name] ??= Record::factory($this, $class);
     }
 
     /**

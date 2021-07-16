@@ -7,9 +7,6 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Generator;
 use Helix\DB;
-use ReflectionClass;
-use ReflectionNamedType;
-use ReflectionProperty;
 use stdClass;
 
 /**
@@ -34,20 +31,12 @@ use stdClass;
  *
  * > Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
  *
- * @method static static factory(DB $db, EntityInterface $proto, string $table, array $properties, array $unique, array $eav = [])
+ * @method static static factory(DB $db, string|EntityInterface $class)
  *
  * @TODO Auto-map singular foreign entity columns.
  */
 class Record extends Table
 {
-
-    protected const RX_RECORD = '/\*\h*@record\h+(?<table>\w+)/i';
-    protected const RX_IS_COLUMN = '/\*\h*@col(umn)?\b/i';
-    protected const RX_UNIQUE = '/\*\h*@unique(\h+(?<ident>[a-z_]+))?/i';
-    protected const RX_VAR = '/\*\h*@var\h+(?<type>\S+)/i'; // includes pipes and backslashes
-    protected const RX_NULL = '/(\bnull\|)|(\|null\b)/i';
-    protected const RX_EAV = '/\*\h*@eav\h+(?<table>\w+)/i';
-    protected const RX_EAV_VAR = '/\*\h*@var\h+(?<type>\w+)\[\]/i'; // typed array
 
     /**
      * Maps complex types to storage types.
@@ -67,28 +56,6 @@ class Record extends Table
      * during {@link Record::fetchEach()} iteration.
      */
     protected const EAV_BATCH_LOAD = 256;
-
-    /**
-     * Maps annotated/native scalar types to storage types acceptable for `settype()`
-     *
-     * @see Schema::T_CONST_NAMES keys
-     */
-    protected const SCALARS = [
-        'bool' => 'bool',
-        'boolean' => 'bool',    // gettype()
-        'double' => 'float',    // gettype()
-        'false' => 'bool',      // @var
-        'float' => 'float',
-        'int' => 'int',
-        'integer' => 'int',     // gettype()
-        'NULL' => 'string',     // gettype()
-        'number' => 'string',   // @var
-        'scalar' => 'string',   // @var
-        'string' => 'string',
-        'String' => 'String',   // @var
-        'STRING' => 'STRING',   // @var
-        'true' => 'bool',       // @var
-    ];
 
     /**
      * `[property => EAV]`
@@ -114,20 +81,16 @@ class Record extends Table
     protected $nullable = [];
 
     /**
-     * `[property => ReflectionProperty]`
-     *
-     * > Programmer's Note: Manipulating subclasses through a parent's reflection is allowed.
-     *
-     * @var ReflectionProperty[]
-     */
-    protected $properties = [];
-
-    /**
      * A boilerplate instance of the class, to clone and populate.
      *
      * @var EntityInterface
      */
     protected $proto;
+
+    /**
+     * @var Reflection
+     */
+    protected $ref;
 
     /**
      * Storage types.
@@ -139,12 +102,6 @@ class Record extends Table
     protected $types = [];
 
     /**
-     * Column groupings for unique constraints.
-     * - Column-level constraints are enumerated names.
-     * - Table-level (multi-column) constraints are names grouped under an arbitrary shared identifier.
-     *
-     * `[ 'foo', 'my_multi'=>['bar','baz'], ... ]`
-     *
      * @var array
      */
     protected $unique;
@@ -155,193 +112,33 @@ class Record extends Table
     protected DateTimeZone $utc;
 
     /**
-     * Constructs record-access from an annotated class.
-     *
-     * If a prototype isn't given for `$class`, this defaults to creating an instance
-     * via reflection (without invoking the constructor).
-     *
      * @param DB $db
-     * @param string|EntityInterface $class Class or prototype instance.
-     * @return Record
+     * @param string|EntityInterface $class
      */
-    public static function fromClass(DB $db, $class)
+    public function __construct(DB $db, $class)
     {
-        $rClass = new ReflectionClass($class);
-        assert($rClass->implementsInterface(EntityInterface::class));
-        $properties = [];
-        $unique = [];
-        $eav = [];
-        foreach ($rClass->getProperties() as $rProp) {
-            $doc = $rProp->getDocComment();
-            if (preg_match(static::RX_IS_COLUMN, $doc)) {
-                $properties[] = $rProp->getName();
-                if (preg_match(static::RX_UNIQUE, $doc, $rx)) {
-                    if (isset($rx['ident'])) {
-                        $unique[$rx['ident']][] = $rProp->getName();
-                    } else {
-                        $unique[] = $rProp->getName();
-                    }
-                }
-            } elseif (preg_match(static::RX_EAV, $doc, $rx)) {
-                preg_match(static::RX_EAV_VAR, $doc, $var);
-                $type = $var['type'] ?? 'string';
-                $type = static::SCALARS[$type] ?? 'string';
-                $eav[$rProp->getName()] = EAV::factory($db, $rx['table'], $type);
-            }
-        }
-        preg_match(static::RX_RECORD, $rClass->getDocComment(), $record);
-        if (!is_object($class)) {
-            assert($rClass->isInstantiable());
-            $class = $rClass->newInstanceWithoutConstructor();
-        }
-        return static::factory($db, $class, $record['table'], $properties, $unique, $eav);
-    }
-
-    /**
-     * @param DB $db
-     * @param EntityInterface $proto
-     * @param string $table
-     * @param string[] $properties Property names.
-     * @param string[] $unique Enumerated property names, or groups of property names keyed by a shared identifier.
-     * @param EAV[] $eav Keyed by property name.
-     */
-    public function __construct(
-        DB $db,
-        EntityInterface $proto,
-        string $table,
-        array $properties,
-        array $unique = [],
-        array $eav = []
-    ) {
-        parent::__construct($db, $table, $properties);
-        $this->proto = $proto;
-        $this->unique = $unique;
+        $this->ref = Reflection::factory($db, $class);
+        $this->proto = is_object($class) ? $class : $this->ref->newProto();
+        assert($this->proto instanceof EntityInterface);
+        $this->unique = $this->ref->getUnique();
         $this->utc = new DateTimeZone('UTC');
-        $rClass = new ReflectionClass($proto);
-        $defaults = $rClass->getDefaultProperties();
-        foreach ($properties as $prop) {
-            $rProp = $rClass->getProperty($prop);
-            $type = $this->__construct_getType($prop, $rProp)
-                ?? static::SCALARS[gettype($defaults[$prop])];
-            $nullable = $this->__construct_isNullable($prop, $rProp)
-                ?? !isset($defaults[$prop]);
-            assert(isset($type, $nullable));
-            $rProp->setAccessible(true);
-            $this->properties[$prop] = $rProp;
-            $this->types[$prop] = $type;
-            $this->nullable[$prop] = $nullable;
+
+        // TODO allow aliasing
+        $cols = $this->ref->getColumns();
+        foreach ($cols as $col) {
+            $type = $this->ref->getType($col);
+            if (isset(static::DEHYDRATE_AS[$type])) {
+                $this->hydration[$col] = $type;
+                $type = static::DEHYDRATE_AS[$type];
+            }
+            $this->types[$col] = $type;
+            $this->nullable[$col] = $this->ref->isNullable($col);
         }
         $this->types['id'] = 'int';
         $this->nullable['id'] = false;
-        $this->eav = $eav;
-        foreach (array_keys($eav) as $name) {
-            $rProp = $rClass->getProperty($name);
-            $rProp->setAccessible(true);
-            $this->properties[$name] = $rProp;
-        }
-    }
+        $this->eav = $this->ref->getEav();
 
-    /**
-     * Resolves a property's storage type during {@link Record::__construct()}
-     *
-     * Returns `null` for unknown. The constructor will fall back to checking the class default.
-     *
-     * @param string $prop
-     * @param ReflectionProperty $rProp
-     * @return null|string Storage type, or `null` for unknown.
-     */
-    protected function __construct_getType(string $prop, ReflectionProperty $rProp): ?string
-    {
-        return $this->__construct_getType_fromReflection($prop, $rProp)
-            ?? $this->__construct_getType_fromVar($prop, $rProp);
-    }
-
-    /**
-     * This also sets {@link Record::$hydration} for complex types.
-     *
-     * @param string $prop
-     * @param ReflectionProperty $rProp
-     * @return null|string
-     */
-    protected function __construct_getType_fromReflection(string $prop, ReflectionProperty $rProp): ?string
-    {
-        if ($rType = $rProp->getType() and $rType instanceof ReflectionNamedType) {
-            $type = $rType->getName();
-            if (isset(static::SCALARS[$type])) {
-                return static::SCALARS[$type];
-            }
-            assert(isset(static::DEHYDRATE_AS[$type]));
-            $this->hydration[$prop] = $type;
-            return static::DEHYDRATE_AS[$type];
-        }
-        return null;
-    }
-
-    /**
-     * This also sets {@link Record::$hydration} for complex types ONLY IF `@var` uses a FQN.
-     *
-     * @param string $prop
-     * @param ReflectionProperty $rProp
-     * @return null|string
-     */
-    protected function __construct_getType_fromVar(string $prop, ReflectionProperty $rProp): ?string
-    {
-        if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
-            $type = preg_replace(static::RX_NULL, '', $var['type']); // remove null
-            if (isset(static::SCALARS[$type])) {
-                return static::SCALARS[$type];
-            }
-            // it's beyond the scope of this class to parse "use" statements,
-            // @var <CLASS> must be a FQN in order to work.
-            $type = ltrim($type, '\\');
-            if (isset(static::DEHYDRATE_AS[$type])) {
-                $this->hydration[$prop] = $type;
-                return static::DEHYDRATE_AS[$type];
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Resolves a property's nullability during {@link Record::__construct()}
-     *
-     * Returns `null` for unknown. The constructor will fall back to checking the class default.
-     *
-     * @param string $prop
-     * @param ReflectionProperty $rProp
-     * @return null|bool
-     */
-    protected function __construct_isNullable(string $prop, ReflectionProperty $rProp): ?bool
-    {
-        return $this->__construct_isNullable_fromReflection($prop, $rProp)
-            ?? $this->__construct_isNullable_fromVar($prop, $rProp);
-    }
-
-    /**
-     * @param string $prop
-     * @param ReflectionProperty $rProp
-     * @return null|bool
-     */
-    protected function __construct_isNullable_fromReflection(string $prop, ReflectionProperty $rProp): ?bool
-    {
-        if ($rType = $rProp->getType()) {
-            return $rType->allowsNull();
-        }
-        return null;
-    }
-
-    /**
-     * @param string $prop
-     * @param ReflectionProperty $rProp
-     * @return null|bool
-     */
-    protected function __construct_isNullable_fromVar(string $prop, ReflectionProperty $rProp): ?bool
-    {
-        if (preg_match(static::RX_VAR, $rProp->getDocComment(), $var)) {
-            preg_replace(static::RX_NULL, '', $var['type'], -1, $nullable);
-            return (bool)$nullable;
-        }
-        return null;
+        parent::__construct($db, $this->ref->getRecordTable(), $cols);
     }
 
     /**
@@ -427,16 +224,6 @@ class Record extends Table
     }
 
     /**
-     * Enumerated property names.
-     *
-     * @return string[]
-     */
-    final public function getProperties(): array
-    {
-        return array_keys($this->properties);
-    }
-
-    /**
      * @return EntityInterface
      */
     public function getProto()
@@ -500,14 +287,14 @@ class Record extends Table
     protected function getValues(EntityInterface $entity): array
     {
         $values = [];
-        foreach (array_keys($this->columns) as $name) {
-            $value = $this->properties[$name]->getValue($entity);
-            if (isset($value, $this->hydration[$name])) {
-                $from = $this->hydration[$name];
+        foreach (array_keys($this->columns) as $prop) {
+            $value = $this->ref->getValue($entity, $prop);
+            if (isset($value, $this->hydration[$prop])) {
+                $from = $this->hydration[$prop];
                 $to = static::DEHYDRATE_AS[$from];
                 $value = $this->getValues_dehydrate($to, $from, $value);
             }
-            $values[$name] = $value;
+            $values[$prop] = $value;
         }
         return $values;
     }
@@ -602,9 +389,9 @@ class Record extends Table
     protected function loadEav(array $entities): void
     {
         $ids = array_keys($entities);
-        foreach ($this->eav as $name => $eav) {
+        foreach ($this->eav as $attr => $eav) {
             foreach ($eav->loadAll($ids) as $id => $values) {
-                $this->properties[$name]->setValue($entities[$id], $values);
+                $this->ref->setValue($entities[$id], $attr, $values);
             }
         }
     }
@@ -632,9 +419,9 @@ class Record extends Table
     protected function saveEav(EntityInterface $entity): void
     {
         $id = $entity->getId();
-        foreach ($this->eav as $name => $eav) {
-            // may be null to skip
-            $values = $this->properties[$name]->getValue($entity);
+        foreach ($this->eav as $attr => $eav) {
+            $values = $this->ref->getValue($entity, $attr);
+            // skip if null
             if (isset($values)) {
                 $eav->save($id, $values);
             }
@@ -657,7 +444,7 @@ class Record extends Table
         });
         $values = $this->getValues($entity);
         unset($values['id']);
-        $this->properties['id']->setValue($entity, $statement($values)->getId());
+        $this->ref->setValue($entity, 'id', $statement($values)->getId());
         $statement->closeCursor();
     }
 
@@ -746,12 +533,13 @@ class Record extends Table
      */
     protected function setValues(EntityInterface $entity, array $values): void
     {
-        foreach ($values as $name => $value) {
-            if (isset($this->properties[$name])) {
-                $this->properties[$name]->setValue($entity, $this->setType($name, $value));
+        foreach ($values as $prop => $value) {
+            if (isset($this->columns[$prop])) {
+                $value = $this->setType($prop, $value);
+                $this->ref->setValue($entity, $prop, $value);
             } else {
                 // attempt to set unknown fields directly on the instance.
-                $entity->{$name} = $value;
+                $entity->{$prop} = $value;
             }
         }
     }

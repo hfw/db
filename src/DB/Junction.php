@@ -3,7 +3,6 @@
 namespace Helix\DB;
 
 use Helix\DB;
-use ReflectionClass;
 
 /**
  * Represents a junction table, derived from an annotated interface.
@@ -13,13 +12,10 @@ use ReflectionClass;
  * - `@junction <TABLE>`
  * - `@foreign <COLUMN> <CLASS FQN>`
  *
- * @method static static factory(DB $db, string $table, array $classes)
+ * @method static static factory(DB $db, string $interface)
  */
 class Junction extends Table
 {
-
-    protected const RX_JUNCTION = '/\*\h*@junction\h+(?<table>\w+)/i';
-    protected const RX_FOREIGN = '/\*\h*@foreign\h+(?<column>\w+)\h+(?<class>\S+)/i';
 
     /**
      * `[column => class]`
@@ -29,30 +25,19 @@ class Junction extends Table
     protected $classes = [];
 
     /**
-     * @param DB $db
-     * @param string $interface
-     * @return Junction
+     * @var Reflection
      */
-    public static function fromInterface(DB $db, string $interface)
-    {
-        $ref = new ReflectionClass($interface);
-        assert($ref->isInterface());
-        $doc = $ref->getDocComment();
-        preg_match(static::RX_JUNCTION, $doc, $junction);
-        preg_match_all(static::RX_FOREIGN, $doc, $foreign, PREG_SET_ORDER);
-        $classes = array_column($foreign, 'class', 'column');
-        return static::factory($db, $junction['table'], $classes);
-    }
+    protected $ref;
 
     /**
      * @param DB $db
-     * @param string $table
-     * @param string[] $classes
+     * @param string $interface
      */
-    public function __construct(DB $db, string $table, array $classes)
+    public function __construct(DB $db, string $interface)
     {
-        parent::__construct($db, $table, array_keys($classes));
-        $this->classes = $classes;
+        $this->ref = Reflection::factory($db, $interface);
+        $this->classes = $this->ref->getForeignClasses();
+        parent::__construct($db, $this->ref->getJunctionTable(), array_keys($this->classes));
     }
 
     /**
