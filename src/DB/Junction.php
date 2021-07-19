@@ -3,6 +3,7 @@
 namespace Helix\DB;
 
 use Helix\DB;
+use Helix\DB\Fluent\Predicate;
 
 /**
  * Represents a junction table, derived from an annotated interface.
@@ -55,7 +56,7 @@ class Junction extends Table
         $select = $record->loadAll();
         $select->join($this, $this[$key]->isEqual($record['id']));
         foreach ($match as $a => $b) {
-            $select->where($this->db->match($this[$a], $b));
+            $select->where(Predicate::match($this->db, $this[$a], $b));
         }
         return $select;
     }

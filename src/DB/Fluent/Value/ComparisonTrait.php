@@ -97,14 +97,14 @@ trait ComparisonTrait
     }
 
     /**
-     * See {@link DB::match()}
+     * See {@link Predicate::match()}
      *
      * @param null|scalar|array|Closure|EntityInterface|Select|ValueInterface $arg
      * @return Predicate
      */
     public function isEqual($arg)
     {
-        return $this->db->match($this, $arg);
+        return Predicate::match($this->db, $this, $arg);
     }
 
     /**

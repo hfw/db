@@ -7,6 +7,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Generator;
 use Helix\DB;
+use Helix\DB\Fluent\Predicate;
 use stdClass;
 
 /**
@@ -176,7 +177,7 @@ class Record extends Table
     /**
      * Similar to {@link loadAll()} except this can additionally search by {@link EAV} values.
      *
-     * @see DB::match()
+     * @see Predicate::match()
      *
      * @param array $match `[property => value]`
      * @param array[] $eavMatch `[eav property => attribute => value]`
@@ -186,7 +187,7 @@ class Record extends Table
     {
         $select = $this->loadAll();
         foreach ($match as $a => $b) {
-            $select->where($this->db->match($this[$a] ?? $a, $b));
+            $select->where(Predicate::match($this->db, $this[$a] ?? $a, $b));
         }
         foreach ($eavMatch as $property => $attributes) {
             $inner = $this->eav[$property]->findAll($attributes);

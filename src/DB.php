@@ -3,19 +3,15 @@
 namespace Helix;
 
 use ArrayAccess;
-use Closure;
 use Countable;
 use Helix\DB\EntityInterface;
 use Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\ExpressionInterface;
 use Helix\DB\Fluent\Num;
-use Helix\DB\Fluent\Predicate;
-use Helix\DB\Fluent\ValueInterface;
 use Helix\DB\Junction;
 use Helix\DB\Migrator;
 use Helix\DB\Record;
 use Helix\DB\Schema;
-use Helix\DB\Select;
 use Helix\DB\Statement;
 use Helix\DB\Table;
 use Helix\DB\Transaction;
@@ -380,45 +376,6 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * Null-safe equality {@link Predicate} from mixed arguments.
-     *
-     * If `$a` is an integer (enumerated item), returns `$b` as a {@link Predicate}
-     *
-     * If `$b` is a closure, returns from `$b($a, DB $this)`
-     *
-     * If `$b` is an {@link EntityInterface}, the ID is used.
-     *
-     * If `$b` is an array, returns `$a IN (...quoted $b)`
-     *
-     * If `$b` is a {@link Select}, returns `$a IN ($b->toSql())`
-     *
-     * Otherwise predicates `$a = quoted $b`
-     *
-     * @param scalar $a
-     * @param null|scalar|array|Closure|EntityInterface|Select|ValueInterface $b
-     * @return Predicate
-     */
-    public function match($a, $b): Predicate
-    {
-        if ($b instanceof Closure) {
-            return $b->__invoke($a, $this);
-        }
-        if (is_int($a)) {
-            return Predicate::factory($this, $b);
-        }
-        if (is_array($b)) {
-            return Predicate::factory($this, "{$a} IN ({$this->quoteList($b)})");
-        }
-        if ($b instanceof Select) {
-            return Predicate::factory($this, "{$a} IN ({$b->toSql()})");
-        }
-        if ($b === null) {
-            return Predicate::factory($this, "{$a} IS NULL");
-        }
-        return Predicate::factory($this, "{$a} = {$this->quote($b)}");
-    }
-
-    /**
      * Returns a scoped transaction.
      *
      * @return Transaction
@@ -430,6 +387,8 @@ class DB extends PDO implements ArrayAccess
 
     /**
      * An expression for the current date and time.
+     *
+     * TODO move to DateTime
      *
      * @return DateTime
      */
@@ -488,6 +447,8 @@ class DB extends PDO implements ArrayAccess
 
     /**
      * `PI()`
+     *
+     * TODO move to Num
      *
      * @return Num
      */

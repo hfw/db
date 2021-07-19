@@ -4,6 +4,7 @@ namespace Helix\DB;
 
 use Closure;
 use Helix\DB;
+use Helix\DB\Fluent\Predicate;
 
 /**
  * Table manipulation using arrays.
@@ -102,7 +103,7 @@ class Table extends AbstractTable
     {
         $select = $this->select(['COUNT(*)']);
         foreach ($match as $a => $b) {
-            $select->where($this->db->match($this[$a] ?? $a, $b));
+            $select->where(Predicate::match($this->db, $this[$a] ?? $a, $b));
         }
         return (int)$select->execute()->fetchColumn();
     }
@@ -110,7 +111,7 @@ class Table extends AbstractTable
     /**
      * Executes a deletion using arbitrary columns.
      *
-     * @see DB::match()
+     * @see Predicate::match()
      *
      * @param array $match
      * @return int Rows affected.
@@ -118,7 +119,7 @@ class Table extends AbstractTable
     public function delete(array $match): int
     {
         foreach ($match as $a => $b) {
-            $match[$a] = $this->db->match($this[$a] ?? $a, $b);
+            $match[$a] = Predicate::match($this->db, $this[$a] ?? $a, $b);
         }
         $match = implode(' AND ', $match);
         return $this->db->exec("DELETE FROM {$this} WHERE {$match}");
@@ -194,7 +195,7 @@ class Table extends AbstractTable
     /**
      * Executes an update using arbitrary columns.
      *
-     * @see DB::match()
+     * @see Predicate::match()
      *
      * @param array $values
      * @param array $match
@@ -207,7 +208,7 @@ class Table extends AbstractTable
         }
         $values = implode(', ', $values);
         foreach ($match as $a => $b) {
-            $match[$a] = $this->db->match($this[$a] ?? $a, $b);
+            $match[$a] = Predicate::match($this->db, $this[$a] ?? $a, $b);
         }
         $match = implode(' AND ', $match);
         return $this->db->exec("UPDATE {$this} SET {$values} WHERE {$match}");

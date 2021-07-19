@@ -3,6 +3,7 @@
 namespace Helix\DB;
 
 use Helix\DB;
+use Helix\DB\Fluent\Predicate;
 
 /**
  * Array storage in an extension table.
@@ -48,10 +49,10 @@ class EAV extends Table
     }
 
     /**
-     * Pivots and self-joins to return a {@link Select} for the `entity` column,
+     * Self-joins to return a {@link Select} for the `entity` column,
      * matching on attribute and value.
      *
-     * @see DB::match()
+     * @see Predicate::match()
      *
      * @param array $match `[attribute => value]`. If empty, selects all IDs for entities having at least one attribute.
      * @return Select
@@ -65,7 +66,7 @@ class EAV extends Table
             $select->join("{$this} AS {$alias}",
                 $alias['entity']->isEqual($prior['entity']),
                 $alias['attribute']->isEqual($attribute),
-                $this->db->match($alias['value'], $value)
+                Predicate::match($this->db, $alias['value'], $value)
             );
             $prior = $alias;
         }
@@ -113,7 +114,7 @@ class EAV extends Table
             return [current($ids) => $this->load(current($ids))];
         }
         $loadAll = $this->select(['entity', 'attribute', 'value'])
-            ->where($this->db->match('entity', $this->db->marks($ids)))
+            ->where(Predicate::match($this->db, 'entity', $this->db->marks($ids)))
             ->order('entity, attribute');
         $values = array_fill_keys($ids, []);
         foreach ($loadAll->getEach(array_values($ids)) as $row) {
