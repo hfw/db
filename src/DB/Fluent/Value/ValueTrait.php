@@ -11,7 +11,6 @@ use Helix\DB\Fluent\Value;
 trait ValueTrait
 {
 
-    use AbstractTrait;
     use AggregateTrait;
     use ComparisonTrait;
 
