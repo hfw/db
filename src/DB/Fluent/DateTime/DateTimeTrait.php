@@ -145,7 +145,7 @@ trait DateTimeTrait
     public function datetime()
     {
         return DateTime::fromFormat($this->db, [
-            'mysql' => "DATE_FORMAT(%s,'%Y-%m-%d %H:%i:%S')",
+            'mysql' => "DATE_FORMAT(%s,'%%Y-%%m-%%d %%H:%%i:%%S')",
             'sqlite' => "DATETIME(%s)"
         ], $this);
     }
@@ -244,6 +244,26 @@ trait DateTimeTrait
     public function diffYears(DateTime $x = null)
     {
         return $this->diffDays($x)->div(365.2425);
+    }
+
+    /**
+     * `YYYY-MM-01`
+     *
+     * @return DateTime
+     */
+    public function firstDayOfMonth()
+    {
+        return DateTime::factory($this->db, $this->dateFormat('%Y-%m-01'));
+    }
+
+    /**
+     * `YYYY-01-01`
+     *
+     * @return DateTime
+     */
+    public function firstDayOfYear()
+    {
+        return DateTime::factory($this->db, $this->dateFormat('%Y-01-01'));
     }
 
     /**
