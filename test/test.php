@@ -39,8 +39,8 @@ $alice = new Author;
 $alice->setName('Alice');
 $alice['dob'] = 'January 1st';
 $alice['favColor'] = 'blue';
-assert($db->save($alice)); // insert
-assert($db->save($alice)); // update
+assert($Author->save($alice)); // insert
+assert($Author->save($alice)); // update
 assert($alice->is($Author->load($alice->getId()))); // explicit id to avoid reloading alice
 
 // define bob.
@@ -48,14 +48,14 @@ $bob = new Author;
 $bob->setName('Bob');
 $bob['dob'] = 'January 2nd';
 $bob['favColor'] = 'red';
-assert($db->save($bob));
+assert($Author->save($bob));
 
 // define their novel.
 $novel = new Book;
 $novel->setTitle("Alice and Bob's Novel");
 $novel->setPublished($now);
 $novel['note'] = 'Scribbles in the margins.';
-assert($db->save($novel));
+assert($Book->save($novel));
 
 // link alice and bob to their novel.
 assert($AuthorsToBooks->delete(['author' => $alice]) === 0);

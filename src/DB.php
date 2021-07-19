@@ -529,17 +529,6 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * Forwards to the entity's {@link Record}
-     *
-     * @param EntityInterface $entity
-     * @return int ID
-     */
-    public function save(EntityInterface $entity): int
-    {
-        return $this->getRecord($entity)->save($entity);
-    }
-
-    /**
      * @param callable $logger
      * @return $this
      */
