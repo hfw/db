@@ -431,16 +431,6 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * `PI()`
-     *
-     * @return Num
-     */
-    public function pi()
-    {
-        return Num::factory($this, "PI()");
-    }
-
-    /**
      * Notifies the logger and prepares a statement.
      *
      * @param string $sql
