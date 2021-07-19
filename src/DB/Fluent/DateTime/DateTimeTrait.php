@@ -11,8 +11,6 @@ use Helix\DB\Fluent\Value\ValueTrait;
 /**
  * Date-time expression manipulation.
  *
- * Each DBMS has its own quirks with dates, which is beyond the scope of this library.
- *
  * @see https://sqlite.org/lang_datefunc.html
  * @see https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
  */
@@ -146,10 +144,11 @@ trait DateTimeTrait
      */
     public function datetime()
     {
-        if ($this->db->isSQLite()) {
-            return DateTime::factory($this->db, "DATETIME({$this})");
-        }
-        return DateTime::factory($this->db, "DATE_FORMAT({$this},'%Y-%m-%d %H:%i:%S')");
+        static $formats = [
+            'mysql' => "DATE_FORMAT(%s,'%Y-%m-%d %H:%i:%S')",
+            'sqlite' => "DATETIME(%s)"
+        ];
+        return DateTime::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
     }
 
     /**
@@ -190,8 +189,7 @@ trait DateTimeTrait
      */
     public function diffDays(DateTime $x = null)
     {
-        $x ??= $this->db->now();
-        return $x->julian()->sub($this->julian());
+        return ($x ?? $this->db->now())->julian()->sub($this->julian());
     }
 
     /**
@@ -228,14 +226,14 @@ trait DateTimeTrait
     }
 
     /**
-     * Date-time difference (`$x - $this`) in whole seconds elapsed (rounded).
+     * Date-time difference (`$x - $this`) in fractional seconds elapsed.
      *
      * @param null|DateTime $x Defaults to the current time.
      * @return Num
      */
     public function diffSeconds(DateTime $x = null)
     {
-        return $this->diffDays($x)->mul(24 * 60 * 60)->round();
+        return $this->diffDays($x)->mul(24 * 60 * 60);
     }
 
     /**
@@ -281,11 +279,12 @@ trait DateTimeTrait
      */
     public function julian()
     {
-        if ($this->db->isSQLite()) {
-            return Num::factory($this->db, "JULIANDAY({$this})");
-        }
-        // julian "year zero" offset, plus number of fractional days since "year zero".
-        return Num::factory($this->db, "(1721059.5 + (TO_SECONDS({$this}) / 86400))");
+        static $formats = [
+            // mysql: julian "year zero" offset, plus number of fractional days since "year zero".
+            'mysql' => "(1721059.5 + (TO_SECONDS(%s) / 86400))",
+            'sqlite' => "JULIANDAY(%s)"
+        ];
+        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
     }
 
     /**
@@ -304,9 +303,7 @@ trait DateTimeTrait
     /**
      * Applies date-time modifiers.
      *
-     * Each argument can be zero, positive, or negative.
-     *
-     * `$s` can also be a `DateInterval` or `DateInterval` description (e.g. `"+1 day"`).
+     * `$s` can be a `DateInterval` or `DateInterval` description (e.g. `"+1 day"`).
      * If so, the rest of the arguments are ignored.
      *
      * @param int|string|DateInterval $s Seconds, or `DateInterval` related
@@ -319,40 +316,57 @@ trait DateTimeTrait
      */
     public function modify($s, int $m = 0, int $h = 0, int $D = 0, int $M = 0, int $Y = 0)
     {
-        static $units = ['SECOND', 'MINUTE', 'HOUR', 'DAY', 'MONTH', 'YEAR'];
+        // interval units. process larger intervals first.
+        static $units = ['YEAR', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND'];
         if (is_string($s)) {
             $s = DateInterval::createFromDateString($s);
             assert($s instanceof DateInterval);
         }
         if ($s instanceof DateInterval) {
-            $ints = [$s->s, $s->i, $s->h, $s->d, $s->m, $s->y];
+            $ints = [$s->y, $s->m, $s->d, $s->h, $s->i, $s->s];
         } else {
-            $ints = func_get_args();
+            $ints = [$Y, $M, $D, $h, $m, $s];
         }
 
-        // remove zeroes and reverse so larger intervals happen first
-        $ints = array_reverse(array_filter($ints), true);
+        // key by units and remove zeroes
+        $ints = array_filter(array_combine($units, $ints));
 
-        // sqlite allows us to do it all in one go
         if ($this->db->isSQLite()) {
-            $spec = [$this];
-            foreach ($ints as $i => $int) {
-                $spec[] = sprintf("'%s %s'", $int > 0 ? "+{$int}" : $int, $units[$i]);
-            }
-            return DateTime::factory($this->db, sprintf('DATETIME(%s)', implode(',', $spec)));
+            return $this->modify_sqlite($ints);
         }
+        return $this->modify_mysql($ints);
+    }
 
-        // mysql requires wrapping
-        $spec = "CAST({$this} AS DATETIME)";
-        foreach ($ints as $i => $int) {
-            $spec = sprintf('DATE_%s(%s, INTERVAL %s %s)',
-                $spec,
-                $int > 0 ? 'ADD' : 'SUB',
-                abs($int),
-                $units[$i]
-            );
+    /**
+     * MySQL requires nesting.
+     *
+     * @param int[] $ints
+     * @return DateTime
+     * @internal
+     */
+    protected function modify_mysql(array $ints)
+    {
+        $spec = $this;
+        foreach ($ints as $unit => $int) {
+            $spec = sprintf('DATE_%s(%s, INTERVAL %s %s)', $int > 0 ? 'ADD' : 'SUB', $spec, abs($int), $unit);
         }
         return DateTime::factory($this->db, $spec);
+    }
+
+    /**
+     * SQLite allows variadic modifiers.
+     *
+     * @param int[] $ints
+     * @return DateTime
+     * @internal
+     */
+    protected function modify_sqlite(array $ints)
+    {
+        $spec = [$this];
+        foreach ($ints as $unit => $int) {
+            $spec[] = sprintf("'%s %s'", $int > 0 ? "+{$int}" : $int, $unit);
+        }
+        return DateTime::factory($this->db, sprintf('DATETIME(%s)', implode(',', $spec)));
     }
 
     /**
@@ -481,10 +495,11 @@ trait DateTimeTrait
      */
     public function timestamp()
     {
-        if ($this->db->isSQLite()) {
-            return Num::factory($this->db, "STRFTIME('%s',{$this})");
-        }
-        return Num::factory($this->db, "UNIX_TIMESTAMP({$this})");
+        static $formats = [
+            'mysql' => "UNIX_TIMESTAMP(%s)",
+            'sqlite' => "STRFTIME('%%s',%s)",
+        ];
+        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
     }
 
     /**
