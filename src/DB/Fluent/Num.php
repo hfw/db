@@ -12,5 +12,6 @@ class Num extends Expression implements ValueInterface
 {
 
     use NumTrait;
+    use FactoryFormatTrait;
     use StrCastTrait;
 }

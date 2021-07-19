@@ -12,5 +12,6 @@ class DateTime extends Expression implements ValueInterface
 {
 
     use DateTimeTrait;
+    use FactoryFormatTrait;
     use StrCastTrait;
 }

@@ -83,11 +83,10 @@ trait StrTrait
      */
     public function length()
     {
-        static $formats = [
+        return Num::fromFormat($this->db, [
             'mysql' => "CHAR_LENGTH(%s)",
             'sqlite' => "LENGTH(CAST(%s AS TEXT))"
-        ];
-        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
+        ], $this);
     }
 
     /**
@@ -160,11 +159,10 @@ trait StrTrait
      */
     public function size()
     {
-        static $formats = [
+        return Num::fromFormat($this->db, [
             'mysql' => "LENGTH(%s)",
             'sqlite' => "LENGTH(CAST(%s AS BLOB))"
-        ];
-        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
+        ], $this);
     }
 
     /**

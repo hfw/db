@@ -20,9 +20,9 @@ trait StrCastTrait
      */
     public function toStr()
     {
-        if ($this->db->isSQLite()) {
-            return Str::factory($this->db, "CAST({$this} AS TEXT)");
-        }
-        return Str::factory($this->db, "CAST({$this} AS CHAR)");
+        return Str::fromFormat($this->db, [
+            'mysql' => "CAST(%s AS CHAR)",
+            'sqlite' => "CAST(%s AS TEXT)"
+        ], $this);
     }
 }

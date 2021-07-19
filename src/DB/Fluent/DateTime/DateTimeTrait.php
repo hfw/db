@@ -144,11 +144,10 @@ trait DateTimeTrait
      */
     public function datetime()
     {
-        static $formats = [
+        return DateTime::fromFormat($this->db, [
             'mysql' => "DATE_FORMAT(%s,'%Y-%m-%d %H:%i:%S')",
             'sqlite' => "DATETIME(%s)"
-        ];
-        return DateTime::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
+        ], $this);
     }
 
     /**
@@ -279,12 +278,11 @@ trait DateTimeTrait
      */
     public function julian()
     {
-        static $formats = [
+        return Num::fromFormat($this->db, [
             // mysql: julian "year zero" offset, plus number of fractional days since "year zero".
             'mysql' => "(1721059.5 + (TO_SECONDS(%s) / 86400))",
             'sqlite' => "JULIANDAY(%s)"
-        ];
-        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
+        ], $this);
     }
 
     /**
@@ -495,11 +493,10 @@ trait DateTimeTrait
      */
     public function timestamp()
     {
-        static $formats = [
+        return Num::fromFormat($this->db, [
             'mysql' => "UNIX_TIMESTAMP(%s)",
             'sqlite' => "STRFTIME('%%s',%s)",
-        ];
-        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
+        ], $this);
     }
 
     /**

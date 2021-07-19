@@ -20,9 +20,9 @@ trait NumCastFloatTrait
      */
     public function toFloat()
     {
-        if ($this->db->isSQLite()) {
-            return Num::factory($this->db, "CAST({$this} AS REAL)");
-        }
-        return Num::factory($this->db, "({$this} + 0)");
+        return Num::fromFormat($this->db, [
+            'mysql' => "(%s + 0)",
+            'sqlite' => "CAST(%s AS REAL)"
+        ], $this);
     }
 }

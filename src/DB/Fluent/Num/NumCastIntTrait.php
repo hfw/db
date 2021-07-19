@@ -20,9 +20,9 @@ trait NumCastIntTrait
      */
     public function toInt()
     {
-        if ($this->db->isSQLite()) {
-            return Num::factory($this->db, "CAST({$this} AS INTEGER)");
-        }
-        return Num::factory($this->db, "CAST({$this} AS SIGNED)");
+        return Num::fromFormat($this->db, [
+            'mysql' => "CAST(%s AS SIGNED)",
+            'sqlite' => "CAST(%s AS INTEGER)"
+        ], $this);
     }
 }

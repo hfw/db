@@ -14,6 +14,7 @@ class Str extends Expression implements ValueInterface
 {
 
     use StrTrait;
+    use FactoryFormatTrait;
     use DateTimeCastTrait;
     use NumCastFloatTrait;
     use NumCastIntTrait;
