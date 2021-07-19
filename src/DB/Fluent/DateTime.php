@@ -26,7 +26,21 @@ class DateTime extends Expression implements ValueInterface
     {
         return static::fromFormat($db, [
             'mysql' => "NOW()",
-            'sqlite' => "DATETIME('now')"
+            'sqlite' => "DATETIME()"
+        ]);
+    }
+
+    /**
+     * An expression for the current date.
+     *
+     * @param DB $db
+     * @return static
+     */
+    public static function today(DB $db)
+    {
+        return static::fromFormat($db, [
+            'mysql' => "CURDATE()",
+            'sqlite' => "DATE()"
         ]);
     }
 }
