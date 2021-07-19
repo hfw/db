@@ -5,7 +5,7 @@ namespace Helix\DB\Fluent\DateTime;
 use DateInterval;
 use Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\Num;
-use Helix\DB\Fluent\Text;
+use Helix\DB\Fluent\Str;
 use Helix\DB\Fluent\Value\ValueTrait;
 
 /**
@@ -123,7 +123,7 @@ trait DateTimeTrait
      * Date formatting expression using a driver-appropriate function.
      *
      * @param string|string[] $format Format, or formats keyed by driver name.
-     * @return Text
+     * @return Str
      */
     public function dateFormat($format)
     {
@@ -132,9 +132,9 @@ trait DateTimeTrait
         }
         $format = $this->db->quote($format);
         if ($this->db->isSQLite()) {
-            return Text::factory($this->db, "STRFTIME({$format},{$this})");
+            return Str::factory($this->db, "STRFTIME({$format},{$this})");
         }
-        return Text::factory($this->db, "DATE_FORMAT({$this},{$format})");
+        return Str::factory($this->db, "DATE_FORMAT({$this},{$format})");
     }
 
     /**
@@ -264,7 +264,7 @@ trait DateTimeTrait
      *
      * https://en.wikipedia.org/wiki/ISO_8601
      *
-     * @return Text
+     * @return Str
      */
     public function iso8601()
     {
@@ -464,7 +464,7 @@ trait DateTimeTrait
     /**
      * `00:00:00` to `23:59:59`
      *
-     * @return Text
+     * @return Str
      */
     public function time()
     {

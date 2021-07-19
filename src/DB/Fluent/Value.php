@@ -5,7 +5,7 @@ namespace Helix\DB\Fluent;
 use Helix\DB\Fluent\DateTime\DateTimeCastTrait;
 use Helix\DB\Fluent\Num\NumCastFloatTrait;
 use Helix\DB\Fluent\Num\NumCastIntTrait;
-use Helix\DB\Fluent\Text\TextCastTrait;
+use Helix\DB\Fluent\Str\StrCastTrait;
 use Helix\DB\Fluent\Value\ValueTrait;
 
 /**
@@ -18,5 +18,5 @@ class Value extends Expression implements ValueInterface
     use DateTimeCastTrait;
     use NumCastFloatTrait;
     use NumCastIntTrait;
-    use TextCastTrait;
+    use StrCastTrait;
 }

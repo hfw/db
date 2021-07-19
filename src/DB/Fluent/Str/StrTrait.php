@@ -1,17 +1,17 @@
 <?php
 
-namespace Helix\DB\Fluent\Text;
+namespace Helix\DB\Fluent\Str;
 
 use Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\Num\BaseConversionTrait;
-use Helix\DB\Fluent\Text;
+use Helix\DB\Fluent\Str;
 use Helix\DB\Fluent\Value\ValueTrait;
 use Helix\DB\Fluent\ValueInterface;
 
 /**
  * Character string expression manipulation.
  */
-trait TextTrait
+trait StrTrait
 {
 
     use ValueTrait;
@@ -20,7 +20,7 @@ trait TextTrait
     /**
      * @param int $direction
      * @param null|string $chars
-     * @return Text
+     * @return Str
      * @internal
      */
     protected function _trim(int $direction, string $chars = null)
@@ -29,12 +29,12 @@ trait TextTrait
         if (isset($chars)) {
             $chars = $this->db->quote($chars);
             if ($this->db->isSQLite()) {
-                return Text::factory($this->db, "{$function}({$this},{$chars})");
+                return Str::factory($this->db, "{$function}({$this},{$chars})");
             }
             $direction = [-1 => 'LEADING', 0 => 'BOTH', 1 => 'TRAILING'][$direction];
-            return Text::factory($this->db, "TRIM({$direction} {$chars} FROM {$this})");
+            return Str::factory($this->db, "TRIM({$direction} {$chars} FROM {$this})");
         }
-        return Text::factory($this->db, "{$function}({$this})");
+        return Str::factory($this->db, "{$function}({$this})");
     }
 
     /**
@@ -44,16 +44,16 @@ trait TextTrait
      * - MySQL: `CONCAT($this, ...)`
      *
      * @param string|ValueInterface ...$strings
-     * @return Text
+     * @return Str
      */
     public function concat(...$strings)
     {
         array_unshift($strings, $this);
         $strings = $this->db->quoteArray($strings);
         if ($this->db->isSQLite()) {
-            return Text::factory($this->db, sprintf('(%s)', implode(' || ', $strings)));
+            return Str::factory($this->db, sprintf('(%s)', implode(' || ', $strings)));
         }
-        return Text::factory($this->db, sprintf('CONCAT(%s)', implode(',', $strings)));
+        return Str::factory($this->db, sprintf('CONCAT(%s)', implode(',', $strings)));
     }
 
     /**
@@ -61,17 +61,17 @@ trait TextTrait
      *
      * `HEX($this)`
      *
-     * @return Text
+     * @return Str
      */
     public function hex()
     {
-        return Text::factory($this->db, "HEX({$this})");
+        return Str::factory($this->db, "HEX({$this})");
     }
 
     /**
      * Number of characters (not necessarily bytes).
      *
-     * @see TextTrait::size()
+     * @see StrTrait::size()
      *
      * @return Num
      */
@@ -88,17 +88,17 @@ trait TextTrait
      *
      * `LOWER($this)`
      *
-     * @return Text
+     * @return Str
      */
     public function lower()
     {
-        return Text::factory($this->db, "LOWER({$this})");
+        return Str::factory($this->db, "LOWER({$this})");
     }
 
     /**
-     * @see TextTrait::trim()
+     * @see StrTrait::trim()
      * @param null|string $chars
-     * @return Text
+     * @return Str
      */
     public function ltrim(string $chars = null)
     {
@@ -129,19 +129,19 @@ trait TextTrait
      *
      * @param string $search
      * @param string $replace
-     * @return Text
+     * @return Str
      */
     public function replace(string $search, string $replace)
     {
         $search = $this->db->quote($search);
         $replace = $this->db->quote($replace);
-        return Text::factory($this->db, "REPLACE({$this},{$search},{$replace})");
+        return Str::factory($this->db, "REPLACE({$this},{$search},{$replace})");
     }
 
     /**
-     * @see TextTrait::trim()
+     * @see StrTrait::trim()
      * @param null|string $chars
-     * @return Text
+     * @return Str
      */
     public function rtrim(string $chars = null)
     {
@@ -168,14 +168,14 @@ trait TextTrait
      *
      * @param int $start 1-based, can be negative to start from the right.
      * @param null|int $length
-     * @return Text
+     * @return Str
      */
     public function substr(int $start, int $length = null)
     {
         if (isset($length)) {
-            return Text::factory($this->db, "SUBSTR({$this},{$start},{$length})");
+            return Str::factory($this->db, "SUBSTR({$this},{$start},{$length})");
         }
-        return Text::factory($this->db, "SUBSTR({$this},{$start})");
+        return Str::factory($this->db, "SUBSTR({$this},{$start})");
     }
 
     /**
@@ -198,10 +198,10 @@ trait TextTrait
      * - SQLite treats it as individual characters (same as PHP)
      * - MySQL treats it as a leading/trailing string
      *
-     * @see TextTrait::ltrim()
-     * @see TextTrait::rtrim()
+     * @see StrTrait::ltrim()
+     * @see StrTrait::rtrim()
      * @param null|string $chars
-     * @return Text
+     * @return Str
      */
     public function trim(string $chars = null)
     {
@@ -213,10 +213,10 @@ trait TextTrait
      *
      * `UPPER($this)`
      *
-     * @return Text
+     * @return Str
      */
     public function upper()
     {
-        return Text::factory($this->db, "UPPER({$this})");
+        return Str::factory($this->db, "UPPER({$this})");
     }
 }

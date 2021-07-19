@@ -6,7 +6,7 @@ use ArrayAccess;
 use Helix\DB;
 use Helix\DB\Fluent\DateTime\DateTimeTrait;
 use Helix\DB\Fluent\Num\NumTrait;
-use Helix\DB\Fluent\Text\TextTrait;
+use Helix\DB\Fluent\Str\StrTrait;
 use Helix\DB\Fluent\ValueInterface;
 use LogicException;
 
@@ -25,7 +25,7 @@ class Column implements ArrayAccess, ValueInterface
     use FactoryTrait;
     use DateTimeTrait;
     use NumTrait;
-    use TextTrait;
+    use StrTrait;
 
     /**
      * @var string

@@ -3,13 +3,13 @@
 namespace Helix\DB\Fluent\Num;
 
 use Helix\DB\Fluent\AbstractTrait;
-use Helix\DB\Fluent\Text;
+use Helix\DB\Fluent\Str;
 
 /**
  * Further manipulate the expression in a different numeric base.
  *
  * Since converting to base 10 only applies to character string expressions,
- * its method can be found at {@link \Helix\DB\Fluent\Text\TextTrait::toBase10()}
+ * its method can be found at {@link \Helix\DB\Fluent\Str\StrTrait::toBase10()}
  */
 trait BaseConversionTrait
 {
@@ -23,11 +23,11 @@ trait BaseConversionTrait
      *
      * @param int $from
      * @param int $to
-     * @return Text
+     * @return Str
      */
     public function toBase(int $from, int $to)
     {
-        return Text::factory($this->db, "CONV({$this},{$from},{$to})");
+        return Str::factory($this->db, "CONV({$this},{$from},{$to})");
     }
 
     /**
@@ -36,7 +36,7 @@ trait BaseConversionTrait
      * `CONV($this,$from,16)`
      *
      * @param int $from
-     * @return Text
+     * @return Str
      */
     public function toBase16(int $from = 10)
     {
@@ -49,7 +49,7 @@ trait BaseConversionTrait
      * `CONV($this,$from,2)`
      *
      * @param int $from
-     * @return Text
+     * @return Str
      */
     public function toBase2(int $from = 10)
     {
@@ -62,7 +62,7 @@ trait BaseConversionTrait
      * `CONV($this,$from,8)`
      *
      * @param int $from
-     * @return Text
+     * @return Str
      */
     public function toBase8(int $from = 10)
     {

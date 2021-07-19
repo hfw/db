@@ -1,14 +1,14 @@
 <?php
 
-namespace Helix\DB\Fluent\Text;
+namespace Helix\DB\Fluent\Str;
 
 use Helix\DB\Fluent\AbstractTrait;
-use Helix\DB\Fluent\Text;
+use Helix\DB\Fluent\Str;
 
 /**
  * Further manipulate the expression as a character string.
  */
-trait TextCastTrait
+trait StrCastTrait
 {
 
     use AbstractTrait;
@@ -16,13 +16,13 @@ trait TextCastTrait
     /**
      * Casts the expression as a character string.
      *
-     * @return Text
+     * @return Str
      */
-    public function toText()
+    public function toStr()
     {
         if ($this->db->isSQLite()) {
-            return Text::factory($this->db, "CAST({$this} AS TEXT)");
+            return Str::factory($this->db, "CAST({$this} AS TEXT)");
         }
-        return Text::factory($this->db, "CAST({$this} AS CHAR)");
+        return Str::factory($this->db, "CAST({$this} AS CHAR)");
     }
 }

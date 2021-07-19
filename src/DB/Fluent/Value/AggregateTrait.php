@@ -4,7 +4,7 @@ namespace Helix\DB\Fluent\Value;
 
 use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\Num;
-use Helix\DB\Fluent\Text;
+use Helix\DB\Fluent\Str;
 
 /**
  * Aggregation functions.
@@ -58,15 +58,15 @@ trait AggregateTrait
      * `GROUP_CONCAT($this)` using a delimiter.
      *
      * @param string $delimiter
-     * @return Text
+     * @return Str
      */
     public function groupConcat(string $delimiter = ',')
     {
         $delimiter = $this->db->quote($delimiter);
         if ($this->db->isSQLite()) {
-            return Text::factory($this->db, "GROUP_CONCAT({$this},{$delimiter})");
+            return Str::factory($this->db, "GROUP_CONCAT({$this},{$delimiter})");
         }
-        return Text::factory($this->db, "GROUP_CONCAT({$this} SEPARATOR {$delimiter})");
+        return Str::factory($this->db, "GROUP_CONCAT({$this} SEPARATOR {$delimiter})");
     }
 
     /**
