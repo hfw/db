@@ -49,11 +49,8 @@ trait NumTrait
      */
     public function add($arg, ...$args)
     {
-        array_unshift($args, $arg);
-        return Num::factory($this->db, sprintf('(%s + %s)',
-            $this,
-            implode(' + ', $this->db->quoteArray($args))
-        ));
+        array_unshift($args, $this, $arg);
+        return Num::factory($this->db, sprintf('(%s)', implode(' + ', $this->db->quoteArray($args))));
     }
 
     /**
@@ -182,11 +179,8 @@ trait NumTrait
      */
     public function div($arg, ...$args)
     {
-        array_unshift($args, $arg);
-        return Num::factory($this->db, sprintf('(%s / %s)',
-            $this,
-            implode(' / ', $this->db->quoteArray($args))
-        ));
+        array_unshift($args, $this, $arg);
+        return Num::factory($this->db, sprintf('(%s)', implode(' / ', $this->db->quoteArray($args))));
     }
 
     /**
@@ -252,6 +246,16 @@ trait NumTrait
     }
 
     /**
+     * `$this = 0`
+     *
+     * @return Predicate
+     */
+    public function isZero()
+    {
+        return Predicate::factory($this->db, "{$this} = 0");
+    }
+
+    /**
      * `LN($this)`
      *
      * @return Num
@@ -314,11 +318,8 @@ trait NumTrait
      */
     public function mul($arg, ...$args)
     {
-        array_unshift($args, $arg);
-        return Num::factory($this->db, sprintf('(%s * %s)',
-            $this,
-            implode(' * ', $this->db->quoteArray($args))
-        ));
+        array_unshift($args, $this, $arg);
+        return Num::factory($this->db, sprintf('(%s)', implode(' * ', $this->db->quoteArray($args))));
     }
 
     /**
@@ -352,6 +353,7 @@ trait NumTrait
      */
     public function root(int $radix)
     {
+        assert($radix !== 0);
         return Num::factory($this->db, "POW({$this},1/{$radix})");
     }
 
@@ -405,11 +407,8 @@ trait NumTrait
      */
     public function sub($arg, ...$args)
     {
-        array_unshift($args, $arg);
-        return Num::factory($this->db, sprintf('(%s - %s)',
-            $this,
-            implode(' - ', $this->db->quoteArray($args))
-        ));
+        array_unshift($args, $this, $arg);
+        return Num::factory($this->db, sprintf('(%s)', implode(' - ', $this->db->quoteArray($args))));
     }
 
     /**
