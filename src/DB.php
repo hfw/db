@@ -5,7 +5,6 @@ namespace Helix;
 use ArrayAccess;
 use Countable;
 use Helix\DB\EntityInterface;
-use Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\ExpressionInterface;
 use Helix\DB\Junction;
 use Helix\DB\Migrator;
@@ -576,19 +575,6 @@ class DB extends PDO implements ArrayAccess
             $argc = (new ReflectionFunction($callable))->getNumberOfRequiredParameters();
             $this->sqliteCreateFunction($name, $callable, $argc, $deterministic);
         }
-    }
-
-    /**
-     * An expression for the current date at midnight.
-     *
-     * @return DateTime
-     */
-    public function today()
-    {
-        if ($this->isSQLite()) {
-            return DateTime::factory($this, "DATE('now')");
-        }
-        return DateTime::factory($this, 'CURRENT_DATE()');
     }
 
     /**
