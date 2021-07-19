@@ -43,4 +43,26 @@ class DateTime extends Expression implements ValueInterface
             'sqlite' => "DATE()"
         ]);
     }
+
+    /**
+     * An expression for tomorrow's date.
+     *
+     * @param DB $db
+     * @return static
+     */
+    public static function tomorrow(DB $db)
+    {
+        return static::today($db)->addDay();
+    }
+
+    /**
+     * An expression for yesterday's date.
+     *
+     * @param DB $db
+     * @return static
+     */
+    public static function yesterday(DB $db)
+    {
+        return static::today($db)->subDay();
+    }
 }
