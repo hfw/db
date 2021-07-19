@@ -26,4 +26,15 @@ class Num extends Expression implements ValueInterface
     {
         return static::factory($db, "PI()");
     }
+
+    /**
+     * `RAND()` float between `0` and `1`
+     *
+     * @param DB $db
+     * @return static
+     */
+    public static function rand(DB $db)
+    {
+        return static::factory($db, "RAND()");
+    }
 }

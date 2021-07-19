@@ -7,7 +7,6 @@ use Countable;
 use Helix\DB\EntityInterface;
 use Helix\DB\Fluent\DateTime;
 use Helix\DB\Fluent\ExpressionInterface;
-use Helix\DB\Fluent\Num;
 use Helix\DB\Junction;
 use Helix\DB\Migrator;
 use Helix\DB\Record;
@@ -507,16 +506,6 @@ class DB extends PDO implements ArrayAccess
     public function quoteList(array $values): string
     {
         return implode(',', $this->quoteArray($values));
-    }
-
-    /**
-     * `RAND()` float between `0` and `1`
-     *
-     * @return Num
-     */
-    public function rand()
-    {
-        return Num::factory($this, "RAND()");
     }
 
     /**
