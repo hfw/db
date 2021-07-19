@@ -388,8 +388,6 @@ class DB extends PDO implements ArrayAccess
     /**
      * An expression for the current date and time.
      *
-     * TODO move to DateTime
-     *
      * @return DateTime
      */
     public function now()
@@ -447,8 +445,6 @@ class DB extends PDO implements ArrayAccess
 
     /**
      * `PI()`
-     *
-     * TODO move to Num
      *
      * @return Num
      */
