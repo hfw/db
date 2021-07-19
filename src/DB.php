@@ -386,19 +386,6 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * An expression for the current date and time.
-     *
-     * @return DateTime
-     */
-    public function now()
-    {
-        if ($this->isSQLite()) {
-            return DateTime::factory($this, "DATETIME('now')");
-        }
-        return DateTime::factory($this, 'NOW()');
-    }
-
-    /**
      * Whether a table exists.
      *
      * @param string $table

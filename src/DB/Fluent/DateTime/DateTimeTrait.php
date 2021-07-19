@@ -188,7 +188,7 @@ trait DateTimeTrait
      */
     public function diffDays(DateTime $x = null)
     {
-        return ($x ?? $this->db->now())->julian()->sub($this->julian());
+        return ($x ?? DateTime::now($this->db))->julian()->sub($this->julian());
     }
 
     /**
