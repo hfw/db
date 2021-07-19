@@ -4,6 +4,7 @@ namespace Helix\DB\Fluent\Str;
 
 use Helix\DB\Fluent\Num;
 use Helix\DB\Fluent\Num\BaseConversionTrait;
+use Helix\DB\Fluent\Predicate;
 use Helix\DB\Fluent\Str;
 use Helix\DB\Fluent\Value\ValueTrait;
 use Helix\DB\Fluent\ValueInterface;
@@ -40,9 +41,6 @@ trait StrTrait
     /**
      * Concatenate other strings.
      *
-     * - SQLite: `($this || ...)`
-     * - MySQL: `CONCAT($this, ...)`
-     *
      * @param string|ValueInterface ...$strings
      * @return Str
      */
@@ -59,13 +57,21 @@ trait StrTrait
     /**
      * Hex representation.
      *
-     * `HEX($this)`
-     *
      * @return Str
      */
     public function hex()
     {
         return Str::factory($this->db, "HEX({$this})");
+    }
+
+    /**
+     * Zero-length.
+     *
+     * @return Predicate
+     */
+    public function isEmpty()
+    {
+        return $this->length()->isZero();
     }
 
     /**
@@ -77,16 +83,15 @@ trait StrTrait
      */
     public function length()
     {
-        if ($this->db->isSQLite()) {
-            return Num::factory($this->db, "LENGTH(CAST({$this} AS TEXT))");
-        }
-        return Num::factory($this->db, "CHAR_LENGTH({$this})");
+        static $formats = [
+            'mysql' => "CHAR_LENGTH(%s)",
+            'sqlite' => "LENGTH(CAST(%s AS TEXT))"
+        ];
+        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
     }
 
     /**
      * Lowercase.
-     *
-     * `LOWER($this)`
      *
      * @return Str
      */
@@ -96,7 +101,8 @@ trait StrTrait
     }
 
     /**
-     * @see StrTrait::trim()
+     * See {@link StrTrait::trim()}
+     *
      * @param null|string $chars
      * @return Str
      */
@@ -125,8 +131,6 @@ trait StrTrait
     /**
      * String replacement.
      *
-     * `REPLACE($this,$search,$replace)`
-     *
      * @param string $search
      * @param string $replace
      * @return Str
@@ -139,7 +143,8 @@ trait StrTrait
     }
 
     /**
-     * @see StrTrait::trim()
+     * See {@link StrTrait::trim()}
+     *
      * @param null|string $chars
      * @return Str
      */
@@ -149,22 +154,21 @@ trait StrTrait
     }
 
     /**
-     * Size in bytes.
+     * Number of bytes (not necessarily characters).
      *
      * @return Num
      */
     public function size()
     {
-        if ($this->db->isSQLite()) {
-            return Num::factory($this->db, "LENGTH(CAST({$this} AS BLOB))");
-        }
-        return Num::factory($this->db, "LENGTH({$this})");
+        static $formats = [
+            'mysql' => "LENGTH(%s)",
+            'sqlite' => "LENGTH(CAST(%s AS BLOB))"
+        ];
+        return Num::factory($this->db, sprintf($formats[$this->db->getDriver()], $this));
     }
 
     /**
      * Substring.
-     *
-     * `SUBSTR($this,$start)` or `SUBSTR($this,$start,$length)`
      *
      * @param int $start 1-based, can be negative to start from the right.
      * @param null|int $length
@@ -172,6 +176,7 @@ trait StrTrait
      */
     public function substr(int $start, int $length = null)
     {
+        assert($start !== 0);
         if (isset($length)) {
             return Str::factory($this->db, "SUBSTR({$this},{$start},{$length})");
         }
@@ -180,8 +185,6 @@ trait StrTrait
 
     /**
      * Convert from an arbitrary base to base 10.
-     *
-     * `CONV($this,$from,10)`
      *
      * @param int $from
      * @return Num
@@ -195,11 +198,12 @@ trait StrTrait
      * Trims whitespace (or other things) from both ends of the string.
      *
      * If `$chars` is given:
-     * - SQLite treats it as individual characters (same as PHP)
      * - MySQL treats it as a leading/trailing string
+     * - SQLite treats it as individual characters (same as PHP)
      *
      * @see StrTrait::ltrim()
      * @see StrTrait::rtrim()
+     *
      * @param null|string $chars
      * @return Str
      */
@@ -210,8 +214,6 @@ trait StrTrait
 
     /**
      * Uppercase.
-     *
-     * `UPPER($this)`
      *
      * @return Str
      */
