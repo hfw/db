@@ -33,14 +33,14 @@ use stdClass;
  * > Annotating the types `String` (capital "S") or `STRING` (all caps) results in `TEXT` and `BLOB`
  *
  * @method static static factory(DB $db, string|EntityInterface $class)
- *
- * @TODO Auto-map singular foreign entity columns.
  */
 class Record extends Table
 {
 
     /**
      * Maps complex types to storage types.
+     *
+     * {@link EntityInterface} is always dehydrated as the integer ID.
      *
      * @see Schema::T_CONST_NAMES keys
      */
@@ -131,6 +131,9 @@ class Record extends Table
             if (isset(static::DEHYDRATE_AS[$type])) {
                 $this->hydration[$col] = $type;
                 $type = static::DEHYDRATE_AS[$type];
+            } elseif (is_a($type, EntityInterface::class, true)) {
+                $this->hydration[$col] = $type;
+                $type = 'int';
             }
             $this->types[$col] = $type;
             $this->nullable[$col] = $this->ref->isNullable($col);
@@ -308,11 +311,19 @@ class Record extends Table
      * @param string $to The storage type.
      * @param string $from The strict type from the class definition.
      * @param array|object $hydrated
-     * @return scalar
+     * @return null|scalar
      */
     protected function getValues_dehydrate(string $to, string $from, $hydrated)
     {
-        unset($from); // we don't need it here but it's given for posterity
+        // we don't need $from here but it's given for posterity
+        unset($from);
+
+        // dehydrate entities to their id
+        if ($hydrated instanceof EntityInterface) {
+            return $hydrated->getId();
+        }
+
+        // dehydrate other complex types
         switch ($to) {
             case 'DateTime':
                 assert($hydrated instanceof DateTime or $hydrated instanceof DateTimeImmutable);
@@ -513,22 +524,30 @@ class Record extends Table
      */
     protected function setType_hydrate(string $to, string $from, $dehydrated)
     {
-        switch ($from) {
-            case 'DateTime':
-                /**
-                 * $to might be "DateTime", "DateTimeImmutable", or an extension.
-                 *
-                 * @see DateTime::createFromFormat()
-                 */
-                return call_user_func(
-                    [$to, 'createFromFormat'],
-                    'Y-m-d H:i:s',
-                    $dehydrated,
-                    $this->utc
-                );
-            default:
-                return unserialize($dehydrated);
+        // hydrate DateTime
+        if ($from === 'DateTime') {
+            /**
+             * $to might be "DateTime", "DateTimeImmutable", or an extension.
+             *
+             * @see DateTime::createFromFormat()
+             */
+            return call_user_func(
+                [$to, 'createFromFormat'],
+                'Y-m-d H:i:s',
+                $dehydrated,
+                $this->utc
+            );
         }
+
+        // hydrate entities
+        if (is_a($to, EntityInterface::class, true)) {
+            return $this->db->getRecord($to)->load($dehydrated);
+        }
+
+        // hydrate other complex
+        $complex = unserialize($dehydrated);
+        assert(is_array($complex) or is_object($complex));
+        return $complex;
     }
 
     /**
