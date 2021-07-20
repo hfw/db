@@ -2,7 +2,6 @@
 
 namespace Helix\DB\Fluent\Value;
 
-use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\Value;
 
 /**
