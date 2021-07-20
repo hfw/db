@@ -38,27 +38,27 @@ class Record extends Table
 {
 
     /**
+     * The number of entities to load EAV entries for at a time,
+     * during {@link Record::fetchEach()} iteration.
+     */
+    protected const EAV_BATCH_LOAD = 256;
+
+    /**
      * Maps complex types to storage types.
      *
-     * {@link EntityInterface} is always dehydrated as the integer ID.
+     * Foreign {@link EntityInterface} columns are automatically added as `"int"`
      *
      * @see Record::getValues_dehydrate()
      * @see Record::setType_hydrate()
      * @see Schema::T_CONST_NAMES
      */
-    protected const DEHYDRATE_AS = [
+    protected $dehydrate = [
         'array' => 'STRING', // blob. eav is better than this for 1D arrays.
         'object' => 'STRING', // blob.
         stdClass::class => 'STRING', // blob
         DateTime::class => 'DateTime',
         DateTimeImmutable::class => 'DateTime',
     ];
-
-    /**
-     * The number of entities to load EAV entries for at a time,
-     * during {@link Record::fetchEach()} iteration.
-     */
-    protected const EAV_BATCH_LOAD = 256;
 
     /**
      * `[property => EAV]`
@@ -74,7 +74,7 @@ class Record extends Table
      *
      * @var string[]
      */
-    protected $hydration = [];
+    protected $hydrate = [];
 
     /**
      * `[ property => is nullable ]`
@@ -130,12 +130,12 @@ class Record extends Table
         $cols = $this->ref->getColumns();
         foreach ($cols as $col) {
             $type = $this->ref->getType($col);
-            if (isset(static::DEHYDRATE_AS[$type])) {
-                $this->hydration[$col] = $type;
-                $type = static::DEHYDRATE_AS[$type];
-            } elseif (is_a($type, EntityInterface::class, true)) {
-                $this->hydration[$col] = $type;
-                $type = 'int';
+            if (is_a($type, EntityInterface::class, true)) {
+                $this->dehydrate[$type] = 'int';
+            }
+            if (isset($this->dehydrate[$type])) {
+                $this->hydrate[$col] = $type;
+                $type = $this->dehydrate[$type];
             }
             $this->types[$col] = $type;
             $this->nullable[$col] = $this->ref->isNullable($col);
@@ -295,9 +295,9 @@ class Record extends Table
         $values = [];
         foreach (array_keys($this->columns) as $prop) {
             $value = $this->ref->getValue($entity, $prop);
-            if (isset($value, $this->hydration[$prop])) {
-                $from = $this->hydration[$prop];
-                $to = static::DEHYDRATE_AS[$from];
+            if (isset($value, $this->hydrate[$prop])) {
+                $from = $this->hydrate[$prop];
+                $to = $this->dehydrate[$from];
                 $value = $this->getValues_dehydrate($to, $from, $value);
             }
             $values[$prop] = $value;
@@ -503,9 +503,9 @@ class Record extends Table
     {
         if (isset($value)) {
             // complex?
-            if (isset($this->hydration[$property])) {
-                $to = $this->hydration[$property];
-                $from = static::DEHYDRATE_AS[$to];
+            if (isset($this->hydrate[$property])) {
+                $to = $this->hydrate[$property];
+                $from = $this->dehydrate[$to];
                 return $this->setType_hydrate($to, $from, $value);
             }
             // scalar. this function doesn't care about the type's letter case.
