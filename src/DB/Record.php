@@ -457,7 +457,10 @@ class Record extends Table
     protected function saveUpdate(EntityInterface $entity): void
     {
         $statement = $this->cache(__FUNCTION__, function () {
-            $slots = $this->db->slotsEqual(array_keys($this->columns));
+            $slots = $this->db->slots(array_keys($this->columns));
+            foreach ($slots as $column => $slot) {
+                $slots[$column] = "{$column} = {$slot}";
+            }
             unset($slots['id']);
             $slots = implode(', ', $slots);
             return $this->db->prepare("UPDATE {$this} SET {$slots} WHERE id = :id");

@@ -129,20 +129,9 @@ class DB extends PDO implements ArrayAccess
      */
     public static function slots(array $columns)
     {
-        return array_combine($columns, array_map(function (string $column) {
-            return ':' . str_replace('.', '__', $column);
-        }, $columns));
-    }
-
-    /**
-     * @param string[] $columns
-     * @return string[] `["column" => "column=:column"]`
-     */
-    public static function slotsEqual(array $columns)
-    {
-        $slots = static::slots($columns);
-        foreach ($slots as $column => $slot) {
-            $slots[$column] = "{$column} = {$slot}";
+        $slots = [];
+        foreach ($columns as $column) {
+            $slots[$column] = ':' . str_replace('.', '__', $column);
         }
         return $slots;
     }
