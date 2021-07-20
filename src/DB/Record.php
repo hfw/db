@@ -42,7 +42,9 @@ class Record extends Table
      *
      * {@link EntityInterface} is always dehydrated as the integer ID.
      *
-     * @see Schema::T_CONST_NAMES keys
+     * @see Record::getValues_dehydrate()
+     * @see Record::setType_hydrate()
+     * @see Schema::T_CONST_NAMES
      */
     protected const DEHYDRATE_AS = [
         'array' => 'STRING', // blob. eav is better than this for 1D arrays.
@@ -323,14 +325,14 @@ class Record extends Table
             return $hydrated->getId();
         }
 
-        // dehydrate other complex types
-        switch ($to) {
-            case 'DateTime':
-                assert($hydrated instanceof DateTime or $hydrated instanceof DateTimeImmutable);
-                return (clone $hydrated)->setTimezone($this->utc)->format(Schema::DATETIME_FORMAT);
-            default:
-                return serialize($hydrated);
+        // dehydrate DateTime
+        if ($to === 'DateTime') {
+            assert($hydrated instanceof DateTime or $hydrated instanceof DateTimeImmutable);
+            return (clone $hydrated)->setTimezone($this->utc)->format(Schema::DATETIME_FORMAT);
         }
+
+        // dehydrate other complex types
+        return serialize($hydrated);
     }
 
     /**
@@ -524,27 +526,17 @@ class Record extends Table
      */
     protected function setType_hydrate(string $to, string $from, $dehydrated)
     {
-        // hydrate DateTime
-        if ($from === 'DateTime') {
-            /**
-             * $to might be "DateTime", "DateTimeImmutable", or an extension.
-             *
-             * @see DateTime::createFromFormat()
-             */
-            return call_user_func(
-                [$to, 'createFromFormat'],
-                'Y-m-d H:i:s',
-                $dehydrated,
-                $this->utc
-            );
-        }
-
-        // hydrate entities
+        // hydrate entities from their id
         if (is_a($to, EntityInterface::class, true)) {
             return $this->db->getRecord($to)->load($dehydrated);
         }
 
-        // hydrate other complex
+        // hydrate DateTime
+        if ($from === 'DateTime') {
+            return new $to($dehydrated, $this->utc);
+        }
+
+        // hydrate other complex types
         $complex = unserialize($dehydrated);
         assert(is_array($complex) or is_object($complex));
         return $complex;
