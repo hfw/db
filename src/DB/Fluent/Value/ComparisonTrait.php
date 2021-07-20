@@ -5,7 +5,7 @@ namespace Helix\DB\Fluent\Value;
 use Closure;
 use Helix\DB\EntityInterface;
 use Helix\DB\Fluent\AbstractTrait;
-use Helix\DB\Fluent\Choice;
+use Helix\DB\Fluent\Branch;
 use Helix\DB\Fluent\Predicate;
 use Helix\DB\Fluent\ValueInterface;
 use Helix\DB\Select;
@@ -319,13 +319,13 @@ trait ComparisonTrait
      * `CASE $this ... END`
      *
      * > :warning: If `$values` are given, the keys are quoted as literal values.
-     * > Omit `$values` and use {@link Choice::when()} if you need expressions for the `WHEN` clause.
+     * > Omit `$values` and use {@link Branch::when()} if you need expressions for the `WHEN` clause.
      *
      * @param array $values `[when => then]`
-     * @return Choice
+     * @return Branch
      */
     public function switch(array $values = [])
     {
-        return Choice::factory($this->db, "{$this}", $values);
+        return Branch::factory($this->db, "{$this}", $values);
     }
 }

@@ -35,7 +35,7 @@ use Helix\DB;
  *
  * @method static static factory(DB $db, string $subject = null, array $values = [])
  */
-class Choice extends Value
+class Branch extends Value
 {
 
     /**
