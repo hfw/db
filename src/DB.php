@@ -195,16 +195,6 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
-     * The driver's name.
-     *
-     * @return string
-     */
-    final public function __toString(): string
-    {
-        return $this->driver;
-    }
-
-    /**
      * Allows nested transactions by using `SAVEPOINT`
      *
      * Use {@link DB::newTransaction()} to work with {@link Transaction} instead.
