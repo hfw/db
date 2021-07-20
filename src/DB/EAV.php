@@ -114,7 +114,7 @@ class EAV extends Table
             return [current($ids) => $this->load(current($ids))];
         }
         $loadAll = $this->select(['entity', 'attribute', 'value'])
-            ->where(Predicate::match($this->db, 'entity', $this->db->marks($ids)))
+            ->where(Predicate::match($this->db, 'entity', $this->db->marks(count($ids))))
             ->order('entity, attribute');
         $values = array_fill_keys($ids, []);
         foreach ($loadAll->getEach(array_values($ids)) as $row) {

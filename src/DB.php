@@ -3,7 +3,6 @@
 namespace Helix;
 
 use ArrayAccess;
-use Countable;
 use Helix\DB\EntityInterface;
 use Helix\DB\Fluent\ExpressionInterface;
 use Helix\DB\Junction;
@@ -104,10 +103,10 @@ class DB extends PDO implements ArrayAccess
     /**
      * Returns an array of `?` placeholder expressions.
      *
-     * @param int|array|Countable $count
+     * @param int $count
      * @return ExpressionInterface[]
      */
-    public static function marks($count)
+    public static function marks(int $count)
     {
         static $mark;
         $mark ??= new class implements ExpressionInterface {
@@ -117,7 +116,7 @@ class DB extends PDO implements ArrayAccess
                 return '?';
             }
         };
-        return array_fill(0, is_int($count) ? $count : count($count), $mark);
+        return array_fill(0, $count, $mark);
     }
 
     /**
