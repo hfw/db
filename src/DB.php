@@ -23,16 +23,6 @@ class DB extends PDO implements ArrayAccess
 {
 
     /**
-     * The driver's name.
-     *
-     * - mysql
-     * - sqlite
-     *
-     * @var string
-     */
-    protected $driver;
-
-    /**
      * @var Junction[]
      */
     protected $junctions = [];
@@ -154,7 +144,6 @@ class DB extends PDO implements ArrayAccess
         $this->setAttribute(self::ATTR_EMULATE_PREPARES, false);
         $this->setAttribute(self::ATTR_ERRMODE, self::ERRMODE_EXCEPTION);
         $this->setAttribute(self::ATTR_STRINGIFY_FETCHES, false);
-        $this->driver = $this->getAttribute(self::ATTR_DRIVER_NAME);
         $this->logger ??= fn() => null;
         $this->schema ??= Schema::factory($this);
 
@@ -264,11 +253,17 @@ class DB extends PDO implements ArrayAccess
     }
 
     /**
+     * The driver's name.
+     *
+     * - mysql
+     * - pgsql
+     * - sqlite
+     *
      * @return string
      */
     final public function getDriver(): string
     {
-        return $this->driver;
+        return $this->getAttribute(self::ATTR_DRIVER_NAME);
     }
 
     /**
@@ -324,7 +319,7 @@ class DB extends PDO implements ArrayAccess
      */
     final public function isMySQL(): bool
     {
-        return $this->driver === 'mysql';
+        return $this->getDriver() === 'mysql';
     }
 
     /**
@@ -332,7 +327,7 @@ class DB extends PDO implements ArrayAccess
      */
     final public function isPostgreSQL(): bool
     {
-        return $this->driver === 'pgsql';
+        return $this->getDriver() === 'pgsql';
     }
 
     /**
@@ -340,7 +335,7 @@ class DB extends PDO implements ArrayAccess
      */
     final public function isSQLite(): bool
     {
-        return $this->driver === 'sqlite';
+        return $this->getDriver() === 'sqlite';
     }
 
     /**
