@@ -7,6 +7,8 @@ use Helix\DB\FactoryTrait;
 
 /**
  * Create an expression using driver-appropriate SQL.
+ *
+ * @internal
  */
 trait FactoryFormatTrait
 {
