@@ -36,6 +36,7 @@ assert($Author->select()->getAll() === []);
 
 // define alice.
 $alice = new Author;
+assert($alice->getId() === null);
 $alice->setName('Alice');
 $alice['dob'] = 'January 1st';
 $alice['favColor'] = 'blue';

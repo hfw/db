@@ -35,7 +35,7 @@ abstract class AbstractEntity implements EntityInterface, ArrayAccess
      * @column
      * @var int
      */
-    protected $id = 0;
+    protected $id;
 
     public function __construct()
     {
@@ -47,7 +47,7 @@ abstract class AbstractEntity implements EntityInterface, ArrayAccess
     /**
      * @return int
      */
-    final public function getId(): int
+    final public function getId(): ?int
     {
         return $this->id;
     }
