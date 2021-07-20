@@ -140,47 +140,63 @@ class DB extends PDO implements ArrayAccess
     {
         $options[self::ATTR_STATEMENT_CLASS] ??= [Statement::class, [$this]];
         parent::__construct($dsn, $username, $password, $options);
+        $this->logger ??= fn() => null;
+        $this->schema ??= Schema::factory($this);
+
+        // these options must not be changed.
         $this->setAttribute(self::ATTR_DEFAULT_FETCH_MODE, self::FETCH_ASSOC);
         $this->setAttribute(self::ATTR_EMULATE_PREPARES, false);
         $this->setAttribute(self::ATTR_ERRMODE, self::ERRMODE_EXCEPTION);
         $this->setAttribute(self::ATTR_STRINGIFY_FETCHES, false);
-        $this->logger ??= fn() => null;
-        $this->schema ??= Schema::factory($this);
 
-        if ($this->isMySQL()) {
-            $this->exec("SET time_zone = 'UTC'");
-        } elseif ($this->isSQLite()) {
-            // polyfill sqlite functions
-            $this->sqliteCreateFunctions([ // deterministic functions
-                // https://www.sqlite.org/lang_mathfunc.html
-                'ACOS' => 'acos',
-                'ASIN' => 'asin',
-                'ATAN' => 'atan',
-                'CEIL' => 'ceil',
-                'COS' => 'cos',
-                'DEGREES' => 'rad2deg',
-                'EXP' => 'exp',
-                'FLOOR' => 'floor',
-                'LN' => 'log',
-                'LOG' => fn($b, $x) => log($x, $b),
-                'LOG10' => 'log10',
-                'LOG2' => fn($x) => log($x, 2),
-                'PI' => 'pi',
-                'POW' => 'pow',
-                'RADIANS' => 'deg2rad',
-                'SIN' => 'sin',
-                'SQRT' => 'sqrt',
-                'TAN' => 'tan',
+        // invoke driver-specific hooks
+        $this->{"__construct_{$this->getDriver()}"}();
+    }
 
-                // these are not in sqlite at all but are in other dbms
-                'CONV' => 'base_convert',
-                'SIGN' => fn($x) => $x <=> 0
-            ]);
+    /**
+     * MySQL construction hook.
+     */
+    protected function __construct_mysql(): void
+    {
+        $this->exec("SET time_zone = 'UTC'");
+    }
 
-            $this->sqliteCreateFunctions([ // non-deterministic
-                'RAND' => fn() => mt_rand() / mt_getrandmax(),
-            ], false);
-        }
+    /**
+     * SQLite construction hook.
+     */
+    protected function __construct_sqlite(): void
+    {
+        // polyfill deterministic sqlite functions
+        $this->sqliteCreateFunctions([
+            // https://www.sqlite.org/lang_mathfunc.html
+            'ACOS' => 'acos',
+            'ASIN' => 'asin',
+            'ATAN' => 'atan',
+            'CEIL' => 'ceil',
+            'COS' => 'cos',
+            'DEGREES' => 'rad2deg',
+            'EXP' => 'exp',
+            'FLOOR' => 'floor',
+            'LN' => 'log',
+            'LOG' => fn($b, $x) => log($x, $b),
+            'LOG10' => 'log10',
+            'LOG2' => fn($x) => log($x, 2),
+            'PI' => 'pi',
+            'POW' => 'pow',
+            'RADIANS' => 'deg2rad',
+            'SIN' => 'sin',
+            'SQRT' => 'sqrt',
+            'TAN' => 'tan',
+
+            // these are not in sqlite at all but are in other dbms
+            'CONV' => 'base_convert',
+            'SIGN' => fn($x) => $x <=> 0
+        ]);
+
+        // non-deterministic
+        $this->sqliteCreateFunctions([
+            'RAND' => fn() => mt_rand() / mt_getrandmax(),
+        ], false);
     }
 
     /**
