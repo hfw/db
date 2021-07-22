@@ -162,6 +162,9 @@ trait DateTimeModifyTrait
      * `$s` can be a `DateInterval` or `DateInterval` description (e.g. `"+1 day"`).
      * If so, the rest of the arguments are ignored.
      *
+     * > Note: Modifiers are processed from greatest-to-least interval scope,
+     * > meaning years are applied first and seconds are applied last.
+     *
      * @param int|string|DateInterval $s Seconds, or `DateInterval` related
      * @param int $m Minutes
      * @param int $h Hours
