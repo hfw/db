@@ -137,6 +137,16 @@ trait DateTimeModifyTrait
     }
 
     /**
+     * `YYYY-MM-DD`
+     *
+     * @return DateTime
+     */
+    public function lastDayOfMonth()
+    {
+        return $this->firstDayOfMonth()->addMonth()->subDay();
+    }
+
+    /**
      * `YYYY-12-31`
      *
      * @return DateTime
