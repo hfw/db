@@ -560,13 +560,13 @@ class DB extends PDO implements ArrayAccess
      *
      * The work is rolled back if an exception is thrown.
      *
-     * @param callable $work `fn(): mixed`
+     * @param callable $work `fn(DB $this): mixed`
      * @return mixed The return value of `$work`
      */
     public function transact(callable $work)
     {
         $transaction = $this->newTransaction();
-        $return = call_user_func($work);
+        $return = call_user_func($work, $this);
         $transaction->commit();
         return $return;
     }
