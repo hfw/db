@@ -137,6 +137,16 @@ trait DateTimeModifyTrait
     }
 
     /**
+     * `YYYY-12-31`
+     *
+     * @return DateTime
+     */
+    public function lastDayOfYear()
+    {
+        return DateTime::factory($this->db, $this->dateFormat('%Y-12-31'));
+    }
+
+    /**
      * Applies date-time modifiers.
      *
      * `$s` can be a `DateInterval` or `DateInterval` description (e.g. `"+1 day"`).
