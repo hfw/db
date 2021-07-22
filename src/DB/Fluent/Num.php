@@ -37,4 +37,19 @@ class Num extends Expression implements ValueInterface
     {
         return static::factory($db, "RAND()");
     }
+
+    /**
+     * {@link DateTime} from a Unix timestamp.
+     *
+     * The expression must be a non-negative integer.
+     *
+     * @return DateTime
+     */
+    public function toDateTime()
+    {
+        return DateTime::fromFormat($this->db, [
+            'mysql' => "CAST(%s AT TIME ZONE 'UTC' AS DATETIME)",
+            'sqlite' => "DATETIME(%s,'unixepoch')",
+        ], $this);
+    }
 }
