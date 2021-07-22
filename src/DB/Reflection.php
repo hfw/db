@@ -8,11 +8,13 @@ use ReflectionNamedType;
 use ReflectionProperty;
 
 /**
- * Interprets classes and annotations.
+ * Interprets classes and annotations, and manipulates objects.
  *
  * > Programmer's Note: Manipulating subclasses through a parent's reflection is allowed.
  *
  * @method static static factory(DB $db, string|object $class)
+ *
+ * @TODO Allow column aliasing.
  */
 class Reflection
 {
@@ -57,6 +59,11 @@ class Reflection
     protected $class;
 
     /**
+     * @var string[]
+     */
+    protected $columns;
+
+    /**
      * @var DB
      */
     protected $db;
@@ -69,7 +76,12 @@ class Reflection
     /**
      * @var ReflectionProperty[]
      */
-    protected $props = [];
+    protected $properties = [];
+
+    /**
+     * @var string[]
+     */
+    protected $unique;
 
     /**
      * @param DB $db
@@ -80,9 +92,9 @@ class Reflection
         $this->db = $db;
         $this->class = new ReflectionClass($class);
         $this->defaults = $this->class->getDefaultProperties();
-        foreach ($this->class->getProperties() as $prop) {
-            $prop->setAccessible(true);
-            $this->props[$prop->getName()] = $prop;
+        foreach ($this->class->getProperties() as $property) {
+            $property->setAccessible(true);
+            $this->properties[$property->getName()] = $property;
         }
     }
 
@@ -93,13 +105,15 @@ class Reflection
      */
     public function getColumns(): array
     {
-        $cols = [];
-        foreach ($this->props as $name => $prop) {
-            if (preg_match(static::RX_IS_COLUMN, $prop->getDocComment())) {
-                $cols[$name] = $name;
+        if (!isset($this->columns)) {
+            $this->columns = [];
+            foreach ($this->properties as $name => $property) {
+                if (preg_match(static::RX_IS_COLUMN, $property->getDocComment())) {
+                    $this->columns[$name] = $name;
+                }
             }
         }
-        return $cols;
+        return $this->columns;
     }
 
     /**
@@ -108,7 +122,7 @@ class Reflection
     public function getEav()
     {
         $EAV = [];
-        foreach ($this->props as $name => $prop) {
+        foreach ($this->properties as $name => $prop) {
             $doc = $prop->getDocComment();
             if (preg_match(static::RX_EAV, $doc, $eav)) {
                 preg_match(static::RX_EAV_VAR, $doc, $var);
@@ -152,35 +166,35 @@ class Reflection
     /**
      * Scalar storage type, or FQN of a complex type.
      *
-     * @param string $column
+     * @param string $property
      * @return string
      */
-    public function getType(string $column): string
+    public function getType(string $property): string
     {
-        return $this->getType_reflection($column)
-            ?? $this->getType_var($column)
-            ?? static::SCALARS[gettype($this->defaults[$column])];
+        return $this->getType_reflection($property)
+            ?? $this->getType_var($property)
+            ?? static::SCALARS[gettype($this->defaults[$property])];
     }
 
     /**
-     * @param string $column
+     * @param string $property
      * @return null|string
      */
-    protected function getType_reflection(string $column): ?string
+    protected function getType_reflection(string $property): ?string
     {
-        if ($type = $this->props[$column]->getType() and $type instanceof ReflectionNamedType) {
+        if ($type = $this->properties[$property]->getType() and $type instanceof ReflectionNamedType) {
             return static::SCALARS[$type->getName()] ?? $type->getName();
         }
         return null;
     }
 
     /**
-     * @param string $column
+     * @param string $property
      * @return null|string
      */
-    protected function getType_var(string $column): ?string
+    protected function getType_var(string $property): ?string
     {
-        if (preg_match(static::RX_VAR, $this->props[$column]->getDocComment(), $var)) {
+        if (preg_match(static::RX_VAR, $this->properties[$property]->getDocComment(), $var)) {
             $type = preg_replace(static::RX_NULL, '', $var['type']); // remove null
             if (isset(static::SCALARS[$type])) {
                 return static::SCALARS[$type];
@@ -203,42 +217,75 @@ class Reflection
      */
     public function getUnique()
     {
-        $unique = [];
-        foreach ($this->props as $prop) {
-            if (preg_match(static::RX_UNIQUE, $prop->getDocComment(), $match)) {
-                if (isset($match['ident'])) {
-                    $unique[$match['ident']][] = $prop->getName();
-                } else {
-                    $unique[] = $prop->getName();
+        if (!isset($this->unique)) {
+            $this->unique = [];
+            foreach ($this->properties as $property) {
+                if (preg_match(static::RX_UNIQUE, $property->getDocComment(), $match)) {
+                    if (isset($match['ident'])) {
+                        $this->unique[$match['ident']][] = $property->getName();
+                    } else {
+                        $this->unique[] = $property->getName();
+                    }
                 }
             }
         }
-        return $unique;
+        return $this->unique;
     }
 
     /**
+     * The shared identifier if a property is part of a multi-column unique-key.
+     *
+     * @param string $property
+     * @return null|string The shared identifier, or nothing.
+     */
+    final public function getUniqueGroup(string $property): ?string
+    {
+        foreach ($this->getUnique() as $key => $value) {
+            if (is_string($key) and in_array($property, $value)) {
+                return $key;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets and returns a value through reflection.
+     *
      * @param object $object
-     * @param string $prop
+     * @param string $property
      * @return mixed
      */
-    public function getValue(object $object, string $prop)
+    public function getValue(object $object, string $property)
     {
-        return $this->props[$prop]->getValue($object);
+        return $this->properties[$property]->getValue($object);
     }
 
     /**
-     * @param string $column
+     * Whether a property allows `NULL` as a value.
+     *
+     * @param string $property
      * @return bool
      */
-    public function isNullable(string $column): bool
+    public function isNullable(string $property): bool
     {
-        if ($type = $this->props[$column]->getType()) {
+        if ($type = $this->properties[$property]->getType()) {
             return $type->allowsNull();
         }
-        if (preg_match(static::RX_VAR, $this->props[$column]->getDocComment(), $var)) {
+        if (preg_match(static::RX_VAR, $this->properties[$property]->getDocComment(), $var)) {
             return (bool)preg_match(static::RX_NULL, $var['type']);
         }
-        return $this->defaults[$column] === null;
+        return $this->defaults[$property] === null;
+    }
+
+    /**
+     * Whether a property has a unique-key constraint of its own.
+     *
+     * @param string $property
+     * @return bool
+     */
+    final public function isUnique(string $property): bool
+    {
+        return in_array($property, $this->getUnique());
     }
 
     /**
@@ -250,12 +297,14 @@ class Reflection
     }
 
     /**
+     * Sets a value through reflection.
+     *
      * @param object $object
-     * @param string $prop
+     * @param string $property
      * @param mixed $value
      */
-    public function setValue(object $object, string $prop, $value)
+    public function setValue(object $object, string $property, $value): void
     {
-        $this->props[$prop]->setValue($object, $value);
+        $this->properties[$property]->setValue($object, $value);
     }
 }

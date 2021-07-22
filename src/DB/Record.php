@@ -2,13 +2,10 @@
 
 namespace Helix\DB;
 
-use DateTime;
-use DateTimeImmutable;
-use DateTimeZone;
 use Generator;
 use Helix\DB;
 use Helix\DB\Fluent\Predicate;
-use stdClass;
+use Helix\DB\Record\Serializer;
 
 /**
  * Represents an "active record" table, derived from an annotated class implementing {@link EntityInterface}.
@@ -44,44 +41,11 @@ class Record extends Table
     protected const EAV_BATCH_LOAD = 256;
 
     /**
-     * Maps complex types to storage types.
-     *
-     * Foreign {@link EntityInterface} columns are automatically added as `"int"`
-     *
-     * @see Record::getValues_dehydrate()
-     * @see Record::setType_hydrate()
-     * @see Schema::T_CONST_NAMES
-     */
-    protected $dehydrate = [
-        'array' => 'STRING', // blob. eav is better than this for 1D arrays.
-        'object' => 'STRING', // blob.
-        stdClass::class => 'STRING', // blob
-        DateTime::class => 'DateTime',
-        DateTimeImmutable::class => 'DateTime',
-    ];
-
-    /**
      * `[property => EAV]`
      *
      * @var EAV[]
      */
     protected $eav = [];
-
-    /**
-     * The specific classes used to hydrate classed properties, like `DateTime`.
-     *
-     * `[ property => class ]`
-     *
-     * @var string[]
-     */
-    protected $hydrate = [];
-
-    /**
-     * `[ property => is nullable ]`
-     *
-     * @var bool[]
-     */
-    protected $nullable = [];
 
     /**
      * A boilerplate instance of the class, to clone and populate.
@@ -90,29 +54,7 @@ class Record extends Table
      */
     protected $proto;
 
-    /**
-     * @var Reflection
-     */
-    protected $ref;
-
-    /**
-     * Storage types.
-     *
-     * `[property => type]`
-     *
-     * @var string[]
-     */
-    protected $types = [];
-
-    /**
-     * @var array
-     */
-    protected $unique;
-
-    /**
-     * @var DateTimeZone
-     */
-    protected DateTimeZone $utc;
+    protected Serializer $serializer;
 
     /**
      * @param DB $db
@@ -120,31 +62,11 @@ class Record extends Table
      */
     public function __construct(DB $db, $class)
     {
-        $this->ref = Reflection::factory($db, $class);
-        $this->proto = is_object($class) ? $class : $this->ref->newProto();
+        $this->serializer = Serializer::factory($db, $class);
+        $this->proto = is_object($class) ? $class : $this->serializer->newProto();
         assert($this->proto instanceof EntityInterface);
-        $this->unique = $this->ref->getUnique();
-        $this->utc = new DateTimeZone('UTC');
-
-        // TODO allow aliasing
-        $cols = $this->ref->getColumns();
-        foreach ($cols as $col) {
-            $type = $this->ref->getType($col);
-            if (is_a($type, EntityInterface::class, true)) {
-                $this->dehydrate[$type] = 'int';
-            }
-            if (isset($this->dehydrate[$type])) {
-                $this->hydrate[$col] = $type;
-                $type = $this->dehydrate[$type];
-            }
-            $this->types[$col] = $type;
-            $this->nullable[$col] = $this->ref->isNullable($col);
-        }
-        $this->types['id'] = 'int';
-        $this->nullable['id'] = false;
-        $this->eav = $this->ref->getEav();
-
-        parent::__construct($db, $this->ref->getRecordTable(), $cols);
+        $this->eav = $this->serializer->getEav();
+        parent::__construct($db, $this->serializer->getRecordTable(), $this->serializer->getColumns());
     }
 
     /**
@@ -171,7 +93,7 @@ class Record extends Table
             $entities = [];
             for ($i = 0; $i < static::EAV_BATCH_LOAD and false !== $row = $statement->fetch(); $i++) {
                 $clone = clone $this->proto;
-                $this->setValues($clone, $row);
+                $this->serializer->import($clone, $row);
                 $entities[$row['id']] = $clone;
             }
             $this->loadEav($entities);
@@ -238,124 +160,6 @@ class Record extends Table
     }
 
     /**
-     * Returns a native/annotated property type.
-     *
-     * This doesn't include whether the property is nullable. Use {@link Record::isNullable()} for that.
-     *
-     * @param string $property
-     * @return string
-     */
-    final public function getType(string $property): string
-    {
-        return $this->types[$property];
-    }
-
-    /**
-     * Returns the native/annotated property types.
-     *
-     * This doesn't include whether the properties are nullable. Use {@link Record::isNullable()} for that.
-     *
-     * @return string[]
-     */
-    final public function getTypes(): array
-    {
-        return $this->types;
-    }
-
-    /**
-     * @return array
-     */
-    final public function getUnique(): array
-    {
-        return $this->unique;
-    }
-
-    /**
-     * The shared identifier if a property is part of a multi-column unique-key.
-     *
-     * @param string $property
-     * @return null|string The shared identifier, or nothing.
-     */
-    final public function getUniqueGroup(string $property): ?string
-    {
-        foreach ($this->unique as $key => $value) {
-            if (is_string($key) and in_array($property, $value)) {
-                return $key;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * @param EntityInterface $entity
-     * @return array
-     */
-    protected function getValues(EntityInterface $entity): array
-    {
-        $values = [];
-        foreach (array_keys($this->columns) as $prop) {
-            $value = $this->ref->getValue($entity, $prop);
-            if (isset($value, $this->hydrate[$prop])) {
-                $from = $this->hydrate[$prop];
-                $to = $this->dehydrate[$from];
-                $value = $this->getValues_dehydrate($to, $from, $value);
-            }
-            $values[$prop] = $value;
-        }
-        return $values;
-    }
-
-    /**
-     * Dehydrates a complex property's value for storage in a scalar column.
-     *
-     * @see Record::setType_hydrate() inverse
-     *
-     * @param string $to The storage type.
-     * @param string $from The strict type from the class definition.
-     * @param array|object $hydrated
-     * @return null|scalar
-     */
-    protected function getValues_dehydrate(string $to, string $from, $hydrated)
-    {
-        // we don't need $from here but it's given for posterity
-        unset($from);
-
-        // dehydrate entities to their id
-        if ($hydrated instanceof EntityInterface) {
-            return $hydrated->getId();
-        }
-
-        // dehydrate DateTime
-        if ($to === 'DateTime') {
-            assert($hydrated instanceof DateTime or $hydrated instanceof DateTimeImmutable);
-            return (clone $hydrated)->setTimezone($this->utc)->format(Schema::DATETIME_FORMAT);
-        }
-
-        // dehydrate other complex types
-        return serialize($hydrated);
-    }
-
-    /**
-     * @param string $property
-     * @return bool
-     */
-    final public function isNullable(string $property): bool
-    {
-        return $this->nullable[$property];
-    }
-
-    /**
-     * Whether a property has a unique-key constraint of its own.
-     *
-     * @param string $property
-     * @return bool
-     */
-    final public function isUnique(string $property): bool
-    {
-        return in_array($property, $this->unique);
-    }
-
-    /**
      * Loads all data for a given ID (clones the prototype), or an existing instance.
      *
      * @param int|EntityInterface $id The given instance may be a subclass of the prototype.
@@ -376,7 +180,7 @@ class Record extends Table
         $values = $statement([$id])->fetch();
         $statement->closeCursor();
         if ($values) {
-            $this->setValues($entity, $values);
+            $this->serializer->import($entity, $values);
             $this->loadEav([$id => $entity]);
             return $entity;
         }
@@ -405,7 +209,7 @@ class Record extends Table
         $ids = array_keys($entities);
         foreach ($this->eav as $attr => $eav) {
             foreach ($eav->loadAll($ids) as $id => $values) {
-                $this->ref->setValue($entities[$id], $attr, $values);
+                $this->serializer->setValue($entities[$id], $attr, $values);
             }
         }
     }
@@ -434,7 +238,7 @@ class Record extends Table
     {
         $id = $entity->getId();
         foreach ($this->eav as $attr => $eav) {
-            $values = $this->ref->getValue($entity, $attr);
+            $values = $this->serializer->getValue($entity, $attr);
             // skip if null
             if (isset($values)) {
                 $eav->save($id, $values);
@@ -456,9 +260,9 @@ class Record extends Table
             $slots = implode(',', $slots);
             return $this->db->prepare("INSERT INTO {$this} ({$columns}) VALUES ({$slots})");
         });
-        $values = $this->getValues($entity);
+        $values = $this->serializer->export($entity);
         unset($values['id']);
-        $this->ref->setValue($entity, 'id', $statement($values)->getId());
+        $this->serializer->setValue($entity, 'id', $statement($values)->getId());
         $statement->closeCursor();
     }
 
@@ -478,7 +282,8 @@ class Record extends Table
             $slots = implode(', ', $slots);
             return $this->db->prepare("UPDATE {$this} SET {$slots} WHERE id = :id");
         });
-        $statement->execute($this->getValues($entity));
+        $values = $this->serializer->export($entity);
+        $statement->execute($values);
         $statement->closeCursor();
     }
 
@@ -492,70 +297,4 @@ class Record extends Table
         return $this;
     }
 
-    /**
-     * Converts a value from storage into the native/annotated type.
-     *
-     * @param string $property
-     * @param mixed $value
-     * @return mixed
-     */
-    protected function setType(string $property, $value)
-    {
-        if (isset($value)) {
-            // complex?
-            if (isset($this->hydrate[$property])) {
-                $to = $this->hydrate[$property];
-                $from = $this->dehydrate[$to];
-                return $this->setType_hydrate($to, $from, $value);
-            }
-            // scalar. this function doesn't care about the type's letter case.
-            settype($value, $this->types[$property]);
-        }
-        return $value;
-    }
-
-    /**
-     * Hydrates a complex value from scalar storage.
-     *
-     * @see Record::getValues_dehydrate() inverse
-     *
-     * @param string $to The strict type from the class definition.
-     * @param string $from The storage type.
-     * @param scalar $dehydrated
-     * @return array|object
-     */
-    protected function setType_hydrate(string $to, string $from, $dehydrated)
-    {
-        // hydrate entities from their id
-        if (is_a($to, EntityInterface::class, true)) {
-            return $this->db->getRecord($to)->load($dehydrated);
-        }
-
-        // hydrate DateTime
-        if ($from === 'DateTime') {
-            return new $to($dehydrated, $this->utc);
-        }
-
-        // hydrate other complex types
-        $complex = unserialize($dehydrated);
-        assert(is_array($complex) or is_object($complex));
-        return $complex;
-    }
-
-    /**
-     * @param EntityInterface $entity
-     * @param array $values
-     */
-    protected function setValues(EntityInterface $entity, array $values): void
-    {
-        foreach ($values as $prop => $value) {
-            if (isset($this->columns[$prop])) {
-                $value = $this->setType($prop, $value);
-                $this->ref->setValue($entity, $prop, $value);
-            } else {
-                // attempt to set unknown fields directly on the instance.
-                $entity->{$prop} = $value;
-            }
-        }
-    }
 }
