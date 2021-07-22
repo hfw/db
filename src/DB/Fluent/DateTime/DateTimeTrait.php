@@ -520,26 +520,25 @@ trait DateTimeTrait
     }
 
     /**
-     * Changes the timezone from the local timezone to UTC.
+     * Changes the timezone from local to UTC.
+     *
+     * SQLite uses the system's timezone as the "local" timezone,
+     * whereas MySQL allows you to specify it.
      *
      * > Warning: Datetimes are already stored and retrieved as UTC.
      * > Only use this if you know the expression is in the local timezone.
      *
      * > Warning: Chaining this multiple times will further change the timezone offset.
      *
+     * @param null|string $mysqlLocalTz The "local" timezone name or offset given to MySQL. Defaults to PHP's current timezone.
      * @return DateTime
      */
-    public function toUTC()
+    public function toUTC(string $mysqlLocalTz = null)
     {
-        if ($this->db->isSQLite()) {
-            // docs:
-            // > "utc" assumes that the time value to its left is in the local timezone
-            // > and adjusts that time value to be in UTC. If the time to the left is not in localtime,
-            // > then the result of "utc" is undefined.
-            return DateTime::factory($this->db, "DATETIME({$this},'utc')");
-        }
-        $local = date_default_timezone_get();
-        return DateTime::factory($this->db, "CONVERT_TZ({$this},'{$local}','UTC')");
+        return DateTime::fromFormat($this->db, [
+            'mysql' => "CONVERT_TZ(%s,'%s','UTC')",
+            'sqlite' => "DATETIME(%s,'utc')"
+        ], $this, $mysqlLocalTz ?? date_default_timezone_get());
     }
 
     /**
