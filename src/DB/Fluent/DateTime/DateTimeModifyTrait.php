@@ -49,6 +49,14 @@ trait DateTimeModifyTrait
     }
 
     /**
+     * @return DateTime
+     */
+    public function addMinute()
+    {
+        return $this->addMinutes(1);
+    }
+
+    /**
      * @param int $minutes
      * @return DateTime
      */
@@ -72,6 +80,14 @@ trait DateTimeModifyTrait
     public function addMonths(int $months)
     {
         return $this->modify(0, 0, 0, 0, $months);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function addSecond()
+    {
+        return $this->addSeconds(1);
     }
 
     /**
@@ -224,6 +240,14 @@ trait DateTimeModifyTrait
     }
 
     /**
+     * @return DateTime
+     */
+    public function subMinute()
+    {
+        return $this->subMinutes(1);
+    }
+
+    /**
      * @param int $minutes
      * @return DateTime
      */
@@ -247,6 +271,14 @@ trait DateTimeModifyTrait
     public function subMonths(int $months)
     {
         return $this->modify(0, 0, 0, 0, $months * -1);
+    }
+
+    /**
+     * @return DateTime
+     */
+    public function subSecond()
+    {
+        return $this->subSeconds(1);
     }
 
     /**
