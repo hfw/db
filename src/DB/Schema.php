@@ -203,7 +203,7 @@ class Schema implements ArrayAccess
     }
 
     /**
-     * `ALTER TABLE $table ADD COLUMN $column ...`
+     * `ALTER TABLE $table ADD COLUMN $column ...` if it doesn't exist.
      *
      * @param string $table
      * @param string $column
@@ -212,9 +212,11 @@ class Schema implements ArrayAccess
      */
     public function addColumn(string $table, string $column, int $type = self::T_STRING_NULL)
     {
-        $type = $this->colDefs[$type & self::T_MASK];
-        $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
-        unset($this->tables[$table]);
+        if (!$this->hasColumn($table, $column)) {
+            $type = $this->colDefs[$type & self::T_MASK];
+            $this->db->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
+            unset($this->tables[$table]);
+        }
         return $this;
     }
 
@@ -294,25 +296,6 @@ class Schema implements ArrayAccess
             implode(', ', $colDefs)
         ));
 
-        return $this;
-    }
-
-    /**
-     * `ALTER TABLE $table DROP COLUMN $column`
-     *
-     * SQLite does not support this, so it's skipped.
-     * It's beyond the scope of this method (for now) to do table recreation for SQLite.
-     *
-     * @param string $table
-     * @param string $column
-     * @return $this
-     */
-    public function dropColumn(string $table, string $column)
-    {
-        if (!$this->db->isSQLite()) {
-            $this->db->exec("ALTER TABLE {$table} DROP COLUMN {$column}");
-        }
-        unset($this->tables[$table]);
         return $this;
     }
 
@@ -444,6 +427,34 @@ class Schema implements ArrayAccess
     {
         sort($columns, SORT_STRING);
         return 'UQ_' . $table . '__' . implode('__', $columns);
+    }
+
+    /**
+     * @param string $table
+     * @param string $column
+     * @return bool
+     */
+    public function hasColumn(string $table, string $column): bool
+    {
+        $table = $this->getTable($table);
+        return isset($table[$column]);
+    }
+
+    /**
+     * @param string $table
+     * @param string[] $columns
+     * @return bool
+     */
+    public function hasUniqueKey(string $table, array $columns): bool
+    {
+        $name = $this->db->quote($this->getUniqueKeyName($table, $columns));
+        if ($this->db->isSQLite()) {
+            $exists = "SELECT 1 FROM sqlite_master WHERE type='index' and name={$name}";
+        } else {
+            $table = $this->db->quote($table);
+            $exists = "SELECT 1 FROM information_schema.statistics WHERE TABLE_NAME={$table} AND INDEX_NAME={$name}";
+        }
+        return (bool)$this->db->query($exists)->fetchColumn();
     }
 
     /**

@@ -261,17 +261,20 @@ $opt = getopt('h', [
                     $T_CONST .= '_NULL';
                 }
                 $up[] = "\$schema->addColumn('{$record}', '{$property}', Schema::{$T_CONST});";
-                $down[] = "\$schema->dropColumn('{$record}', '{$property}');";
             }
         }
         foreach ($serializer->getUnique() as $property) {
-            $up[] = "\$schema->addUniqueKey('{$record}', ['{$property}']);";
-            $down[] = "\$schema->dropUniqueKey('{$record}', ['{$property}']);";
+            if (!$this->schema->hasUniqueKey($record, [$property])) {
+                $up[] = "\$schema->addUniqueKey('{$record}', ['{$property}']);";
+                $down[] = "\$schema->dropUniqueKey('{$record}', ['{$property}']);";
+            }
         }
         foreach ($serializer->getUniqueGroups() as $properties) {
-            $properties = "'" . implode("','", $properties) . "'";
-            $up[] = "\$schema->addUniqueKey('{$record}', [{$properties}]);";
-            $down[] = "\$schema->dropUniqueKey('{$record}', [{$properties}]);";
+            if (!$this->schema->hasUniqueKey($record, $properties)) {
+                $properties = "'" . implode("','", $properties) . "'";
+                $up[] = "\$schema->addUniqueKey('{$record}', [{$properties}]);";
+                $down[] = "\$schema->dropUniqueKey('{$record}', [{$properties}]);";
+            }
         }
     }
 
@@ -280,12 +283,10 @@ $opt = getopt('h', [
         $columns = $this->schema->getColumnInfo($record);
         foreach ($columns as $column => $info) {
             if (!$record[$column]) {
-                $T_CONST = Schema::T_CONST_NAMES[$info['type']];
-                if ($info['nullable']) {
-                    $T_CONST .= '_NULL';
+                if ($this->schema->hasUniqueKey($record, [$column])) {
+                    $up[] = "\$schema->dropUniqueKey('{$record}', ['{$column}']);";
+                    $down[] = "\$schema->addUniqueKey('{$record}', ['{$column}']);";
                 }
-                $up[] = "\$schema->dropColumn('{$record}', '{$column}');";
-                $down[] = "\$schema->addColumn('{$record}', '{$column}', Schema::{$T_CONST});";
             }
         }
     }
