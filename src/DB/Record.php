@@ -160,6 +160,14 @@ class Record extends Table
     }
 
     /**
+     * @return Serializer
+     */
+    public function getSerializer(): Serializer
+    {
+        return $this->serializer;
+    }
+
+    /**
      * Loads all data for a given ID (clones the prototype), or an existing instance.
      *
      * @param int|EntityInterface $id The given instance may be a subclass of the prototype.

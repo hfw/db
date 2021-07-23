@@ -8,7 +8,6 @@ include_once __DIR__ . "/.init.php";
 use DateTime;
 use Helix\DB\MigrationInterface;
 use Helix\DB\Record;
-use Helix\DB\Record\Serializer;
 use Helix\DB\Schema;
 
 $opt = getopt('h', [
@@ -31,8 +30,6 @@ $opt = getopt('h', [
     private DB $db;
 
     private Schema $schema;
-
-    private Serializer $serializer;
 
     public function __construct(array $argv, array $opt)
     {
@@ -193,7 +190,6 @@ $opt = getopt('h', [
     {
         $class = $this->_toClass($class) or $this->_usage_exit();
         $record = $this->db->getRecord($class);
-        $this->serializer = Serializer::factory($this->db, $class);
         $up = [];
         $down = [];
         if (!$this->schema->getTable($record)) {
@@ -228,19 +224,20 @@ $opt = getopt('h', [
     {
         $columns = $this->schema->getColumnInfo($record);
         $multiUnique = [];
-        foreach ($this->serializer->getStorageTypes() as $property => $type) {
+        $serializer = $record->getSerializer();
+        foreach ($serializer->getStorageTypes() as $property => $type) {
             if (!isset($columns[$property])) {
                 $T_CONST = Schema::T_CONST_NAMES[$type];
-                if ($this->serializer->isNullable($property)) {
+                if ($serializer->isNullable($property)) {
                     $T_CONST .= '_NULL';
                 }
                 $up[] = "\$schema->addColumn('{$record}', '{$property}', Schema::{$T_CONST});";
                 $down[] = "\$schema->dropColumn('{$record}', '{$property}');";
             }
-            if ($this->serializer->isUnique($property)) {
+            if ($serializer->isUnique($property)) {
                 $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$property}']);";
                 $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$property}']);";
-            } elseif ($uniqueGroup = $this->serializer->getUniqueGroup($property)) {
+            } elseif ($uniqueGroup = $serializer->getUniqueGroup($property)) {
                 $multiUnique[$uniqueGroup][] = $property;
             }
         }
@@ -268,10 +265,11 @@ $opt = getopt('h', [
 
     private function record_create(Record $record, &$up, &$down)
     {
+        $serializer = $record->getSerializer();
         $columns = [];
-        foreach ($this->serializer->getStorageTypes() as $property => $type) {
+        foreach ($serializer->getStorageTypes() as $property => $type) {
             $T_CONST = Schema::T_CONST_NAMES[$type];
-            if ($this->serializer->isNullable($property)) {
+            if ($serializer->isNullable($property)) {
                 $T_CONST .= '_NULL';
             }
             $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
@@ -282,7 +280,7 @@ $opt = getopt('h', [
         $up[] = "\$schema->createTable('{$record}', {$columns});";
         $down[] = "\$schema->dropTable('{$record}');";
 
-        foreach ($this->serializer->getUnique() as $unique) {
+        foreach ($serializer->getUnique() as $unique) {
             if (is_array($unique)) {
                 $unique = implode("', '", $unique);
             }
