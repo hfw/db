@@ -488,21 +488,6 @@ class Schema implements ArrayAccess
     }
 
     /**
-     * `ALTER TABLE $table RENAME COLUMN $oldName TO $newName`
-     *
-     * @param string $table
-     * @param string $oldName
-     * @param string $newName
-     * @return $this
-     */
-    public function renameColumn(string $table, string $oldName, string $newName)
-    {
-        $this->db->exec("ALTER TABLE {$table} RENAME COLUMN {$oldName} TO {$newName}");
-        unset($this->tables[$table]);
-        return $this;
-    }
-
-    /**
      * `ALTER TABLE $oldName RENAME TO $newName`
      *
      * @param string $oldName
