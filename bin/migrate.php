@@ -222,13 +222,13 @@ $opt = getopt('h', [
 
         // add unique constraints
         foreach ($serializer->getUnique() as $column) {
-            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$column}']);";
-            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$column}']);";
+            $up[] = "\$schema->addUniqueKey('{$record}', ['{$column}']);";
+            $down[] = "\$schema->dropUniqueKey('{$record}', ['{$column}']);";
         }
         foreach ($serializer->getUniqueGroups() as $columns) {
             $columns = implode("', '", $columns);
-            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$columns}']);";
-            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$columns}']);";
+            $up[] = "\$schema->addUniqueKey('{$record}', ['{$columns}']);";
+            $down[] = "\$schema->dropUniqueKey('{$record}', ['{$columns}']);";
         }
     }
 
@@ -265,13 +265,13 @@ $opt = getopt('h', [
             }
         }
         foreach ($serializer->getUnique() as $property) {
-            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$property}']);";
-            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$property}']);";
+            $up[] = "\$schema->addUniqueKey('{$record}', ['{$property}']);";
+            $down[] = "\$schema->dropUniqueKey('{$record}', ['{$property}']);";
         }
         foreach ($serializer->getUniqueGroups() as $properties) {
             $properties = "'" . implode("','", $properties) . "'";
-            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', [{$properties}]);";
-            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', [{$properties}]);";
+            $up[] = "\$schema->addUniqueKey('{$record}', [{$properties}]);";
+            $down[] = "\$schema->dropUniqueKey('{$record}', [{$properties}]);";
         }
     }
 

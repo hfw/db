@@ -225,9 +225,9 @@ class Schema implements ArrayAccess
      * @param string[] $columns
      * @return $this
      */
-    public function addUniqueKeyConstraint(string $table, array $columns)
+    public function addUniqueKey(string $table, array $columns)
     {
-        $name = $this->getUniqueKeyConstraintName($table, $columns);
+        $name = $this->getUniqueKeyName($table, $columns);
         $columns = implode(',', $columns);
         if ($this->db->isSQLite()) {
             $this->db->exec("CREATE UNIQUE INDEX {$name} ON {$table} ({$columns})");
@@ -271,7 +271,7 @@ class Schema implements ArrayAccess
         if ($primaryKey) {
             $colDefs[] = sprintf(
                 'CONSTRAINT %s PRIMARY KEY (%s)',
-                $this->getPrimaryKeyConstraintName($table, $primaryKey),
+                $this->getPrimaryKeyName($table, $primaryKey),
                 implode(',', $primaryKey)
             );
         }
@@ -280,7 +280,7 @@ class Schema implements ArrayAccess
         foreach ($foreign as $local => $external) {
             $colDefs[] = sprintf(
                 'CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON UPDATE CASCADE ON DELETE %s',
-                $this->getForeignKeyConstraintName($table, $local),
+                $this->getForeignKeyName($table, $local),
                 $local,
                 $external->getQualifier(),
                 $external->getName(),
@@ -336,9 +336,9 @@ class Schema implements ArrayAccess
      * @param string[] $columns
      * @return $this
      */
-    public function dropUniqueKeyConstraint(string $table, array $columns)
+    public function dropUniqueKey(string $table, array $columns)
     {
-        $name = $this->getUniqueKeyConstraintName($table, $columns);
+        $name = $this->getUniqueKeyName($table, $columns);
         if ($this->db->isSQLite()) {
             $this->db->exec("DROP INDEX {$name}");
         } else {
@@ -394,7 +394,7 @@ class Schema implements ArrayAccess
      * @param string $column
      * @return string
      */
-    final public function getForeignKeyConstraintName(string $table, string $column): string
+    final public function getForeignKeyName(string $table, string $column): string
     {
         return 'FK_' . $table . '__' . $column;
     }
@@ -406,7 +406,7 @@ class Schema implements ArrayAccess
      * @param string[] $columns
      * @return string
      */
-    final public function getPrimaryKeyConstraintName(string $table, array $columns): string
+    final public function getPrimaryKeyName(string $table, array $columns): string
     {
         sort($columns, SORT_STRING);
         return 'PK_' . $table . '__' . implode('__', $columns);
@@ -440,7 +440,7 @@ class Schema implements ArrayAccess
      * @param string[] $columns
      * @return string
      */
-    final public function getUniqueKeyConstraintName(string $table, array $columns): string
+    final public function getUniqueKeyName(string $table, array $columns): string
     {
         sort($columns, SORT_STRING);
         return 'UQ_' . $table . '__' . implode('__', $columns);
