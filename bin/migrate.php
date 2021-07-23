@@ -202,6 +202,36 @@ $opt = getopt('h', [
         $this->write($class, $up, $down);
     }
 
+    private function record_create(Record $record, &$up, &$down)
+    {
+        $serializer = $record->getSerializer();
+
+        // define the table
+        $columns = [];
+        foreach ($serializer->getStorageTypes() as $column => $type) {
+            $T_CONST = Schema::T_CONST_NAMES[$type];
+            if ($serializer->isNullable($column)) {
+                $T_CONST .= '_NULL';
+            }
+            $columns[$column] = "'{$column}' => Schema::{$T_CONST}";
+        }
+        $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
+        $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
+        $up[] = "\$schema->createTable('{$record}', {$columns});";
+        $down[] = "\$schema->dropTable('{$record}');";
+
+        // add unique constraints
+        foreach ($serializer->getUnique() as $column) {
+            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$column}']);";
+            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$column}']);";
+        }
+        foreach ($serializer->getUniqueGroups() as $columns) {
+            $columns = implode("', '", $columns);
+            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$columns}']);";
+            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$columns}']);";
+        }
+    }
+
     private function record_create_eav(Record $record, &$up, &$down)
     {
         foreach ($record->getEav() as $eav) {
@@ -223,7 +253,6 @@ $opt = getopt('h', [
     private function record_add_columns(Record $record, &$up, &$down)
     {
         $columns = $this->schema->getColumnInfo($record);
-        $multiUnique = [];
         $serializer = $record->getSerializer();
         foreach ($serializer->getStorageTypes() as $property => $type) {
             if (!isset($columns[$property])) {
@@ -234,14 +263,12 @@ $opt = getopt('h', [
                 $up[] = "\$schema->addColumn('{$record}', '{$property}', Schema::{$T_CONST});";
                 $down[] = "\$schema->dropColumn('{$record}', '{$property}');";
             }
-            if ($serializer->isUnique($property)) {
-                $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$property}']);";
-                $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$property}']);";
-            } elseif ($uniqueGroup = $serializer->getUniqueGroup($property)) {
-                $multiUnique[$uniqueGroup][] = $property;
-            }
         }
-        foreach ($multiUnique as $properties) {
+        foreach ($serializer->getUnique() as $property) {
+            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$property}']);";
+            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$property}']);";
+        }
+        foreach ($serializer->getUniqueGroups() as $properties) {
             $properties = "'" . implode("','", $properties) . "'";
             $up[] = "\$schema->addUniqueKeyConstraint('{$record}', [{$properties}]);";
             $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', [{$properties}]);";
@@ -260,32 +287,6 @@ $opt = getopt('h', [
                 $up[] = "\$schema->dropColumn('{$record}', '{$column}');";
                 $down[] = "\$schema->addColumn('{$record}', '{$column}', Schema::{$T_CONST});";
             }
-        }
-    }
-
-    private function record_create(Record $record, &$up, &$down)
-    {
-        $serializer = $record->getSerializer();
-        $columns = [];
-        foreach ($serializer->getStorageTypes() as $property => $type) {
-            $T_CONST = Schema::T_CONST_NAMES[$type];
-            if ($serializer->isNullable($property)) {
-                $T_CONST .= '_NULL';
-            }
-            $columns[$property] = "'{$property}' => Schema::{$T_CONST}";
-        }
-
-        $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
-        $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
-        $up[] = "\$schema->createTable('{$record}', {$columns});";
-        $down[] = "\$schema->dropTable('{$record}');";
-
-        foreach ($serializer->getUnique() as $unique) {
-            if (is_array($unique)) {
-                $unique = implode("', '", $unique);
-            }
-            $up[] = "\$schema->addUniqueKeyConstraint('{$record}', ['{$unique}']);";
-            $down[] = "\$schema->dropUniqueKeyConstraint('{$record}', ['{$unique}']);";
         }
     }
 

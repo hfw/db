@@ -23,7 +23,8 @@ class Reflection
 
     protected const RX_RECORD = '/\*\h*@record\h+(?<table>\w+)/i';
     protected const RX_IS_COLUMN = '/\*\h*@col(umn)?\b/i';
-    protected const RX_UNIQUE = '/\*\h*@unique(\h+(?<ident>[a-z_]+))?/i';
+    protected const RX_UNIQUE = '/^\h*\*\h*@unique\h*$/im';
+    protected const RX_UNIQUE_GROUP = '/^\h*\*\h*@unique\h+(?<ident>[a-z_]+)\h*$/im';
     protected const RX_VAR = '/\*\h*@var\h+(?<type>\S+)/i'; // includes pipes and backslashes
     protected const RX_NULL = '/(\bnull\|)|(\|null\b)/i';
     protected const RX_EAV = '/\*\h*@eav\h+(?<table>\w+)/i';
@@ -79,11 +80,6 @@ class Reflection
     protected $properties = [];
 
     /**
-     * @var string[]
-     */
-    protected $unique;
-
-    /**
      * @param DB $db
      * @param string|object $class
      */
@@ -93,26 +89,20 @@ class Reflection
         $this->class = new ReflectionClass($class);
         $this->defaults = $this->class->getDefaultProperties();
         foreach ($this->class->getProperties() as $property) {
+            $name = $property->getName();
             $property->setAccessible(true);
-            $this->properties[$property->getName()] = $property;
+            $this->properties[$name] = $property;
+            if ($this->isColumn($name)) {
+                $this->columns[$name] = $name;
+            }
         }
     }
 
     /**
-     * @TODO allow aliasing
-     *
      * @return string[]
      */
-    public function getColumns(): array
+    final public function getColumns(): array
     {
-        if (!isset($this->columns)) {
-            $this->columns = [];
-            foreach ($this->properties as $name => $property) {
-                if (preg_match(static::RX_IS_COLUMN, $property->getDocComment())) {
-                    $this->columns[$name] = $name;
-                }
-            }
-        }
         return $this->columns;
     }
 
@@ -207,45 +197,31 @@ class Reflection
     }
 
     /**
-     * Column groupings for unique constraints.
-     * - Column-level constraints are enumerated names.
-     * - Table-level (multi-column) constraints are names grouped under an arbitrary shared identifier.
+     * Columns with their own individual unique constraints.
      *
-     * `[ 'foo', 'my_multi'=>['bar','baz'], ... ]`
-     *
-     * @return array
+     * @return string[]
      */
-    public function getUnique()
+    public function getUnique(): array
     {
-        if (!isset($this->unique)) {
-            $this->unique = [];
-            foreach ($this->properties as $property) {
-                if (preg_match(static::RX_UNIQUE, $property->getDocComment(), $match)) {
-                    if (isset($match['ident'])) {
-                        $this->unique[$match['ident']][] = $property->getName();
-                    } else {
-                        $this->unique[] = $property->getName();
-                    }
-                }
-            }
-        }
-        return $this->unique;
+        return array_filter($this->columns, fn(string $property) => $this->isUnique($property));
     }
 
     /**
-     * The shared identifier if a property is part of a multi-column unique-key.
+     * Table-level (multi-column) constraints are grouped under an arbitrary shared identifier.
      *
-     * @param string $property
-     * @return null|string The shared identifier, or nothing.
+     * `[ shared identifier => [ col, ... ], ... ]`
+     *
+     * @return string[][]
      */
-    final public function getUniqueGroup(string $property): ?string
+    public function getUniqueGroups(): array
     {
-        foreach ($this->getUnique() as $key => $value) {
-            if (is_string($key) and in_array($property, $value)) {
-                return $key;
+        $groups = [];
+        foreach ($this->columns as $column) {
+            if ($this->isUniqueMulti($column, $ident)) {
+                $groups[$ident][$column] = $column;
             }
         }
-        return null;
+        return $groups;
     }
 
     /**
@@ -258,6 +234,15 @@ class Reflection
     public function getValue(object $object, string $property)
     {
         return $this->properties[$property]->getValue($object);
+    }
+
+    /**
+     * @param string $property
+     * @return bool
+     */
+    public function isColumn(string $property): bool
+    {
+        return (bool)preg_match(static::RX_IS_COLUMN, $this->properties[$property]->getDocComment());
     }
 
     /**
@@ -278,14 +263,26 @@ class Reflection
     }
 
     /**
-     * Whether a property has a unique-key constraint of its own.
-     *
-     * @param string $property
+     * @param string $column
      * @return bool
      */
-    final public function isUnique(string $property): bool
+    public function isUnique(string $column): bool
     {
-        return in_array($property, $this->getUnique());
+        return (bool)preg_match(static::RX_UNIQUE, $this->properties[$column]->getDocComment());
+    }
+
+    /**
+     * @param string $column
+     * @param void $ident Updated to the group identifier.
+     * @return bool
+     */
+    public function isUniqueMulti(string $column, &$ident = null): bool
+    {
+        if (preg_match(static::RX_UNIQUE_GROUP, $this->properties[$column]->getDocComment(), $unique)) {
+            $ident = $unique['ident'];
+            return true;
+        }
+        return false;
     }
 
     /**

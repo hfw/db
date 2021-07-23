@@ -63,7 +63,7 @@ class Serializer extends Reflection
     {
         parent::__construct($db, $class);
         $this->utc = new DateTimeZone('UTC');
-        foreach ($this->getColumns() as $col) {
+        foreach ($this->columns as $col) {
             $type = $this->getType($col);
             if (is_a($type, EntityInterface::class, true)) {
                 $this->dehydrate[$type] = 'int';
