@@ -5,6 +5,7 @@ namespace Helix\DB\Fluent\DateTime;
 use DateInterval;
 use Helix\DB\Fluent\AbstractTrait;
 use Helix\DB\Fluent\DateTime;
+use Helix\DB\Fluent\Str;
 
 /**
  * Date-time modifiers.
@@ -13,6 +14,12 @@ trait DateTimeModifyTrait
 {
 
     use AbstractTrait;
+
+    /**
+     * @param string|string[] $format
+     * @return Str
+     */
+    abstract public function dateFormat($format);
 
     /**
      * @return DateTime
@@ -226,6 +233,155 @@ trait DateTimeModifyTrait
             $spec[] = sprintf("'%s %s'", $int > 0 ? "+{$int}" : $int, $unit);
         }
         return DateTime::factory($this->db, sprintf('DATETIME(%s)', implode(',', $spec)));
+    }
+
+    /**
+     * Manually set the date components, preserving the time.
+     *
+     * `NULL` can be given to preserve a component's value.
+     *
+     * @param null|int $day
+     * @param null|int $month
+     * @param null|int $year
+     * @return DateTime
+     */
+    public function setDate(int $day = null, int $month = null, int $year = null)
+    {
+        $day ??= '%D';
+        $month ??= '%m';
+        $year ??= '%Y';
+        if (is_int($day)) {
+            assert($day >= 1 and $day <= 31);
+            $day = sprintf('%02d', $day);
+        }
+        if (is_int($month)) {
+            assert($month >= 1 and $month <= 12);
+            $month = sprintf('%02d', $month);
+        }
+        if (is_int($year)) {
+            assert($year >= 0 and $year <= 9999);
+            $year = sprintf('%04d', $year);
+        }
+        return DateTime::factory($this->db, $this->dateFormat([
+            'mysql' => "{$year}-{$month}-{$day} %H:%i:%S",
+            'sqlite' => "{$year}-{$month}-{$day} %H:%M:%S",
+        ]));
+    }
+
+    /**
+     * @param int $day
+     * @return DateTime
+     */
+    public function setDay(int $day)
+    {
+        assert($day >= 1 and $day <= 31);
+        $day = sprintf('%02d', $day);
+        return DateTime::factory($this->db, $this->dateFormat([
+            'mysql' => "%Y-%m-{$day} %H:%i:%S",
+            'sqlite' => "%Y-%m-{$day} %H:%M:%S",
+        ]));
+    }
+
+    /**
+     * @param int $hours
+     * @return DateTime
+     */
+    public function setHours(int $hours)
+    {
+        assert($hours >= 0 and $hours <= 23);
+        $hours = sprintf('%02d', $hours);
+        return DateTime::factory($this->db, $this->dateFormat([
+            'mysql' => "%Y-%m-%d {$hours}:%i:%S",
+            'sqlite' => "%Y-%m-%d {$hours}:%M:%S"
+        ]));
+    }
+
+    /**
+     * @param int $minutes
+     * @return DateTime
+     */
+    public function setMinutes(int $minutes)
+    {
+        assert($minutes >= 0 and $minutes <= 59);
+        $minutes = sprintf('%02d', $minutes);
+        return DateTime::factory($this->db, $this->dateFormat("%Y-%m-%d %H:{$minutes}:%S"));
+    }
+
+    /**
+     * @param int $month
+     * @return DateTime
+     */
+    public function setMonth(int $month)
+    {
+        assert($month >= 1 and $month <= 12);
+        $month = sprintf('%02d', $month);
+        return DateTime::factory($this->db, $this->dateFormat([
+            'mysql' => "%Y-{$month}-%d %H:%i:%S",
+            'sqlite' => "%Y-{$month}-%d %H:%M:%S",
+        ]));
+    }
+
+    /**
+     * @param int $seconds
+     * @return DateTime
+     */
+    public function setSeconds(int $seconds)
+    {
+        assert($seconds >= 0 and $seconds <= 59);
+        $seconds = sprintf('%02d', $seconds);
+        return DateTime::factory($this->db, $this->dateFormat([
+            'mysql' => "%Y-%m-%d %H:%i:{$seconds}",
+            'sqlite' => "%Y-%m-%d %H:%M:{$seconds}"
+        ]));
+    }
+
+    /**
+     * Manually set the time components, preserving the date.
+     *
+     * `NULL` can be given to preserve a component's value.
+     *
+     * @param null|int $seconds
+     * @param null|int $minutes
+     * @param null|int $hours
+     * @return DateTime
+     */
+    public function setTime(int $seconds = null, int $minutes = null, int $hours = null)
+    {
+        $seconds ??= '%S';
+        $minutes ??= [
+            'mysql' => '%i',
+            'sqlite' => '%M',
+        ][$this->db->getDriver()];
+        $hours ??= '%H';
+
+        if (is_int($seconds)) {
+            assert($seconds >= 0 and $seconds <= 59);
+            $seconds = sprintf('%02d', $seconds);
+        }
+        if (is_int($minutes)) {
+            assert($minutes >= 0 and $minutes <= 59);
+            $minutes = sprintf('%02d', $minutes);
+        }
+        if (is_int($hours)) {
+            assert($hours >= 0 and $hours <= 23);
+            $hours = sprintf('%02d', $hours);
+        }
+
+        return DateTime::factory($this->db, $this->dateFormat("%Y-%m-%d {$hours}:{$minutes}:{$seconds}"));
+    }
+
+    /**
+     * @param int $year
+     * @return DateTime
+     */
+    public function setYear(int $year)
+    {
+        assert($year >= 0 and $year <= 9999);
+        $year = sprintf('%04d', $year);
+        return DateTime::factory($this->db, $this->dateFormat([
+            'mysql' => "{$year}-%m-%d %H:%i:%S",
+            'sqlite' => "{$year}-%m-%d %H:%M:%S",
+        ]));
     }
 
     /**
