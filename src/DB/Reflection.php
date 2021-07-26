@@ -161,39 +161,21 @@ class Reflection
      */
     public function getType(string $property): string
     {
-        return $this->getType_reflection($property)
-            ?? $this->getType_var($property)
-            ?? static::SCALARS[gettype($this->defaults[$property])];
-    }
-
-    /**
-     * @param string $property
-     * @return null|string
-     */
-    protected function getType_reflection(string $property): ?string
-    {
+        // reflection
         if ($type = $this->properties[$property]->getType() and $type instanceof ReflectionNamedType) {
             return static::SCALARS[$type->getName()] ?? $type->getName();
         }
-        return null;
-    }
 
-    /**
-     * @param string $property
-     * @return null|string
-     */
-    protected function getType_var(string $property): ?string
-    {
+        // @var
         if (preg_match(static::RX_VAR, $this->properties[$property]->getDocComment(), $var)) {
             $type = preg_replace(static::RX_NULL, '', $var['type']); // remove null
-            if (isset(static::SCALARS[$type])) {
-                return static::SCALARS[$type];
-            }
             // it's beyond the scope of this class to parse "use" statements (for now),
             // @var <CLASS> must be a FQN in order to work.
-            return ltrim($type, '\\');
+            return static::SCALARS[$type] ?? ltrim($type, '\\');
         }
-        return null;
+
+        // default value
+        return static::SCALARS[gettype($this->defaults[$property])];
     }
 
     /**
