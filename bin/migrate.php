@@ -217,7 +217,17 @@ $opt = getopt('h', [
         }
         $columns['id'] = "'id' => Schema::T_AUTOINCREMENT";
         $columns = "[\n\t\t\t" . implode(",\n\t\t\t", $columns) . "\n\t\t]";
-        $up[] = "\$schema->createTable('{$record}', {$columns});";
+
+        $foreign = [];
+        foreach ($serializer->getForeign() as $col => $class) {
+            $foreign[$col] = "'{$col}' => \$schema['{$this->db->getRecord($class)}']['id']";
+        }
+        if ($foreign) {
+            $foreign = "[\n\t\t\t" . implode(",\n\t\t\t", $foreign) . "\n\t\t]";
+            $up[] = "\$schema->createTable('{$record}', {$columns}, {$foreign});";
+        } else {
+            $up[] = "\$schema->createTable('{$record}', {$columns});";
+        }
         $down[] = "\$schema->dropTable('{$record}');";
 
         // add unique constraints

@@ -36,6 +36,15 @@ class Serializer extends Reflection
     ];
 
     /**
+     * Properties that are foreign keys to other entities.
+     *
+     * `[ property => foreign entity class ]`
+     *
+     * @var string[]
+     */
+    protected $foreign = [];
+
+    /**
      * The specific classes used to hydrate classed properties, like `DateTime`.
      *
      * `[ property => class ]`
@@ -66,6 +75,7 @@ class Serializer extends Reflection
         foreach ($this->columns as $col) {
             $type = $this->getType($col);
             if (is_a($type, EntityInterface::class, true)) {
+                $this->foreign[$col] = $type;
                 $this->dehydrate[$type] = 'int';
             }
             if (isset($this->dehydrate[$type])) {
@@ -126,6 +136,14 @@ class Serializer extends Reflection
             $values[$col] = $value;
         }
         return $values;
+    }
+
+    /**
+     * @return string[]
+     */
+    final public function getForeign(): array
+    {
+        return $this->foreign;
     }
 
     /**
